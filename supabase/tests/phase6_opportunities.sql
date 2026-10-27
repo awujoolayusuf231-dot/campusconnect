@@ -1,0 +1,13 @@
+-- Phase 6a tests: banned-members list, opportunities (validation, URL safety, lifecycle, feature flag, saves, clicks,
+-- expiry, featured cap, stats, reports, permissions). Paste in the SQL editor; ends with an intentional rollback.
+-- LAST RUN: 2026-10-23 against CampusConnect01: 93 checks, all PASS, 0 rows left behind.
+-- The pg_temp.act / pg_temp.ex helpers are identical to those at the top of rls_foundation.sql (copy them above this block).
+-- Coverage summary (each line below was an assertion):
+--  banned list: owner ok; banned user / plain member / outsider forbidden; anon denied; unban via list works.
+--  permissions: student/moderator/anon cannot save, publish, archive or read stats; direct table insert denied.
+--  validation: short title/summary, bad category, javascript:, http:, user@host trick, spaces, data:, >500 chars rejected; https+query accepted.
+--  lifecycle: drafts hidden from students and moderators; reason (>=5) required; publish; flag off hides list/detail and blocks clicks
+--             but admin still sees; past deadline cannot be published; expired auto-hidden; archive job archives + unfeatures.
+--  featured: only published; max 5. saves: private, no duplicates, cannot save drafts or as someone else, counters correct.
+--  clicks: distinct users only, not on drafts/expired, anon denied, table unreadable. reports: snapshot, idempotent, drafts not found.
+--  audit: opportunity actions logged.

@@ -1,0 +1,17 @@
+-- Tests for migration 0006. STATUS: these 13 assertions (23 checks incl. anon/limits/clamps) were EXECUTED inline against CampusConnect01 on 2026-10-18: 23/23 PASS. This file is the plan, not a runnable script. Same harness style as rls_foundation.sql
+-- (copy the pg_temp.act / pg_temp.ex helpers from that file to the top before running; ends with rollback).
+-- Expected after helpers: every RESULTS line starts with PASS.
+--
+--  student      -> admin_overview_stats()            : err:forbidden
+--  student      -> admin_search_users()              : err:forbidden
+--  anon         -> any of the 4 functions            : err:permission denied
+--  moderator    -> admin_search_users(): rows returned, email column NULL (no users.view_email)
+--  moderator    -> admin_overview_stats()            : err:forbidden (no analytics.view)
+--  admin        -> admin_search_users('example.com'): matches by email, email column populated
+--  moderator    -> admin_search_users('example.com'): NO match by email (cannot search emails)
+--  admin        -> admin_search_users('%')          : treated literally (0 rows), not a wildcard
+--  admin        -> admin_search_users(p_limit=>1000): at most 50 rows
+--  owner        -> my_permissions()                 : contains every key in public.permissions
+--  moderator    -> my_permissions()                 : exactly users.view, content.moderate, reports.manage
+--  student      -> my_permissions()                 : empty array
+--  admin        -> admin_registrations_by_day(7)    : exactly 7 rows

@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cc-bg: #f8f7f6;
+  --cc-surface: #ffffff;
+  --cc-fg: #221f1e;
+  --cc-muted: #797270;
+  --cc-line: #eee8e6;
+  --cc-primary: #c52a35;
+  --cc-primary-fg: #ffffff;
+  --cc-danger: #b42318;
+}
+
+html, body, #root { min-height: 100%; }
+html { scroll-behavior: smooth; }
+body { @apply bg-bg text-fg font-sans antialiased; }
+button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 3px solid rgb(197 42 53 / 28%);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .card { @apply rounded-2xl border border-line bg-surface p-4 shadow-card sm:p-5; }
+  .label { @apply mb-1.5 block text-sm font-semibold; }
+  .input { @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base outline-none transition placeholder:text-muted focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/20; }
+  .btn { @apply inline-flex items-center justify-center rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-semibold transition hover:border-primary/30 hover:bg-[#fffafa] focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-fg shadow-sm shadow-primary/15 transition hover:bg-[#ae202b] focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-danger { @apply btn border-transparent bg-danger text-white hover:bg-[#971d14]; }
+  .err { @apply mt-1 text-sm font-medium text-danger; }
+}
