@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/features/social/components/ConfirmDialog";
 import { blockUser } from "@/features/social/api";
 import { socialErrorMessage } from "@/lib/errors";
 import { timeAgo } from "@/lib/time";
+import { LoadingState } from "@/app/LoadingState";
 
 interface Conv { conversation_id: string; other_user_id: string; username: string | null; display_name: string | null; avatar_path: string | null; last_message_at: string; preview: string | null; unread_count: number }
 interface Msg { id: string; sender_id: string; body: string; status: string; created_at: string }
@@ -23,7 +24,7 @@ export function MessagesPage() {
     <div className="md:grid md:grid-cols-[18rem,1fr] md:gap-4">
       <aside className={`${id ? "hidden md:block" : "block"}`} aria-label="Conversations">
         <h1 className="mb-3 text-2xl font-semibold">Messages</h1>
-        {convs.isLoading && <p role="status">Loading…</p>}
+        {convs.isLoading && <LoadingState label="Finding your conversations" variant="panel" />}
         {convs.isError && <p role="alert" className="err">Could not load conversations.</p>}
         {convs.data?.length === 0 && <p className="card text-sm text-muted">No conversations yet. Open a student's profile and choose Message.</p>}
         <ul className="space-y-2">{convs.data?.map((c) => (
@@ -75,7 +76,7 @@ function Thread({ convId, other }: { convId: string; other: Conv | null }) {
         {other && <button className="text-xs underline text-muted" onClick={() => setBlocking(true)}>Block</button>}
       </header>
       <div className="flex-1 space-y-2 overflow-y-auto p-3" role="log" aria-live="polite">
-        {msgs.isLoading && <p role="status" className="text-sm text-muted">Loading…</p>}
+        {msgs.isLoading && <LoadingState label="Gathering messages" />}
         {msgs.isError && <p role="alert" className="err">Could not load messages.</p>}
         {msgs.data?.length === 0 && <p className="text-center text-sm text-muted">Say hello 👋</p>}
         {msgs.data?.map((m) => { const mine = m.sender_id === me; return (

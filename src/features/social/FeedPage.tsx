@@ -5,6 +5,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { Composer } from "./components/Composer";
 import { OnboardingCard } from "@/features/onboarding/OnboardingCard";
 import { PostCard } from "./components/PostCard";
+import { LoadingState } from "@/app/LoadingState";
 
 const TABS: [FeedScope, string][] = [["all", "Everyone"], ["following", "Following"], ["institution", "My institution"]];
 
@@ -40,7 +41,7 @@ export function FeedPage() {
           {scope === "following" ? "Follow students in Discover to see their posts here." : scope === "institution" ? "No posts from your institution yet. Set your institution in your profile." : "No posts yet. Be the first to post!"}
         </div>)}
       {posts.map((p) => <PostCard key={p.id} post={p} images={media.data?.[p.id]} me={me} />)}
-      {feed.hasNextPage && <button className="btn w-full" disabled={feed.isFetchingNextPage} onClick={() => void feed.fetchNextPage()}>{feed.isFetchingNextPage ? "Loading…" : "Load more"}</button>}
+      {feed.hasNextPage && <button className="btn w-full gap-2" disabled={feed.isFetchingNextPage} onClick={() => void feed.fetchNextPage()}>{feed.isFetchingNextPage ? <LoadingState label="Finding more posts" /> : "Load more"}</button>}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { listActiveInstitutions } from "@/features/institutions/api";
 import { MAX_AVATAR_BYTES, MAX_INPUT_IMAGE_BYTES, validateImages } from "@/features/social/api";
 import { optimizeImage } from "@/lib/image";
 import { WhiteshirtDialog } from "./WhiteshirtDialog";
+import { LoadingState } from "@/app/LoadingState";
 
 const schema = z.object({
   display_name: z.string().trim().min(1, "Enter your name").max(60),
@@ -84,7 +85,7 @@ export function ProfileEditPage() {
     void qc.invalidateQueries({ queryKey: ["own-profile"] });
   }
 
-  if (own.isLoading) return <p role="status">Loading…</p>;
+  if (own.isLoading) return <LoadingState label="Preparing your profile" variant="panel" />;
   if (own.isError) return <p role="alert" className="err">Could not load your profile.</p>;
   const field = (name: keyof Values, label: string, props: InputHTMLAttributes<HTMLInputElement> = {}) => (
     <div><label className="label" htmlFor={name}>{label}</label><input id={name} className="input" {...props} {...register(name as Exclude<keyof Values, "show_celebration">)} />{errors[name] && <p className="err">{errors[name]?.message as string}</p>}</div>);

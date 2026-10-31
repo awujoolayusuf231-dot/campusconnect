@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { adminErrorMessage } from "@/lib/errors";
 import { timeAgo } from "@/lib/time";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { LoadingState } from "@/app/LoadingState";
 
 interface Report { id: string; reporter_id: string | null; reported_user_id: string | null; target_type: string; target_id: string; category: string; explanation: string | null; content_snapshot: string | null; status: string; assigned_to: string | null; resolved_at: string | null; created_at: string }
 interface Note { id: number; author_id: string | null; note: string; created_at: string }
@@ -32,7 +33,7 @@ export function ReportsPage() {
       <div role="tablist" aria-label="Report status" className="flex flex-wrap gap-2">
         {STATUSES.map((s) => <button key={s} role="tab" aria-selected={status === s} className={status === s ? "btn-primary" : "btn"} onClick={() => { setStatus(s); setSelected(null); }}>{s.replace("_", " ")}</button>)}
       </div>
-      {list.isLoading && <p role="status">Loading…</p>}
+      {list.isLoading && <LoadingState label="Gathering reports" variant="panel" />}
       {list.isError && <p role="alert" className="err">Could not load reports.</p>}
       {list.data?.rows.length === 0 && <p className="card text-center text-muted">No {status.replace("_", " ")} reports.</p>}
       <div className="grid gap-4 lg:grid-cols-2">

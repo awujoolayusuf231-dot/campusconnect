@@ -7,6 +7,7 @@ import { listActiveInstitutions } from "@/features/institutions/api";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { Avatar } from "./components/Avatar";
 import { socialErrorMessage } from "@/lib/errors";
+import { LoadingState } from "@/app/LoadingState";
 
 interface Student { id: string; username: string; display_name: string; avatar_path: string | null; bio: string | null; institution_id: string | null; department: string | null; academic_level: string | null }
 const PAGE = 24;
@@ -43,7 +44,7 @@ export function DiscoverPage() {
         <input className="input" aria-label="Interest" placeholder="Interest" value={form.interest} onChange={set("interest")} />
         <button className="btn-primary">Search</button>
       </form>
-      {results.isLoading && <p role="status">Searching…</p>}
+      {results.isLoading && <LoadingState label="Finding students" variant="panel" />}
       {results.isError && <p role="alert" className="err">Could not load results.</p>}
       {results.data?.length === 0 && <p className="card text-center text-muted">No students match your filters.</p>}
       {toggle.isError && <p role="alert" className="err">{socialErrorMessage((toggle.error as Error).message)}</p>}

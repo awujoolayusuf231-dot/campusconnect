@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ExternalLink, X } from "lucide-react";
 import { celebrationUrlSchema } from "@/validation/profile";
+import { LoadingState } from "@/app/LoadingState";
 
 // The ONLY site this dialog can show. Fixed on purpose: never built from user input.
 export const WHITESHIRT_HOME = "https://www.whiteshirt.fun/";
@@ -49,7 +50,7 @@ export function WhiteshirtDialog({ onUse, onClose }: Props) {
         </header>
         <p className="border-b border-line bg-surface px-3 py-2 text-xs text-muted">This is the real whiteshirt.fun site shown inside CampusConnect. Your CampusConnect login is not shared with it, and CampusConnect cannot see what you type there. Create your board, then paste its link below.</p>
         <div className="relative flex-1 bg-surface">
-          {!loaded && <p role="status" className="absolute inset-0 flex items-center justify-center text-sm text-muted">Loading whiteshirt.fun…</p>}
+          {!loaded && <div className="absolute inset-0 grid place-items-center bg-surface/90 p-4"><LoadingState label="Opening your celebration board" variant="panel" /></div>}
           <iframe title="whiteshirt.fun" src={WHITESHIRT_HOME} onLoad={() => setLoaded(true)} className="relative h-full w-full border-0"
             referrerPolicy="strict-origin-when-cross-origin"
             sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox" />

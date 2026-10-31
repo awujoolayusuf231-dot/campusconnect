@@ -5,6 +5,7 @@ import { addComment, deleteComment, fetchComments } from "../api";
 import { socialErrorMessage } from "@/lib/errors";
 import { timeAgo } from "@/lib/time";
 import { ReportDialog } from "./ReportDialog";
+import { LoadingState } from "@/app/LoadingState";
 
 export function CommentSection({ postId, me }: { postId: string; me: string }) {
   const qc = useQueryClient();
@@ -17,7 +18,7 @@ export function CommentSection({ postId, me }: { postId: string; me: string }) {
 
   return (
     <div className="mt-3 space-y-3 border-t border-line pt-3">
-      {comments.isLoading && <p role="status" className="text-sm text-muted">Loading comments…</p>}
+      {comments.isLoading && <LoadingState label="Gathering comments" />}
       {comments.isError && <p role="alert" className="err">Could not load comments.</p>}
       {comments.data?.length === 0 && <p className="text-sm text-muted">No comments yet. Be the first.</p>}
       <ul className="space-y-2">

@@ -4,6 +4,7 @@ import { Bookmark, ExternalLink } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { ReportDialog } from "@/features/social/components/ReportDialog";
 import { socialErrorMessage } from "@/lib/errors";
+import { LoadingState } from "@/app/LoadingState";
 
 interface Opp { id: string; title: string; organization: string | null; summary: string; category: string; deadline: string | null; featured: boolean; save_count: number; saved_by_me: boolean; external_host: string | null }
 interface Detail { id: string; title: string; organization: string | null; summary: string; description: string | null; external_url: string | null; deadline: string | null }
@@ -38,7 +39,7 @@ export function OpportunitiesPage() {
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={saved} onChange={(e) => { setPage(0); setSaved(e.target.checked); }} /> Saved only</label>
         <button className="btn-primary">Search</button>
       </form>
-      {list.isLoading && <p role="status">Loading…</p>}
+      {list.isLoading && <LoadingState label="Finding opportunities" variant="panel" />}
       {list.isError && <p role="alert" className="err">Could not load opportunities.</p>}
       {list.data?.length === 0 && <p className="card text-center text-muted">{saved ? "You have not saved anything yet." : "No opportunities match right now. Check back soon."}</p>}
       {toggle.isError && <p role="alert" className="err">{socialErrorMessage((toggle.error as Error).message)}</p>}
@@ -66,7 +67,7 @@ function DetailDialog({ id, onClose, onReport }: { id: string; onClose: () => vo
   return (
     <div role="dialog" aria-modal="true" aria-label="Opportunity details" className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 p-4 md:items-center" onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
       <div className="card max-h-[85dvh] w-full max-w-lg space-y-3 overflow-y-auto">
-        {d.isLoading && <p role="status">Loading…</p>}
+        {d.isLoading && <LoadingState label="Preparing opportunity details" />}
         {!d.isLoading && !o && <p>This opportunity is no longer available.</p>}
         {o && <>
           <h2 className="text-lg font-semibold">{o.title}</h2>

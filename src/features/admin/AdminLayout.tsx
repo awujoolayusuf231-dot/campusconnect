@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { visibleNav } from "./nav";
 import { useMyPermissions } from "./useMyPermissions";
+import { LoadingState } from "@/app/LoadingState";
 
 export function AdminLayout() {
   const perms = useMyPermissions();
@@ -23,7 +24,7 @@ export function AdminLayout() {
         </nav>
       </aside>
       <main id="main" tabIndex={-1} className="motion-content flex-1 p-4 outline-none md:p-8">
-        {perms.isLoading ? <p role="status">Loading…</p> : perms.isError ? <p role="alert" className="err">Could not load permissions.</p> : <Outlet />}
+        {perms.isLoading ? <LoadingState label="Checking your admin access" variant="panel" /> : perms.isError ? <p role="alert" className="err">Could not load permissions.</p> : <Outlet />}
       </main>
     </div>
   );

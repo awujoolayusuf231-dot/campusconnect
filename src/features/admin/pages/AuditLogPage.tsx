@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { timeAgo } from "@/lib/time";
+import { LoadingState } from "@/app/LoadingState";
 
 interface Row { id: number; actor_id: string | null; action: string; target_type: string; target_id: string | null; reason: string | null; metadata: Record<string, unknown>; created_at: string }
 const PAGE = 50;
@@ -23,7 +24,7 @@ export function AuditLogPage() {
       {list.isError && <p role="alert" className="err">You do not have permission to view the audit log.</p>}
       <div className="overflow-x-auto rounded-xl border border-line bg-surface"><table className="w-full text-left text-sm">
         <thead className="border-b border-line text-muted"><tr><th className="p-3">When</th><th className="p-3">Actor</th><th className="p-3">Action</th><th className="p-3">Target</th><th className="p-3">Reason</th></tr></thead>
-        <tbody>{list.isLoading && <tr><td className="p-3" colSpan={5}>Loading…</td></tr>}{list.data?.rows.length === 0 && <tr><td className="p-3 text-muted" colSpan={5}>No entries.</td></tr>}
+        <tbody>{list.isLoading && <tr><td className="p-3" colSpan={5}><LoadingState label="Gathering audit entries" /></td></tr>}{list.data?.rows.length === 0 && <tr><td className="p-3 text-muted" colSpan={5}>No entries.</td></tr>}
           {list.data?.rows.map((r) => (<tr key={r.id} className="cursor-pointer border-b border-line align-top last:border-0" onClick={() => setOpen(open === r.id ? null : r.id)}>
             <td className="p-3 whitespace-nowrap" title={r.created_at}>{timeAgo(r.created_at)}</td><td className="p-3">{r.actor_id ? list.data?.names.get(r.actor_id) ?? r.actor_id.slice(0, 8) : "system"}</td>
             <td className="p-3 font-medium">{r.action}</td><td className="p-3">{r.target_type}{r.target_id ? ` · ${r.target_id.slice(0, 8)}` : ""}</td>

@@ -12,6 +12,7 @@ import { ReportDialog } from "@/features/social/components/ReportDialog";
 import { ConfirmDialog } from "@/features/social/components/ConfirmDialog";
 import { socialErrorMessage } from "@/lib/errors";
 import { timeAgo } from "@/lib/time";
+import { LoadingState } from "@/app/LoadingState";
 
 type Tab = "posts" | "members" | "moderation";
 
@@ -34,7 +35,7 @@ export function CommunityPage() {
   const leave = useMutation({ mutationFn: () => leaveCommunity(c!.id), onSuccess: () => { setLeaving(false); refresh(); } });
   const archive = useMutation({ mutationFn: () => archiveCommunity(c!.id, c!.status === "active"), onSuccess: refresh });
 
-  if (community.isLoading) return <p role="status">Loading…</p>;
+  if (community.isLoading) return <LoadingState label="Finding this community" variant="page" />;
   if (community.isError) return <p role="alert" className="err">Could not load this community.</p>;
   if (!c) return <div className="card">This community does not exist or is not available. <Link className="underline" to="/app/communities">Back to communities</Link></div>;
   const isMember = !!role.data;
@@ -96,7 +97,7 @@ function CommunityPosts({ community, isMember, isMod, me }: { community: { id: s
     <div className="space-y-3">
       {isMember && community.status === "active" && <Composer communityId={community.id} />}
       {!isMember && community.status === "active" && <p className="card text-sm text-muted">Join this community to post.</p>}
-      {feed.isLoading && <p role="status">Loading posts…</p>}
+      {feed.isLoading && <LoadingState label="Gathering community posts" variant="panel" />}
       {posts.length === 0 && !feed.isLoading && <p className="card text-center text-muted">No posts yet.</p>}
       {posts.map((p) => (
         <div key={p.id} className="space-y-1">
@@ -124,7 +125,7 @@ function Members({ id, me, role }: { id: string; me: string; role: string | null
   const run = (user: string, action: string) => (action === "make_moderator" || action === "remove_moderator") ? setPending({ user, action }) : setPending({ user, action });
   return (
     <div className="space-y-2">
-      {members.isLoading && <p role="status">Loading…</p>}
+      {members.isLoading && <LoadingState label="Finding community members" />}
       <ul className="space-y-2">{members.data?.filter((m) => m.status === "active").map((m) => (
         <li key={m.user_id} className="card flex items-center gap-3">
           <Avatar name={m.profile?.display_name ?? "?"} path={m.profile?.avatar_path ?? null} />
