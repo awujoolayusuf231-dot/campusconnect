@@ -3,6 +3,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { FEED_PAGE, fetchFeed, fetchMediaUrls, type Cursor, type FeedScope } from "./api";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { Composer } from "./components/Composer";
+import { OnboardingCard } from "@/features/onboarding/OnboardingCard";
 import { PostCard } from "./components/PostCard";
 
 const TABS: [FeedScope, string][] = [["all", "Everyone"], ["following", "Following"], ["institution", "My institution"]];
@@ -26,6 +27,7 @@ export function FeedPage() {
 
   return (
     <div className="space-y-4">
+      <OnboardingCard />
       <Composer />
       <div role="tablist" aria-label="Feed" className="flex gap-2">
         {TABS.map(([v, l]) => (

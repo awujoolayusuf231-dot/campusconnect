@@ -201,3 +201,11 @@ Unit/component tests written (link extraction incl. lookalike domains, fixed src
 - Error boundary + global handlers + scrubbed error reporting (src/lib/observability.ts, src/app/AppErrorBoundary.tsx); pluggable sinks;
   no third-party service wired. React Query errors are reported too (key name only, never data).
 - Profile Posts/Reposts tabs: "Show more" (20 -> up to 100).
+
+## Onboarding, accessibility, saved tests (latest)
+- Onboarding checklist on the feed (photo, institution, bio, follow 3 students, join a community, first post), progress bar, dismissible per user
+  (stored in the browser only). Pure step logic checked in Node (4 checks PASS). Component not run in a browser.
+- Skip-to-content links and `<main id="main">` landmarks on public, student and admin layouts.
+- `scripts/offline-typecheck-stubs.py` + `scripts/offline-tsconfig.json`: how I typecheck without npm access (see docs/TESTING.md). Own-code typecheck: 0 errors.
+- `supabase/tests/phase6_opportunities.sql` is now the full runnable script; executed AS SAVED on 2026-10-26: 88/88 PASS (rolled back).
+  Still NOT saved as runnable SQL: the Phase 5 suite (~250 assertions) and the reposts/stats/connections suite (68 assertions): both passed inline.

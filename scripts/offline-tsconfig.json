@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "paths": {
+      "@/*": [
+        "/home/claude/campusconnect/src/*"
+      ]
+    },
+    "types": [],
+    "noImplicitAny": false
+  },
+  "include": [
+    "/home/claude/campusconnect/src/**/*",
+    "/home/claude/campusconnect/e2e/**/*",
+    "/tmp/stubs/stubs.d.ts"
+  ]
+}
