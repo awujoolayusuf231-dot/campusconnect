@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { adminErrorMessage } from "@/lib/errors";
 import { listActiveInstitutions } from "@/features/institutions/api";
 import { useMyPermissions } from "../useMyPermissions";
+import { LoadingState } from "@/app/LoadingState";
 
 interface Row { user_id: string; username: string; display_name: string; institution_id: string | null; status: string; role: string; email: string | null; joined_at: string; total_count: number }
 const PAGE = 25;
@@ -37,7 +38,7 @@ export function UsersPage() {
         <table className="w-full text-left text-sm">
           <thead className="border-b border-line text-muted"><tr><th className="p-3">User</th><th className="p-3">Email</th><th className="p-3">Role</th><th className="p-3">Status</th><th className="p-3">Joined</th><th className="p-3" /></tr></thead>
           <tbody>
-            {users.isLoading && <tr><td className="p-3" colSpan={6}>Loading…</td></tr>}
+            {users.isLoading && <tr><td className="p-3" colSpan={6}><LoadingState label="Finding students" /></td></tr>}
             {users.data?.length === 0 && <tr><td className="p-3 text-muted" colSpan={6}>No users match.</td></tr>}
             {users.data?.map((u) => (
               <tr key={u.user_id} className="border-b border-line last:border-0">

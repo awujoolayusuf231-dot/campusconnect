@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { LoadingState } from "@/app/LoadingState";
 
 export function ResetPasswordPage() {
   const { session, loading } = useAuth();
@@ -16,7 +17,7 @@ export function ResetPasswordPage() {
     if (error) { setMsg("Could not update the password. The link may have expired."); return; }
     nav("/app", { replace: true });
   }
-  if (loading) return <div role="status" className="p-8">Loading…</div>;
+  if (loading) return <LoadingState label="Verifying your password link" variant="page" />;
   if (!session) return <main className="mx-auto max-w-md px-6 py-12"><p className="card">This reset link is invalid or has expired. Request a new one from the login page.</p></main>;
   return (
     <main className="mx-auto max-w-md px-6 py-12">

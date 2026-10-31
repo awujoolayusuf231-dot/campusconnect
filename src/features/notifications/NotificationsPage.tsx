@@ -3,6 +3,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { timeAgo } from "@/lib/time";
+import { LoadingState } from "@/app/LoadingState";
 
 interface Notif { id: number; type: string; actor_username: string | null; actor_display_name: string | null; entity_type: string | null; entity_id: string | null; data: Record<string, unknown>; created_at: string; read_at: string | null }
 const PAGE = 30;
@@ -40,7 +41,7 @@ export function NotificationsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between"><h1 className="text-2xl font-semibold">Notifications</h1><button className="btn" disabled={markAll.isPending} onClick={() => markAll.mutate()}>Mark all as read</button></div>
-      {list.isLoading && <p role="status">Loading…</p>}
+      {list.isLoading && <LoadingState label="Gathering your notifications" variant="panel" />}
       {list.isError && <p role="alert" className="err">Could not load notifications.</p>}
       {!list.isLoading && items.length === 0 && <p className="card text-center text-muted">You are all caught up.</p>}
       <ul className="space-y-2">{items.map((n) => { const d = describe(n); const body = <><span className={n.read_at ? "" : "font-semibold"}>{d.text}</span><span className="ml-2 text-xs text-muted">{timeAgo(n.created_at)}</span></>;

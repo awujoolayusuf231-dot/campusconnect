@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { LoadingState } from "@/app/LoadingState";
 
 interface Inst { id: string; name: string; short_name: string | null; type: string; state: string | null; aliases: string[]; is_active: boolean }
 const TYPES: [string, string][] = [["university", "University"], ["polytechnic", "Polytechnic"], ["college_of_education", "College of education"], ["other", "Other"]];
@@ -39,7 +40,7 @@ export function InstitutionsPage() {
       {toggle.isError && <p role="alert" className="err">{friendly((toggle.error as Error).message)}</p>}
       <div className="overflow-x-auto rounded-xl border border-line bg-surface"><table className="w-full text-left text-sm">
         <thead className="border-b border-line text-muted"><tr><th className="p-3">Name</th><th className="p-3">Type</th><th className="p-3">State</th><th className="p-3">Students</th><th className="p-3">Status</th><th className="p-3" /></tr></thead>
-        <tbody>{list.isLoading && <tr><td className="p-3" colSpan={6}>Loading…</td></tr>}{shown.length === 0 && !list.isLoading && <tr><td className="p-3 text-muted" colSpan={6}>No institutions yet.</td></tr>}
+        <tbody>{list.isLoading && <tr><td className="p-3" colSpan={6}><LoadingState label="Finding institutions" /></td></tr>}{shown.length === 0 && !list.isLoading && <tr><td className="p-3 text-muted" colSpan={6}>No institutions yet.</td></tr>}
           {shown.map((i) => <tr key={i.id} className="border-b border-line last:border-0"><td className="p-3"><div className="font-medium">{i.name}</div><div className="text-muted">{[i.short_name, ...i.aliases].filter(Boolean).join(", ")}</div></td>
             <td className="p-3">{TYPES.find(([v]) => v === i.type)?.[1]}</td><td className="p-3">{i.state ?? "—"}</td><td className="p-3">{counts.data?.get(i.id) ?? 0}</td><td className="p-3">{i.is_active ? "Active" : "Inactive"}</td>
             <td className="p-3 text-right space-x-1"><button className="btn" onClick={() => setF({ id: i.id, name: i.name, short_name: i.short_name ?? "", type: i.type, state: i.state ?? "", aliases: i.aliases.join(", ") })}>Edit</button><button className="btn" disabled={toggle.isPending} onClick={() => toggle.mutate(i)}>{i.is_active ? "Deactivate" : "Activate"}</button></td></tr>)}</tbody></table></div>

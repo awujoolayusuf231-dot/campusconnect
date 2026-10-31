@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { listActiveInstitutions } from "@/features/institutions/api";
 import { adminErrorMessage } from "@/lib/errors";
 import { timeAgo } from "@/lib/time";
+import { LoadingState } from "@/app/LoadingState";
 
 interface Ann { id: string; title: string; body: string; audience: string; institution_id: string | null; status: string; starts_at: string | null; ends_at: string | null; published_at: string | null; recipient_count: number | null; created_at: string }
 const toIso = (v: string) => (v ? new Date(v).toISOString() : null);
@@ -35,7 +36,7 @@ export function AnnouncementsPage() {
         {save.isError && <p role="alert" className="err">{adminErrorMessage((save.error as Error).message)}</p>}
         <div className="flex gap-2"><button type="button" className="btn" onClick={() => setPreview((v) => !v)}>{preview ? "Hide preview" : "Preview"}</button><button className="btn-primary" disabled={!valid || save.isPending}>Save draft</button></div>
       </form>
-      {list.isLoading && <p role="status">Loading…</p>}
+      {list.isLoading && <LoadingState label="Gathering announcements" variant="panel" />}
       {list.data?.length === 0 && <p className="card text-center text-muted">No announcements yet.</p>}
       <ul className="space-y-3">{list.data?.map((a) => <AnnouncementRow key={a.id} a={a} />)}</ul>
     </div>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { COMMUNITY_CATEGORIES, createCommunity, listCommunities } from "./api";
 import { socialErrorMessage } from "@/lib/errors";
+import { LoadingState } from "@/app/LoadingState";
 
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
 
@@ -19,7 +20,7 @@ export function CommunitiesPage() {
         <select className="input w-auto" aria-label="Category" value={cat} onChange={(e) => { setPage(0); setCat(e.target.value); }}><option value="">All categories</option>{COMMUNITY_CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
         <button className="btn-primary">Search</button>
       </form>
-      {list.isLoading && <p role="status">Loading…</p>}
+      {list.isLoading && <LoadingState label="Finding communities" variant="panel" />}
       {list.isError && <p role="alert" className="err">Could not load communities.</p>}
       {list.data?.length === 0 && <p className="card text-center text-muted">No communities found. Create the first one!</p>}
       <ul className="grid gap-3 md:grid-cols-2">

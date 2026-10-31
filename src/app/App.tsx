@@ -19,6 +19,7 @@ import { AboutPage, ContactPage, FeaturesPage, GuidelinesPage, PrivacyPage, Term
 import { PostPage } from "@/features/social/PostPage";
 import { OpportunitiesPage } from "@/features/opportunities/OpportunitiesPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
+import { LoadingState } from "@/app/LoadingState";
 
 const AdminLayout = lazy(() => import("@/features/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
 const DashboardPage = lazy(() => import("@/features/admin/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
@@ -36,7 +37,7 @@ export function App() {
   const location = useLocation();
 
   return (
-    <Suspense fallback={<div role="status" className="p-8">Loading…</div>}>
+    <Suspense fallback={<LoadingState label="Preparing your campus space" variant="page" />}>
       <div key={location.pathname} className="route-transition">
        <Routes>
         <Route path="/" element={<HomePage />} />

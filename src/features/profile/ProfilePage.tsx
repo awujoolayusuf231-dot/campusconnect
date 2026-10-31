@@ -13,6 +13,7 @@ import { ConnectionsDialog } from "./ConnectionsDialog";
 import { celebrationUrlSchema } from "@/validation/profile";
 import { formatCount } from "@/lib/format";
 import { socialErrorMessage } from "@/lib/errors";
+import { LoadingState } from "@/app/LoadingState";
 
 interface Profile { id: string; username: string; display_name: string; bio: string | null; avatar_path: string | null; institution_id: string | null; faculty: string | null; department: string | null; academic_level: string | null; graduation_year: number | null; interests: string[]; location: string | null; website_url: string | null; celebration_url: string | null; show_celebration: boolean; created_at: string }
 type Tab = "posts" | "reposts";
@@ -114,12 +115,12 @@ export function ProfilePage() {
       <div role="tablist" aria-label="Profile content" className="flex gap-2">
         {(["posts", "reposts"] as Tab[]).map((t) => <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? "btn-primary" : "btn"} onClick={() => { setTab(t); setLimit(20); }}>{t === "posts" ? "Posts" : "Reposts"}</button>)}
       </div>
-      {active.isLoading && <p role="status">Loading…</p>}
+      {active.isLoading && <LoadingState label={tab === "posts" ? "Gathering posts" : "Gathering reposts"} variant="panel" />}
       {active.isError && <p role="alert" className="err">Could not load this tab.</p>}
       {active.data?.posts.length === 0 && <p className="card text-center text-muted">{tab === "posts" ? "No posts yet." : "No reposts yet."}</p>}
       {active.data?.posts.map((post) => <PostCard key={`${tab}-${post.id}`} post={post} images={active.data?.media[post.id]} me={me} />)}
 
-      {active.data && active.data.posts.length >= limit && limit < 100 && <button className="btn w-full" disabled={active.isFetching} onClick={() => setLimit((l) => Math.min(l + 20, 100))}>{active.isFetching ? "Loading…" : "Show more"}</button>}
+      {active.data && active.data.posts.length >= limit && limit < 100 && <button className="btn w-full gap-2" disabled={active.isFetching} onClick={() => setLimit((l) => Math.min(l + 20, 100))}>{active.isFetching ? <LoadingState label="Finding more posts" /> : "Show more"}</button>}
 
       {list && <ConnectionsDialog userId={p.id} initial={list} me={me} onClose={() => setList(null)} />}
       {dialog === "report" && <ReportDialog type="user" targetId={p.id} onClose={() => setDialog(null)} />}

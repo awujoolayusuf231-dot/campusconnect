@@ -16,34 +16,81 @@ html, body, #root { height: 100%; }
 body { @apply bg-bg text-fg font-sans antialiased; }
 
 @keyframes cc-route-enter {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(16px) scale(0.99); filter: blur(3px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes cc-content-enter {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(18px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes cc-hero-image {
+  from { transform: scale(1.04); }
+  to { transform: scale(1.12); }
+}
+
+@keyframes cc-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+@keyframes cc-soft-glow {
+  0%, 100% { box-shadow: 0 24px 70px rgba(80, 30, 30, 0.18); }
+  50% { box-shadow: 0 30px 90px rgba(130, 32, 45, 0.28); }
+}
+
 .route-transition {
-  animation: cc-route-enter 380ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  animation: cc-route-enter 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top center;
 }
 
 .motion-content > * {
-  animation: cc-content-enter 520ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  animation: cc-content-enter 680ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.motion-content > *:nth-child(2) { animation-delay: 70ms; }
-.motion-content > *:nth-child(3) { animation-delay: 130ms; }
-.motion-content > *:nth-child(4) { animation-delay: 190ms; }
+.motion-content > *:nth-child(2) { animation-delay: 100ms; }
+.motion-content > *:nth-child(3) { animation-delay: 180ms; }
+.motion-content > *:nth-child(4) { animation-delay: 260ms; }
 
 a, button, [role="button"], .card, article {
   transition:
     color 180ms ease,
     background-color 180ms ease,
     border-color 180ms ease,
-    box-shadow 220ms ease,
-    transform 220ms cubic-bezier(0.2, 0.75, 0.25, 1);
+    box-shadow 260ms ease,
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-image {
+  animation: cc-hero-image 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.hero-float {
+  animation: cc-float 6s ease-in-out 800ms infinite;
+}
+
+.hero-glow {
+  animation: cc-soft-glow 7s ease-in-out 1s infinite;
+}
+
+.feature-card {
+  opacity: 0;
+  animation: cc-content-enter 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.feature-card:nth-child(2) { animation-delay: 120ms; }
+.feature-card:nth-child(3) { animation-delay: 240ms; }
+.feature-card:nth-child(4) { animation-delay: 360ms; }
+
+.interactive-lift {
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 280ms ease,
+    transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @layer components {
@@ -57,13 +104,19 @@ a, button, [role="button"], .card, article {
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .card:hover, article:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 32px rgb(35 24 20 / 8%);
+  .card:hover, article:hover, .interactive-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 38px rgb(35 24 20 / 10%);
   }
 
-  button:not(:disabled):hover, [role="button"]:not([aria-disabled="true"]):hover {
-    transform: translateY(-1px);
+  button:not(:disabled):hover, [role="button"]:not([aria-disabled="true"]):hover,
+  a.btn:hover, a.btn-primary:hover {
+    transform: translateY(-2px);
+  }
+
+  button:not(:disabled):active, [role="button"]:not([aria-disabled="true"]):active,
+  a.btn:active, a.btn-primary:active {
+    transform: translateY(0) scale(0.97);
   }
 }
 
@@ -74,4 +127,6 @@ a, button, [role="button"], .card, article {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+
+  .feature-card { opacity: 1; }
 }

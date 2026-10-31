@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { adminErrorMessage } from "@/lib/errors";
 import { timeAgo } from "@/lib/time";
+import { LoadingState } from "@/app/LoadingState";
 
 interface Row { id: string; name: string; slug: string; category: string; status: string; member_count: number; created_by: string | null; created_at: string }
 const PAGE = 25;
@@ -37,7 +38,7 @@ export function CommunitiesAdminPage() {
       <div className="overflow-x-auto rounded-xl border border-line bg-surface"><table className="w-full text-left text-sm">
         <thead className="border-b border-line text-muted"><tr><th className="p-3">Community</th><th className="p-3">Owner</th><th className="p-3">Members</th><th className="p-3">Status</th><th className="p-3">Created</th><th className="p-3" /></tr></thead>
         <tbody>
-          {list.isLoading && <tr><td className="p-3" colSpan={6}>Loading…</td></tr>}
+          {list.isLoading && <tr><td className="p-3" colSpan={6}><LoadingState label="Finding communities" /></td></tr>}
           {list.data?.rows.length === 0 && <tr><td className="p-3 text-muted" colSpan={6}>No communities match.</td></tr>}
           {list.data?.rows.map((r) => (
             <tr key={r.id} className="border-b border-line last:border-0">

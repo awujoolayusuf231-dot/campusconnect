@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { fetchMediaUrls, type FeedPost } from "./api";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { PostCard } from "./components/PostCard";
+import { LoadingState } from "@/app/LoadingState";
 
 // Landing page for a shared post link (/app/p/:id). Visibility is decided by the database (RLS), not by this page.
 export function PostPage() {
@@ -25,7 +26,7 @@ export function PostPage() {
   return (
     <div className="space-y-3">
       <Link to="/app" className="text-sm underline">← Feed</Link>
-      {q.isLoading && <p role="status">Loading…</p>}
+      {q.isLoading && <LoadingState label="Finding this post" variant="panel" />}
       {q.isError && <p role="alert" className="err">Could not load this post.</p>}
       {q.data === null && <div className="card">This post is not available. It may have been removed, or you may not be able to see it.</div>}
       {q.data && <PostCard post={q.data.post} images={q.data.media} me={me} defaultOpenComments />}
