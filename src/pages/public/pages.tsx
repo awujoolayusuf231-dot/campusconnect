@@ -55,15 +55,6 @@ function SectionHeading({ eyebrow, title, description }: { eyebrow: string; titl
   );
 }
 
-function DraftNotice() {
-  return (
-    <aside role="note" className="flex gap-3 rounded-2xl border border-[#f1d59a] bg-[#fff9e9] p-4 text-sm leading-6 text-[#644d1c]">
-      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f7e7bd] font-black" aria-hidden="true">!</span>
-      <p><strong>Draft for review.</strong> This page describes how the platform works today. Have it reviewed by a qualified Nigerian lawyer before public launch. It is not legal advice and does not claim compliance with any law.</p>
-    </aside>
-  );
-}
-
 function LegalPage({ eyebrow, title, description, icon, sections, navLabel }: {
   eyebrow: string;
   title: string;
@@ -76,7 +67,6 @@ function LegalPage({ eyebrow, title, description, icon, sections, navLabel }: {
     <PublicLayout wide>
       <div className="space-y-6 sm:space-y-8">
         <PageHero eyebrow={eyebrow} title={title} description={description} icon={icon} />
-        <DraftNotice />
         <div className="grid items-start gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
           <aside className="space-y-4 lg:sticky lg:top-6">
             <nav aria-label={navLabel} className="rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.04)]">
