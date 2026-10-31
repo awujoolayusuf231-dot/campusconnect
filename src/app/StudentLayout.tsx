@@ -19,11 +19,10 @@ export function StudentLayout() {
     { to: "/app/communities", label: "Communities", icon: Users, end: false, badge: 0 },
     { to: "/app/opportunities", label: "Opportunities", icon: Briefcase, end: false, badge: 0 },
     { to: "/app/messages", label: "Messages", icon: MessageCircle, end: false, badge: counts.messages },
-    { to: "/app/notifications", label: "Notifications", icon: Bell, end: false, badge: counts.notifications },
     { to: me.data ? `/app/u/${me.data}` : "/app/profile/edit", label: "My profile", icon: UserRound, end: false, badge: 0 },
     { to: "/app/settings", label: "Settings", icon: Settings, end: false, badge: 0 },
   ];
-  const mobileItems = items.filter((i) => ["Home feed", "Communities", "Opportunities", "Messages", "Notifications"].includes(i.label));
+  const mobileItems = items.filter((i) => ["Home feed", "Discover", "Communities", "Opportunities", "Messages"].includes(i.label));
   const inChat = /^\/app\/messages\/[^/]+/.test(pathname); // chat is a dedicated full screen on mobile
   const desktopLink = ({ isActive }: { isActive: boolean }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${isActive ? "bg-[#f4e3e4] font-semibold text-primary" : "text-muted hover:bg-white hover:text-fg"}`;
   const mobileLink = ({ isActive }: { isActive: boolean }) => `relative flex min-w-0 flex-col items-center gap-1 px-1 py-2 text-[10px] sm:text-xs ${isActive ? "font-semibold text-primary" : "text-muted"}`;
@@ -37,19 +36,30 @@ export function StudentLayout() {
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-sm"><GraduationCap size={20} aria-hidden="true" /></span>
             <span className="text-base font-black tracking-tight text-fg sm:text-lg">Campus<span className="text-primary">Connect</span></span>
           </Link>
-          {!inChat && <div className="flex items-center gap-3 sm:gap-5">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden text-xs font-medium text-muted sm:block">Your campus. Your community.</span>
-            <Link
-              to={me.data ? `/app/u/${me.data}` : "/app/profile/edit"}
-              aria-label="My profile"
-              title="My profile"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:border-primary/30 hover:bg-[#f4e3e4] hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            <NavLink
+              to="/app/notifications"
+              aria-label={counts.notifications > 0 ? `Notifications, ${counts.notifications} unread` : "Notifications"}
+              title="Notifications"
+              className={({ isActive }) => `relative flex h-9 w-9 items-center justify-center rounded-full border bg-white transition hover:border-primary/30 hover:bg-[#f4e3e4] hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${isActive ? "border-primary/30 text-primary" : "border-line text-muted"}`}
             >
-              <UserRound size={18} aria-hidden="true" />
-            </Link>
-            {role !== "student" && <NavLink to="/admin" className="text-sm font-semibold text-muted hover:text-primary">Admin</NavLink>}
-            <button className="text-sm font-semibold text-muted hover:text-primary" onClick={() => void supabase.auth.signOut()}>Log out</button>
-          </div>}
+              <Bell size={18} aria-hidden="true" />
+              {counts.notifications > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-primary px-1 text-center text-[9px] font-bold leading-4 text-white">{counts.notifications > 99 ? "99+" : counts.notifications}</span>}
+            </NavLink>
+            {!inChat && <>
+              <Link
+                to={me.data ? `/app/u/${me.data}` : "/app/profile/edit"}
+                aria-label="My profile"
+                title="My profile"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-white text-muted transition hover:border-primary/30 hover:bg-[#f4e3e4] hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <UserRound size={18} aria-hidden="true" />
+              </Link>
+              {role !== "student" && <NavLink to="/admin" className="text-sm font-semibold text-muted hover:text-primary">Admin</NavLink>}
+              <button className="text-sm font-semibold text-muted hover:text-primary" onClick={() => void supabase.auth.signOut()}>Log out</button>
+            </>}
+          </div>
         </div>
       </header>
       <div className="mx-auto flex w-full max-w-[1600px]">
