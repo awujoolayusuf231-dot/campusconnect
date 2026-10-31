@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { RequireAuth, RequireStaff } from "@/features/auth/guards";
 import { HomePage } from "@/pages/HomePage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
@@ -33,9 +33,12 @@ const StaffPage = lazy(() => import("@/features/admin/pages/StaffPage").then((m)
 const UsersPage = lazy(() => import("@/features/admin/pages/UsersPage").then((m) => ({ default: m.UsersPage })));
 
 export function App() {
+  const location = useLocation();
+
   return (
     <Suspense fallback={<div role="status" className="p-8">Loading…</div>}>
-      <Routes>
+      <div key={location.pathname} className="route-transition">
+       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/about" element={<AboutPage />} />
@@ -78,7 +81,8 @@ export function App() {
           </Route>
         </Route>
         <Route path="*" element={<div className="p-8">Page not found. <a className="underline" href="/">Home</a></div>} />
-      </Routes>
+       </Routes>
+      </div>
     </Suspense>
   );
 }

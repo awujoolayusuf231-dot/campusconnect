@@ -22,7 +22,7 @@ export function AdminLayout() {
           <NavLink to="/app" className="whitespace-nowrap px-2 py-1.5 text-sm text-muted underline">Back to app</NavLink>
         </nav>
       </aside>
-      <main id="main" tabIndex={-1} className="flex-1 p-4 outline-none md:p-8">
+      <main id="main" tabIndex={-1} className="motion-content flex-1 p-4 outline-none md:p-8">
         {perms.isLoading ? <p role="status">Loading…</p> : perms.isError ? <p role="alert" className="err">Could not load permissions.</p> : <Outlet />}
       </main>
     </div>

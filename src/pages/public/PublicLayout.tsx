@@ -23,7 +23,7 @@ export function PublicLayout({ children, wide = false }: { children: ReactNode; 
             <NavLink to="/features" className={link}>Features</NavLink><NavLink to="/about" className={link}>About</NavLink><NavLink to="/contact" className={link}>Contact</NavLink>
             {session ? <Link to="/app" className="btn-primary ml-2">Open app</Link> : <><Link to="/login" className="btn ml-2">Log in</Link>{s?.registration_open !== false && <Link to="/register" className="btn-primary ml-2">Join</Link>}</>}
           </nav></div></header>
-      <main id="main" tabIndex={-1} className={`mx-auto w-full flex-1 px-4 py-8 outline-none sm:px-6 ${wide ? "max-w-7xl" : "max-w-3xl"}`}>{children}</main>
+      <main id="main" tabIndex={-1} className={`motion-content mx-auto w-full flex-1 px-4 py-8 outline-none sm:px-6 ${wide ? "max-w-7xl" : "max-w-3xl"}`}>{children}</main>
       <footer className="border-t border-line bg-surface"><nav aria-label="Legal" className="mx-auto flex max-w-7xl flex-wrap gap-4 px-4 py-4 text-sm text-muted sm:px-6">
         <Link to="/community-guidelines" className="underline">Community guidelines</Link><Link to="/privacy" className="underline">Privacy</Link><Link to="/terms" className="underline">Terms</Link><Link to="/contact" className="underline">Support</Link>
         <span className="ml-auto">© {new Date().getFullYear()} {s?.platform_name ?? "CampusConnect"}</span></nav></footer>
