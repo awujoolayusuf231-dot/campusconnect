@@ -15,9 +15,9 @@ describe("public landing page", () => {
     auth.value = { session: null, loading: false };
     render(<MemoryRouter initialEntries={["/"]}><HomePage /></MemoryRouter>);
 
-    expect(screen.getByRole("heading", { name: /your campus, connected/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /create account/i })).toHaveAttribute("href", "/register");
-    expect(screen.getByRole("link", { name: /i already have an account/i })).toHaveAttribute("href", "/login");
+    expect(screen.getByRole("heading", { name: /your campus is better together/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /join the community/i })).toHaveAttribute("href", "/register");
+    expect(screen.getAllByRole("link", { name: /log in/i }).some((link) => link.getAttribute("href") === "/login")).toBe(true);
   });
 
   it("sends signed-in visitors straight to the app", () => {

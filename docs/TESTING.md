@@ -6,7 +6,7 @@ Open the Supabase SQL editor for the CampusConnect project, paste a file, run it
 |---|---|---|
 | `supabase/tests/rls_foundation.sql` | roles, RLS, audit, settings, URL checks, privilege lockdown | saved; last run 75/75 |
 | `supabase/tests/social_core.sql` | posts, likes, comments, follows, blocks, reports, moderation, feed, discovery | saved; last run all PASS (141) |
-| `supabase/tests/phase6_opportunities.sql` | opportunities, URL safety, expiry, featured cap, saves/clicks, reports, banned list | **summary only**: the 93 assertions ran inline; the runnable script is not yet saved |
+| `supabase/tests/phase6_opportunities.sql` | opportunities, URL safety, expiry, featured cap, saves/clicks, reports, banned list | saved (runnable); last run of the saved file: 88/88 |
 | Phase 5 (communities, notifications, announcements, messaging) | ~250 assertions ran inline, all PASS after fixing a real bug | **not saved in the repo yet** |
 Helper functions `pg_temp.act(user, role, sql)` and `pg_temp.ex(name, got, want)` are defined at the top of `rls_foundation.sql`; copy them above any new suite.
 Re-run all suites after **every** migration that touches policies, grants or functions.
