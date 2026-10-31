@@ -4,7 +4,7 @@ CampusConnect is a static single-page app (Vite build) plus a dedicated Supabase
 
 ## 1. Supabase project (one per environment)
 Use a separate Supabase project per environment (e.g. `CampusConnect01` = current; create a second for staging/production if you want isolation).
-1. Apply every file in `supabase/migrations/` **in filename order** (SQL editor, or `supabase link` + `supabase db push`). Never edit an applied migration; add a new one.
+1. Apply every file in `supabase/migrations/` **in filename order** (SQL editor, or `supabase link` + `supabase db push`). Never edit an applied migration; add a new one. Migration `20261031000013_google_oauth_profile_usernames.sql` reads standard Google name metadata to create readable profile usernames and updates existing Google profiles that still have generated `user_*` handles.
 2. Auth > URL Configuration: set **Site URL** to your production origin (e.g. `https://campusconnect.example.ng`) and add it plus `http://localhost:5173` to **Redirect URLs** (use `https://your-domain/**`).
 3. Auth > Providers > Email: keep **Confirm email ON**. Keep "Secure password change" on.
 4. **Auth > Password security (dashboard only, cannot be set from code):** turn ON **Leaked password protection** (the Supabase security advisor flags it as a WARN while off), and raise the **minimum password length** to at least 8 (the app enforces 8-72 in the form, but the server setting is the real rule).
