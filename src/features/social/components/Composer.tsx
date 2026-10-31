@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImagePlus, Send, SquarePen, X } from "lucide-react";
 import { createPost, validateImages } from "../api";
@@ -48,7 +49,7 @@ export function Composer({ communityId }: { communityId?: string }) {
     if (problem && input.current) input.current.value = "";
   }
 
-  return (
+  return createPortal(
     <>
       <button
         ref={trigger}
@@ -112,6 +113,7 @@ export function Composer({ communityId }: { communityId?: string }) {
           </section>
         </div>
       )}
-    </>
+    </>,
+    document.body,
   );
 }

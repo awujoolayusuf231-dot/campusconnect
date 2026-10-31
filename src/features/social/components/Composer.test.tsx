@@ -28,9 +28,12 @@ describe("Composer", () => {
 
     const trigger = screen.getByRole("button", { name: "Create a post" });
     expect(trigger.className).toContain("fixed");
+    expect(trigger.parentElement).toBe(document.body);
     fireEvent.click(trigger);
 
-    expect(screen.getByRole("dialog", { name: "Create a post" })).toBeInTheDocument();
+    const dialog = screen.getByRole("dialog", { name: "Create a post" });
+    expect(dialog.parentElement?.parentElement).toBe(document.body);
+    expect(dialog).toBeInTheDocument();
     expect(screen.getByLabelText("What's happening?")).toHaveFocus();
   });
 
