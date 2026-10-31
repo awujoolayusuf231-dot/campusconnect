@@ -54,7 +54,7 @@ export function AuthPageLayout({ mode, eyebrow, title, description, children }: 
           <p className="relative mt-5 hidden text-xs text-white/60 lg:block">A little more connected, one conversation at a time.</p>
         </aside>
 
-        <main className="flex min-w-0 flex-col px-5 py-6 sm:px-9 sm:py-9 lg:px-10 lg:py-10 xl:px-16 xl:py-12">
+        <main className="motion-content flex min-w-0 flex-col px-5 py-6 sm:px-9 sm:py-9 lg:px-10 lg:py-10 xl:px-16 xl:py-12">
           <nav aria-label="Account" className="flex justify-end gap-1">
             <NavLink to="/login" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-semibold transition ${isActive && mode === "login" ? "bg-primary/[0.08] text-primary" : "text-muted hover:bg-bg hover:text-fg"}`}>Log in</NavLink>
             <NavLink to="/register" className={({ isActive }) => `rounded-lg px-3 py-2 text-sm font-semibold transition ${isActive && mode === "register" ? "bg-primary/[0.08] text-primary" : "text-muted hover:bg-bg hover:text-fg"}`}>Join</NavLink>
