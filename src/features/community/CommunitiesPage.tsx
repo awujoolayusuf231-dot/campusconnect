@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { COMMUNITY_CATEGORIES, createCommunity, listCommunities } from "./api";
@@ -41,7 +42,8 @@ function CreateDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
   const m = useMutation({ mutationFn: () => createCommunity({ ...f, institution: "" }), onSuccess: () => onCreated(f.slug) });
   const valid = f.name.trim().length >= 3 && /^[a-z0-9][a-z0-9-]{2,39}$/.test(f.slug);
   return (
-    <div role="dialog" aria-modal="true" aria-label="Create community" className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 p-4 md:items-center" onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
+    createPortal(
+    <div role="dialog" aria-modal="true" aria-label="Create community" className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-4 pt-[calc(1rem+env(safe-area-inset-top))] backdrop-blur-[2px] md:items-center md:p-6" onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
       <form className="card w-full max-w-md space-y-3" onSubmit={(e) => { e.preventDefault(); if (valid) m.mutate(); }}>
         <h2 className="font-semibold">Create a community</h2>
         <div><label className="label" htmlFor="cn">Name</label><input id="cn" className="input" maxLength={60} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value, slug: slugTouched ? f.slug : slugify(e.target.value) })} /></div>
@@ -52,6 +54,8 @@ function CreateDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
         {m.isError && <p role="alert" className="err">{socialErrorMessage(String((m.error as Error).message))}</p>}
         <div className="flex justify-end gap-2"><button type="button" className="btn" onClick={onClose}>Cancel</button><button className="btn-primary" disabled={!valid || m.isPending}>{m.isPending ? "Creating…" : "Create"}</button></div>
       </form>
-    </div>
+    </div>,
+    document.body,
+    )
   );
 }
