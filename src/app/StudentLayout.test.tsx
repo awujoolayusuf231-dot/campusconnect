@@ -23,6 +23,7 @@ function renderStudentLayout(initialEntry = "/app") {
         <Route element={<StudentLayout />}>
           <Route path="/app" element={<p>Home content</p>} />
           <Route path="/app/discover" element={<p>Discover content</p>} />
+          <Route path="/app/messages/:id" element={<p>Conversation content</p>} />
           <Route path="/app/notifications" element={<p>Notification content</p>} />
         </Route>
       </Routes>
@@ -70,5 +71,12 @@ describe("StudentLayout navigation", () => {
     fireEvent.click(screen.getByRole("link", { name: "Notifications, 7 unread" }));
 
     expect(screen.getByText("Notification content")).toBeInTheDocument();
+  });
+
+  it("does not apply the transform entrance animation to an active conversation", () => {
+    renderStudentLayout("/app/messages/conversation-1");
+
+    expect(screen.getByText("Conversation content")).toBeInTheDocument();
+    expect(screen.getByText("Conversation content").parentElement).not.toHaveClass("motion-content");
   });
 });

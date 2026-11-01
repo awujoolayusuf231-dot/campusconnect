@@ -75,7 +75,7 @@ export function StudentLayout() {
           </div>
         </aside>
         <main id="main" tabIndex={-1} className={`${inChat ? "w-full" : "w-full lg:ml-[250px]"} min-w-0 px-4 pb-24 pt-5 outline-none sm:px-6 lg:px-6 lg:pb-8`}>
-          <div className="motion-content mx-auto w-full max-w-[1000px] space-y-4"><AnnouncementBanner /><Outlet /></div>
+          <div className={`mx-auto w-full max-w-[1000px] space-y-4${inChat ? "" : " motion-content"}`}><AnnouncementBanner /><Outlet /></div>
         </main>
       </div>
       {!inChat && (
