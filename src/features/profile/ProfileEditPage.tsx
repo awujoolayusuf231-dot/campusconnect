@@ -1,6 +1,6 @@
 import { useState, type InputHTMLAttributes } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { celebrationUrlSchema } from "@/validation/profile";
 import { listActiveInstitutions } from "@/features/institutions/api";
+import { InstitutionPicker } from "@/features/institutions/InstitutionPicker";
 import { MAX_AVATAR_BYTES, MAX_INPUT_IMAGE_BYTES, validateImages } from "@/features/social/api";
 import { optimizeImage } from "@/lib/image";
 import { WhiteshirtDialog } from "./WhiteshirtDialog";
@@ -42,7 +43,7 @@ export function ProfileEditPage() {
   const own = useQuery({ queryKey: ["own-profile", uid], enabled: !!uid, queryFn: async () => {
     const { data, error } = await supabase.from("profiles").select("*").eq("id", uid).single(); if (error) throw error; return data as Record<string, unknown>; } });
 
-  const { register, handleSubmit, setError, setValue, formState: { errors, isSubmitting } } = useForm<Values>({
+  const { register, control, handleSubmit, setError, setValue, formState: { errors, isSubmitting } } = useForm<Values>({
     resolver: zodResolver(schema),
     values: own.data ? {
       display_name: String(own.data.display_name ?? ""), bio: String(own.data.bio ?? ""), institution_id: String(own.data.institution_id ?? ""),
@@ -99,7 +100,21 @@ export function ProfileEditPage() {
         {field("display_name", "Name")}
         <div><label className="label" htmlFor="bio">Bio</label><textarea id="bio" rows={3} maxLength={280} className="input" {...register("bio")} />{errors.bio && <p className="err">{errors.bio.message}</p>}</div>
         <div><label className="label" htmlFor="institution_id">Institution (self-reported, not verified)</label>
-          <select id="institution_id" className="input" {...register("institution_id")}><option value="">None</option>{(institutions.data ?? []).map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}</select></div>
+          <Controller
+            control={control}
+            name="institution_id"
+            render={({ field }) => (
+              <InstitutionPicker
+                id="institution_id"
+                selectedId={field.value}
+                institutions={institutions.data ?? []}
+                onChange={field.onChange}
+                isLoading={institutions.isLoading}
+                isError={institutions.isError}
+              />
+            )}
+          />
+        </div>
         {field("faculty", "Faculty / school")}{field("department", "Department / course")}{field("academic_level", "Level (e.g. 300L, ND2)")}
         {field("graduation_year", "Graduation year", { inputMode: "numeric" })}{field("location", "Location (city or state)")}
         {field("interests", "Interests (comma separated, up to 10)")}{field("website_url", "Website (https://…)")}

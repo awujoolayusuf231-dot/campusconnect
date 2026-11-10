@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link } from "react-router-dom";
@@ -9,6 +9,7 @@ import { usernameSchema } from "@/validation/profile";
 import { friendlyAuthError } from "@/lib/errors";
 import { usePublicSettings } from "@/lib/publicSettings";
 import { listActiveInstitutions } from "@/features/institutions/api";
+import { InstitutionPicker } from "@/features/institutions/InstitutionPicker";
 import { AuthPageLayout } from "@/features/auth/AuthPageLayout";
 import { GoogleSignInButton } from "@/features/auth/GoogleSignInButton";
 
@@ -26,7 +27,7 @@ export function RegisterPage() {
   const [serverError, setServerError] = useState("");
   const settings = usePublicSettings();
   const institutions = useQuery({ queryKey: ["institutions", "active"], queryFn: listActiveInstitutions });
-  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<Values>({ resolver: zodResolver(schema) });
+  const { register, control, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<Values>({ resolver: zodResolver(schema) });
 
   async function onSubmit(v: Values) {
     setServerError("");
@@ -70,10 +71,20 @@ export function RegisterPage() {
           <div><label className="label" htmlFor="email">Email address</label><input id="email" type="email" className="input" autoComplete="email" placeholder="you@example.com" {...register("email")} />{errors.email && <p className="err">{errors.email.message}</p>}</div>
           <div><label className="label" htmlFor="password">Create a password</label><input id="password" type="password" className="input" autoComplete="new-password" placeholder="At least 8 characters" {...register("password")} />{errors.password && <p className="err">{errors.password.message}</p>}</div>
           <div><label className="label" htmlFor="institutionId">Institution (optional)</label>
-            <select id="institutionId" className="input" {...register("institutionId")}>
-              <option value="">Choose later</option>
-              {(institutions.data ?? []).map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
-            </select>
+            <Controller
+              control={control}
+              name="institutionId"
+              render={({ field }) => (
+                <InstitutionPicker
+                  id="institutionId"
+                  selectedId={field.value ?? ""}
+                  institutions={institutions.data ?? []}
+                  onChange={field.onChange}
+                  isLoading={institutions.isLoading}
+                  isError={institutions.isError}
+                />
+              )}
+            />
             {institutions.data?.length === 0 && <p className="mt-1 text-xs text-muted">No institutions have been added yet. You can choose one later.</p>}
             <p className="mt-1 text-xs text-muted">Institution details are self-reported and not verified.</p></div>
           {serverError && <p role="alert" className="err">{serverError}</p>}
