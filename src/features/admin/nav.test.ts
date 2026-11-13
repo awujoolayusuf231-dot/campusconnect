@@ -10,6 +10,16 @@ describe("visibleNav", () => {
   it("reports.manage shows the Reports page", () => {
     expect(visibleNav(["reports.manage"]).flatMap((s) => s.items.map((i) => i.label))).toEqual(["Reports"]);
   });
+  it("shows question review and catalog only with their respective permissions", () => {
+    expect(visibleNav(["past_questions.review"]).flatMap((s) => s.items.map((i) => i.label))).toContain("Question review");
+    expect(visibleNav(["past_questions.review"]).flatMap((s) => s.items.map((i) => i.label))).not.toContain("Academic catalog");
+    expect(visibleNav(["past_questions.manage"]).flatMap((s) => s.items.map((i) => i.label))).toContain("Academic catalog");
+  });
+  it("shows Study Notes review only with its review permission", () => {
+    const labels = visibleNav(["study_notes.review"]).flatMap((s) => s.items.map((i) => i.label));
+    expect(labels).toContain("Study Notes review");
+    expect(labels).not.toContain("Question review");
+  });
   it("admin-style permissions show communities and announcements", () => {
     const labels = visibleNav(["communities.manage", "announcements.manage"]).flatMap((s) => s.items.map((i) => i.label));
     expect(labels).toEqual(["Communities", "Announcements"]);

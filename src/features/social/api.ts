@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase, supabasePublishableKey, supabaseUrl } from "@/lib/supabase";
 import { optimizeImage } from "@/lib/image";
 
 export type FeedScope = "all" | "following" | "institution";
@@ -9,9 +9,17 @@ export interface FeedPost {
   activity_at: string; reposter_username: string | null; reposter_name: string | null;
 }
 export interface Cursor { created_at: string; id: string }
-export interface CommentRow { id: string; author_id: string; body: string; created_at: string; edited_at: string | null; author: { username: string; display_name: string } | null }
+export interface CommentRow {
+  id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+  edited_at: string | null;
+  author: { username: string; display_name: string; avatar_path: string | null } | null;
+}
 
 export const FEED_PAGE = 20;
+export const COMMENT_PAGE_SIZE = 50;
 const IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 export const MAX_POST_IMAGE_BYTES = 5 * 1024 * 1024;   // storage bucket limit (after optimisation)
 export const MAX_AVATAR_BYTES = 2 * 1024 * 1024;       // storage bucket limit (after optimisation)
@@ -36,20 +44,38 @@ export async function fetchFeed(scope: FeedScope, cursor: Cursor | null, limit =
   return (data ?? []) as FeedPost[];
 }
 
-export async function fetchMediaUrls(postIds: string[]): Promise<Record<string, string[]>> {
+export async function fetchMediaPaths(postIds: string[]): Promise<Record<string, string[]>> {
   if (postIds.length === 0) return {};
   const { data, error } = await supabase.from("post_media").select("post_id,storage_path,position").in("post_id", postIds).order("position");
   if (error) throw error;
   const rows = (data ?? []) as { post_id: string; storage_path: string; position: number }[];
   if (rows.length === 0) return {};
-  const { data: signed } = await supabase.storage.from("post-images").createSignedUrls(rows.map((r) => r.storage_path), 3600);
-  const byPath = new Map<string, string>((signed ?? []).map((s) => [s.path ?? "", s.signedUrl] as [string, string]));
   const out: Record<string, string[]> = {};
   for (const r of rows) {
-    const url = byPath.get(r.storage_path);
-    if (url) (out[r.post_id] ??= []).push(url);
+    (out[r.post_id] ??= []).push(r.storage_path);
   }
   return out;
+}
+
+export async function fetchPostImage(path: string, signal?: AbortSignal): Promise<Blob> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  const accessToken = data.session?.access_token;
+  if (!accessToken) throw new Error("Sign in to view this image.");
+
+  const response = await fetch(
+    `${supabaseUrl.replace(/\/$/, "")}/functions/v1/post-image?path=${encodeURIComponent(path)}`,
+    {
+      headers: {
+        apikey: supabasePublishableKey,
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
+      ...(signal ? { signal } : {}),
+    },
+  );
+  if (!response.ok) throw new Error("This image is no longer available.");
+  return response.blob();
 }
 
 export async function createPost(body: string, files: File[], communityId?: string): Promise<{ failedImages: number }> {
@@ -89,18 +115,20 @@ export const addComment = (postId: string, body: string) => rpc("add_comment", {
 export const deleteComment = (id: string) => rpc("delete_own_comment", { p_comment: id });
 export const followUser = (id: string) => rpc("follow_user", { p_target: id });
 export const unfollowUser = (id: string) => rpc("unfollow_user", { p_target: id });
-export type ReportTarget = "user" | "post" | "comment" | "community" | "message" | "opportunity";
+export type ReportTarget = "user" | "post" | "comment" | "community" | "message" | "opportunity" | "assignment_discussion" | "assignment_discussion_reply";
 export const submitReport = (type: ReportTarget, target: string, category: string, explanation: string) =>
-  rpc("submit_report", { p_type: type, p_target: target, p_category: category, p_explanation: explanation || null });
+  type === "assignment_discussion" || type === "assignment_discussion_reply"
+    ? rpc("submit_assignment_discussion_report", { p_type: type, p_target: target, p_category: category, p_explanation: explanation || null })
+    : rpc("submit_report", { p_type: type, p_target: target, p_category: category, p_explanation: explanation || null });
 export async function blockUser(id: string) {
   const { error } = await supabase.from("blocks").insert({ blocked_id: id });
   if (error) throw error;
 }
 
-export async function fetchComments(postId: string): Promise<CommentRow[]> {
+export async function fetchComments(postId: string, page = 0, pageSize = COMMENT_PAGE_SIZE): Promise<CommentRow[]> {
   const { data, error } = await supabase.from("comments")
-    .select("id,author_id,body,created_at,edited_at,author:profiles(username,display_name)")
-    .eq("post_id", postId).eq("status", "visible").order("created_at").limit(100);
+    .select("id,author_id,body,created_at,edited_at,author:profiles!comments_author_id_fkey(username,display_name,avatar_path)")
+    .eq("post_id", postId).eq("status", "visible").order("created_at").range(page * pageSize, page * pageSize + pageSize - 1);
   if (error) throw error;
   return (data ?? []) as unknown as CommentRow[];
 }

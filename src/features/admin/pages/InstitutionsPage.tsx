@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Upload } from "lucide-react";
+import { Download, RefreshCw, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { LoadingState } from "@/app/LoadingState";
 import { previewInstitutionCsv, type InstitutionImportPreview } from "@/features/admin/institutionImport";
@@ -19,7 +19,7 @@ export function InstitutionsPage() {
   const [importPreview, setImportPreview] = useState<InstitutionImportPreview | null>(null);
   const [importError, setImportError] = useState("");
   const [importSuccess, setImportSuccess] = useState("");
-  const list = useQuery({ queryKey: ["admin", "institutions"], queryFn: async () => {
+  const list = useQuery({ queryKey: ["admin", "institutions"], refetchOnMount: "always", queryFn: async () => {
     const all: Inst[] = [];
     for (let from = 0; ; from += 1000) {
       const { data, error } = await supabase.from("institutions").select("id,name,short_name,type,state,aliases,is_active").order("name").range(from, from + 999);
@@ -74,7 +74,12 @@ export function InstitutionsPage() {
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ["admin", "institutions"] }); void qc.invalidateQueries({ queryKey: ["institutions"] }); } });
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Institutions</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Institutions</h1>
+        <button type="button" className="btn min-h-9 gap-2" onClick={() => void list.refetch()}>
+          <RefreshCw size={14} aria-hidden="true" />Refresh institutions
+        </button>
+      </div>
       <p className="text-sm text-muted">Students choose an institution themselves; it is <strong>not verified</strong>. Deactivating hides it from new selections but keeps existing profiles.</p>
       <section className="card space-y-3">
         <div>

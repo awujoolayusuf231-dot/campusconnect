@@ -10,6 +10,11 @@ export const ADMIN_NAV: AdminNavSection[] = [
     { label: "Staff", to: "/admin/staff", permission: "staff.view" },
     { label: "Institutions", to: "/admin/institutions", permission: "institutions.manage" }] },
   { title: "Content", items: [{ label: "Reports", to: "/admin/reports", permission: "reports.manage" }] },
+  { title: "Academic resources", items: [
+    { label: "Study Notes review", to: "/admin/study-notes/review", permission: "study_notes.review" },
+    { label: "Question review", to: "/admin/past-questions/review", permission: "past_questions.review" },
+    { label: "Academic catalog", to: "/admin/past-questions/catalog", permission: "past_questions.manage" },
+  ] },
   { title: "Community", items: [{ label: "Communities", to: "/admin/communities", permission: "communities.manage" }] },
   { title: "Student services", items: [{ label: "Opportunities", to: "/admin/opportunities", permission: "opportunities.manage" }] },
   { title: "Communication", items: [{ label: "Announcements", to: "/admin/announcements", permission: "announcements.manage" }] },

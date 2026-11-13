@@ -7,6 +7,8 @@ if (!url || !key) {
   throw new Error("Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY. Copy .env.example to .env.local.");
 }
 // Browser client: publishable key only. Authorization is enforced by RLS and RPCs, never by this client.
+export const supabaseUrl = url;
+export const supabasePublishableKey = key;
 export const supabase = createClient(url, key, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 });

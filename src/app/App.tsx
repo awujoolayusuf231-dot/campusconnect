@@ -20,6 +20,31 @@ import { PostPage } from "@/features/social/PostPage";
 import { OpportunitiesPage } from "@/features/opportunities/OpportunitiesPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { LoadingState } from "@/app/LoadingState";
+import { PastQuestionsLayout } from "@/features/past-questions/PastQuestionsLayout";
+import {
+  MyStudyNotes,
+  SavedStudyNotes,
+  StudyNoteDetails,
+  StudyNotesCourses,
+  StudyNotesCourseDetails,
+  StudyNotesHome,
+  StudyNotesInstitutionDetails,
+  StudyNotesInstitutions,
+  StudyNotesLayout,
+  StudyNotesUpload,
+} from "@/features/study-notes/StudyNotesPages";
+import {
+  CourseBrowser,
+  CourseDetailsPage,
+  CatalogManagementPage,
+  InstitutionBrowser,
+  InstitutionDetailsPage,
+  MyResourcesPage,
+  PastQuestionsHome,
+  QuestionDetailsPage,
+  ResourceManagementPage,
+  UploadPage,
+} from "@/features/past-questions/PastQuestionsPages";
 
 const AdminLayout = lazy(() => import("@/features/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
 const DashboardPage = lazy(() => import("@/features/admin/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
@@ -32,6 +57,9 @@ const PlatformSettingsPage = lazy(() => import("@/features/admin/pages/PlatformS
 const AuditLogPage = lazy(() => import("@/features/admin/pages/AuditLogPage").then((m) => ({ default: m.AuditLogPage })));
 const StaffPage = lazy(() => import("@/features/admin/pages/StaffPage").then((m) => ({ default: m.StaffPage })));
 const UsersPage = lazy(() => import("@/features/admin/pages/UsersPage").then((m) => ({ default: m.UsersPage })));
+const StudyNotesReviewPage = lazy(() => import("@/features/admin/pages/StudyNotesReviewPage").then((m) => ({ default: m.StudyNotesReviewPage })));
+const AssignmentDiscussionsPage = lazy(() => import("@/features/assignment-discussions/AssignmentDiscussionsPages").then((m) => ({ default: m.AssignmentDiscussionsPage })));
+const AssignmentDiscussionRoomPage = lazy(() => import("@/features/assignment-discussions/AssignmentDiscussionsPages").then((m) => ({ default: m.AssignmentDiscussionRoomPage })));
 
 export function App() {
   const location = useLocation();
@@ -57,6 +85,31 @@ export function App() {
             <Route path="/app/discover" element={<DiscoverPage />} />
             <Route path="/app/p/:id" element={<PostPage />} />
             <Route path="/app/communities" element={<CommunitiesPage />} />
+            <Route path="/app/past-questions" element={<PastQuestionsLayout />}>
+              <Route index element={<PastQuestionsHome />} />
+              <Route path="institutions" element={<InstitutionBrowser />} />
+              <Route path="institutions/:institutionId" element={<InstitutionDetailsPage />} />
+              <Route path="courses" element={<CourseBrowser />} />
+              <Route path="courses/:courseId" element={<CourseDetailsPage />} />
+              <Route path="questions/:questionId" element={<QuestionDetailsPage />} />
+              <Route path="upload" element={<UploadPage />} />
+              <Route path="my-resources" element={<MyResourcesPage />} />
+              <Route path="manage" element={<ResourceManagementPage />} />
+              <Route path="catalog" element={<CatalogManagementPage />} />
+            </Route>
+            <Route path="/app/study-notes" element={<StudyNotesLayout />}>
+              <Route index element={<StudyNotesHome />} />
+              <Route path="institutions" element={<StudyNotesInstitutions />} />
+              <Route path="institutions/:institutionId" element={<StudyNotesInstitutionDetails />} />
+              <Route path="courses" element={<StudyNotesCourses />} />
+              <Route path="courses/:courseId" element={<StudyNotesCourseDetails />} />
+              <Route path="notes/:noteId" element={<StudyNoteDetails />} />
+              <Route path="upload" element={<StudyNotesUpload />} />
+              <Route path="my-uploads" element={<MyStudyNotes />} />
+              <Route path="saved" element={<SavedStudyNotes />} />
+            </Route>
+            <Route path="/app/assignment-discussions" element={<AssignmentDiscussionsPage />} />
+            <Route path="/app/assignment-discussions/courses/:courseId" element={<AssignmentDiscussionRoomPage />} />
             <Route path="/app/opportunities" element={<OpportunitiesPage />} />
             <Route path="/app/c/:slug" element={<CommunityPage />} />
             <Route path="/app/notifications" element={<NotificationsPage />} />
@@ -79,6 +132,9 @@ export function App() {
             <Route path="settings" element={<PlatformSettingsPage />} />
             <Route path="audit" element={<AuditLogPage />} />
             <Route path="staff" element={<StaffPage />} />
+            <Route path="study-notes/review" element={<StudyNotesReviewPage />} />
+            <Route path="past-questions/review" element={<ResourceManagementPage />} />
+            <Route path="past-questions/catalog" element={<CatalogManagementPage />} />
           </Route>
         </Route>
         <Route path="*" element={<div className="p-8">Page not found. <a className="underline" href="/">Home</a></div>} />

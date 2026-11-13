@@ -62,7 +62,7 @@ function ReportDetail({ report, who }: { report: Report; who: Map<string, string
   const run = useMutation({ mutationFn: async (fn: () => PromiseLike<{ error: { message: string } | null }>) => { const { error } = await fn(); if (error) throw new Error(error.message); }, onSuccess: done });
   const rpc = (name: string, args: Record<string, unknown>) => () => supabase.rpc(name, args);
   const reasonOk = reason.trim().length >= 5;
-  const canHide = report.target_type === "post" || report.target_type === "comment";
+  const canHide = ["post", "comment", "assignment_discussion", "assignment_discussion_reply"].includes(report.target_type);
   const isCommunity = report.target_type === "community";
 
   return (

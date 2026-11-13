@@ -23,6 +23,7 @@ function renderStudentLayout(initialEntry = "/app") {
         <Route element={<StudentLayout />}>
           <Route path="/app" element={<p>Home content</p>} />
           <Route path="/app/discover" element={<p>Discover content</p>} />
+          <Route path="/app/study-notes" element={<p>Study notes content</p>} />
           <Route path="/app/messages/:id" element={<p>Conversation content</p>} />
           <Route path="/app/notifications" element={<p>Notification content</p>} />
         </Route>
@@ -42,18 +43,34 @@ describe("StudentLayout navigation", () => {
     mocks.counts = { notifications: 7, messages: 0 };
   });
 
-  it("shows Discover immediately after Home in the mobile navigation", () => {
+  it("keeps the primary mobile navigation focused on the four most-used destinations", () => {
     renderStudentLayout();
 
-    const mobileLinks = within(getMobileMainNavigation()).getAllByRole("link");
+    const mobileNavigation = getMobileMainNavigation();
+    const mobileLinks = within(mobileNavigation).getAllByRole("link");
 
     expect(mobileLinks.map((link) => link.getAttribute("href"))).toEqual([
       "/app",
       "/app/discover",
       "/app/communities",
-      "/app/opportunities",
       "/app/messages",
     ]);
+    expect(within(mobileNavigation).getByRole("button", { name: "More navigation" })).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("opens secondary destinations from More and closes the menu after navigation", () => {
+    renderStudentLayout();
+    const mobileNavigation = getMobileMainNavigation();
+
+    fireEvent.click(within(mobileNavigation).getByRole("button", { name: "More navigation" }));
+
+    const moreMenu = within(mobileNavigation).getByRole("link", { name: "Study Notes" });
+    expect(moreMenu).toHaveAttribute("href", "/app/study-notes");
+    expect(within(mobileNavigation).getByRole("link", { name: "Past Questions" })).toBeVisible();
+    fireEvent.click(moreMenu);
+
+    expect(screen.getByText("Study notes content")).toBeInTheDocument();
+    expect(within(mobileNavigation).queryByRole("link", { name: "Past Questions" })).not.toBeInTheDocument();
   });
 
   it("puts the notification link and unread count in the header", () => {

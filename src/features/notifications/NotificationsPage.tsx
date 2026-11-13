@@ -7,7 +7,7 @@ import { LoadingState } from "@/app/LoadingState";
 
 interface Notif { id: number; type: string; actor_username: string | null; actor_display_name: string | null; entity_type: string | null; entity_id: string | null; data: Record<string, unknown>; created_at: string; read_at: string | null }
 const PAGE = 30;
-const PREFS: [string, string][] = [["notify_follows", "New followers"], ["notify_likes", "Likes"], ["notify_comments", "Comments"], ["notify_community", "Community activity"], ["notify_messages", "Messages"]];
+const PREFS: [string, string][] = [["notify_follows", "New followers"], ["notify_likes", "Likes"], ["notify_comments", "Comments"], ["notify_community", "Community activity"], ["notify_messages", "Messages"], ["notify_discussions", "Assignment discussion replies"]];
 
 function describe(n: Notif): { text: string; to?: string } {
   const who = n.actor_display_name ?? "Someone";
@@ -16,6 +16,12 @@ function describe(n: Notif): { text: string; to?: string } {
     case "like": return { text: `${who} liked your post` };
     case "repost": return { text: `${who} reposted your post` };
     case "comment": return { text: `${who} commented on your post` };
+    case "discussion_reply": return {
+      text: `${who} replied to your course discussion`,
+      to: typeof n.data.course_id === "string" && n.entity_id
+        ? `/app/assignment-discussions/courses/${n.data.course_id}?discussion=${n.entity_id}`
+        : "/app/assignment-discussions",
+    };
     case "community_join": return { text: `${who} joined your community`, to: "/app/communities" };
     case "message": return { text: `${who} sent you a message`, to: n.entity_id ? `/app/messages/${n.entity_id}` : "/app/messages" };
     case "announcement": return { text: `Announcement: ${String(n.data.title ?? "")}` };

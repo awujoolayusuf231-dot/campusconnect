@@ -7,8 +7,13 @@ export function ReportDialog({ type, targetId, onClose }: { type: ReportTarget; 
   const [category, setCategory] = useState("spam");
   const [text, setText] = useState("");
   const m = useMutation({ mutationFn: () => submitReport(type, targetId, category, text.trim()) });
+  const targetLabel = type === "assignment_discussion"
+    ? "discussion"
+    : type === "assignment_discussion_reply"
+      ? "discussion reply"
+      : type;
   return (
-    <div role="dialog" aria-modal="true" aria-label={`Report ${type}`} className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 p-4 md:items-center"
+    <div role="dialog" aria-modal="true" aria-label={`Report ${targetLabel}`} className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 p-4 md:items-center"
       onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
       <div className="card w-full max-w-md space-y-3">
         {m.isSuccess ? (
@@ -19,7 +24,7 @@ export function ReportDialog({ type, targetId, onClose }: { type: ReportTarget; 
           </>
         ) : (
           <>
-            <h2 className="font-semibold">Report this {type}</h2>
+            <h2 className="font-semibold">Report this {targetLabel}</h2>
             <div><label className="label" htmlFor="rc">Reason</label>
               <select id="rc" className="input" value={category} onChange={(e) => setCategory(e.target.value)}>
                 {REPORT_CATEGORIES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>

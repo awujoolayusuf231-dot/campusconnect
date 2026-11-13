@@ -7,7 +7,7 @@ import { timeAgo } from "@/lib/time";
 
 interface StaffRow { user_id: string; role: string; granted_at: string; username: string | null; display_name: string | null; perms: string[] }
 interface Found { user_id: string; username: string; display_name: string; role: string; status: string }
-const ALL_PERMS = ["users.view", "users.view_email", "users.moderate", "content.moderate", "reports.manage", "institutions.manage", "communities.manage", "opportunities.manage", "announcements.manage", "analytics.view", "audit.view", "settings.manage", "flags.manage", "staff.view"];
+const ALL_PERMS = ["users.view", "users.view_email", "users.moderate", "content.moderate", "reports.manage", "institutions.manage", "communities.manage", "opportunities.manage", "announcements.manage", "analytics.view", "audit.view", "settings.manage", "flags.manage", "staff.view", "past_questions.review", "past_questions.manage", "study_notes.review"];
 
 // Only the owner holds staff.manage by default. The database re-checks every call; an admin can never grant admin/owner.
 export function StaffPage() {

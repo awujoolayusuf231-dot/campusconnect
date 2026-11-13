@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
 export type AppRole = "student" | "moderator" | "admin" | "owner";
@@ -8,15 +9,28 @@ interface AuthState { session: Session | null; role: AppRole; loading: boolean }
 const AuthContext = createContext<AuthState>({ session: null, role: "student", loading: true });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole>("student");
   const [loading, setLoading] = useState(true);
+  const sessionUserId = useRef<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); if (!data.session) setLoading(false); });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => { setSession(s); if (!s) { setRole("student"); setLoading(false); } });
+    supabase.auth.getSession().then(({ data }) => {
+      const next = data.session;
+      if (sessionUserId.current !== (next?.user.id ?? null)) queryClient.clear();
+      sessionUserId.current = next?.user.id ?? null;
+      setSession(next);
+      if (!next) setLoading(false);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, next) => {
+      if (sessionUserId.current !== (next?.user.id ?? null)) queryClient.clear();
+      sessionUserId.current = next?.user.id ?? null;
+      setSession(next);
+      if (!next) { setRole("student"); setLoading(false); }
+    });
     return () => sub.subscription.unsubscribe();
-  }, []);
+  }, [queryClient]);
 
   // Role is read from the database (current_app_role RPC). UI use only: RLS/RPCs enforce the real rules.
   useEffect(() => {
