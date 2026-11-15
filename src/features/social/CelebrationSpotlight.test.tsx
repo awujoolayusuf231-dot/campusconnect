@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -40,10 +40,29 @@ describe("CelebrationSpotlight", () => {
     renderSpotlight();
 
     expect(await screen.findByRole("heading", { name: "Amina" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "Celebration highlights" })).toHaveClass("sticky", "top-16");
     fireEvent.click(screen.getByRole("button", { name: "Next celebration" }));
 
     expect(await screen.findByRole("heading", { name: "Tunde" })).toBeVisible();
     expect(screen.getByRole("link", { name: "View card" })).toHaveAttribute("href", "/app/celebrations/card-2");
     expect(screen.getByRole("link", { name: "Explore all" })).toHaveAttribute("href", "/app/celebrations");
+  });
+
+  it("automatically advances the carousel when it is not hovered or focused", async () => {
+    renderSpotlight();
+    expect(await screen.findByRole("heading", { name: "Amina" })).toBeVisible();
+    const carousel = screen.getByRole("region", { name: "Celebration highlights" });
+    fireEvent.mouseEnter(carousel);
+    vi.useFakeTimers();
+    try {
+      act(() => vi.advanceTimersByTime(12_000));
+      expect(screen.getByRole("heading", { name: "Amina" })).toBeVisible();
+      fireEvent.mouseLeave(carousel);
+      act(() => vi.advanceTimersByTime(6000));
+      expect(screen.getByRole("heading", { name: "Tunde" })).toBeVisible();
+    } finally {
+      fireEvent.mouseEnter(carousel);
+      vi.useRealTimers();
+    }
   });
 });

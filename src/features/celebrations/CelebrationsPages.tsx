@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Award, ArrowLeft, ArrowRight, CalendarDays, Clock3, GraduationCap, Heart, PartyPopper, Sparkles, Trash2 } from "lucide-react";
+import { Award, ArrowLeft, ArrowRight, CalendarDays, Clock3, ExternalLink, GraduationCap, Heart, PartyPopper, Sparkles, Trash2 } from "lucide-react";
 import { LoadingState } from "@/app/LoadingState";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { celebrationUrlSchema } from "@/validation/profile";
+import { CelebrationPoster } from "./CelebrationPoster";
 import {
   addCelebrationReminder,
   cancelCelebrationReminder,
@@ -19,6 +20,7 @@ import {
   validateCelebration,
   type CelebrationCard,
   type CelebrationCategory,
+  type CelebrationDetails,
   type CelebrationTheme,
   type FeedCelebration,
   type SaveCelebrationInput,
@@ -28,7 +30,9 @@ type Template = { id: string; category: CelebrationCategory; label: string; back
 const CATEGORY_LABELS: Record<CelebrationCategory, string> = {
   birthday: "Birthday", convocation: "Convocation", graduation: "Graduation", induction: "Induction",
   sign_out: "Sign-out", naming_ceremony: "Naming ceremony", wedding: "Wedding", anniversary: "Anniversary",
-  achievement: "Personal achievement", other: "Other",
+  achievement: "Personal achievement", promotion_achievement: "Promotion & achievement",
+  award_recognition: "Award & recognition", engagement: "Engagement", housewarming: "Housewarming",
+  baby_shower: "Baby shower", retirement: "Retirement", cultural_celebration: "Cultural celebration", other: "Other",
 };
 const TEMPLATES: Template[] = [
   { id: "birthday-balloons", category: "birthday", label: "Balloons & joy", background: "#8e2433", accent: "#ffd166", text: "#fffaf2", icon: PartyPopper, font: "display", style: "confetti" },
@@ -55,6 +59,13 @@ const CATEGORY_BACKGROUNDS: Record<CelebrationCategory, string> = {
   wedding: "/celebrations/wedding.jpg",
   anniversary: "/celebrations/wedding.jpg",
   achievement: "/celebrations/achievement.jpg",
+  promotion_achievement: "/celebrations/achievement.jpg",
+  award_recognition: "/celebrations/achievement.jpg",
+  engagement: "/celebrations/wedding.jpg",
+  housewarming: "/celebrations/achievement.jpg",
+  baby_shower: "/celebrations/birthday.jpg",
+  retirement: "/celebrations/achievement.jpg",
+  cultural_celebration: "/celebrations/achievement.jpg",
   other: "/celebrations/achievement.jpg",
 };
 const DEFAULT_THEME: CelebrationTheme = { background: "#8e2433", accent: "#ffd166", text: "#fffaf2", align: "center", font: "display", photoX: 50, photoY: 72, photoScale: 1 };
@@ -69,111 +80,10 @@ function ThemeForTemplate(templateId: string): CelebrationTheme {
   return { ...DEFAULT_THEME, background: template.background, accent: template.accent, text: template.text, font: template.font };
 }
 
-function CelebrationArtwork({ category }: { category: CelebrationCategory }) {
-  const academic = category === "convocation" || category === "graduation" || category === "sign_out";
-  return <svg aria-hidden="true" viewBox="0 0 360 420" fill="none" className="absolute -bottom-5 right-0 h-[82%] w-[65%] max-w-[340px] text-current opacity-[0.18] sm:right-5">
-    {academic && <>
-      <path d="M105 142 144 123h72l39 19 43 63-40 28-23-27 4 131c-41 22-83 22-124 0l4-131-23 27-40-28 43-63Z" fill="currentColor" />
-      <path d="m138 127 42 46 42-46M180 173v163M148 145l-26 77m110-77 26 77" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
-      <path d="m180 35 115 35-115 35L65 70 180 35Z" fill="currentColor" />
-      <path d="M113 85v46c39 24 95 24 134 0V85M295 70v71" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
-      <circle cx="295" cy="147" r="8" fill="currentColor" />
-    </>}
-    {category === "birthday" && <>
-      <ellipse cx="115" cy="109" rx="38" ry="50" fill="currentColor" />
-      <ellipse cx="208" cy="83" rx="34" ry="45" fill="currentColor" />
-      <ellipse cx="278" cy="128" rx="32" ry="42" fill="currentColor" />
-      <path d="m115 159-17 114m110-145-10 146m80-104-24 110" stroke="currentColor" strokeWidth="4" />
-      <path d="M100 291h167v68H100zM86 275h195v24H86zM120 275v-29m42 29v-38m43 38v-29m39 29v-38" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
-      <path d="M119 237c-9-13 9-18 0-30m43 21c-9-13 9-18 0-30m86 30c-9-13 9-18 0-30" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-    </>}
-    {category === "induction" && <>
-      <path d="M105 95h150v232H105zM135 139h90m-90 42h75m-75 42h56" stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="245" cy="280" r="55" fill="currentColor" />
-      <path d="m220 280 18 18 35-39" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="m180 60 8 22 22 8-22 8-8 22-8-22-22-8 22-8 8-22Z" fill="currentColor" />
-    </>}
-    {category === "naming_ceremony" && <>
-      <path d="M73 221h214l-17 103H90L73 221Z" fill="currentColor" />
-      <path d="M95 218c3-51 36-83 85-83s82 32 85 83M118 323v22m124-22v22M145 218c8-26 20-40 35-40s27 14 35 40" stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M180 87c-20-25 16-31 0-57m43 71c-19-24 16-30 0-55" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
-      <circle cx="180" cy="225" r="18" fill="currentColor" />
-    </>}
-    {(category === "wedding" || category === "anniversary") && <>
-      <circle cx="148" cy="210" r="77" stroke="currentColor" strokeWidth="18" />
-      <circle cx="214" cy="210" r="77" stroke="currentColor" strokeWidth="18" />
-      <path d="m178 102 11-27 11 27-11 13-11-13Zm105 27 9-21 9 21-9 10-9-10Z" fill="currentColor" />
-      <path d="M83 325c48 25 147 25 195 0" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
-    </>}
-    {category === "achievement" && <>
-      <path d="M115 73h130v91c0 52-28 84-65 84s-65-32-65-84V73Z" fill="currentColor" />
-      <path d="M115 98H72v28c0 43 22 66 64 68m109-96h43v28c0 43-22 66-64 68m-44 62v65m-48 38h96m-77-38h58v38h-58z" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="m180 99 10 24 26 2-20 17 6 25-22-14-22 14 6-25-20-17 26-2 10-24Z" fill="currentColor" />
-    </>}
-    {category === "other" && <>
-      <path d="m100 220 165-96-12 189-153-93Z" fill="currentColor" />
-      <path d="m100 220 153 93m-87-142 15 21m35-40 15 20m-95 34 15 21" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
-      <path d="m274 91 12-29m21 57 30-7M83 131l-27-15m228 173 24 23" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
-    </>}
-  </svg>;
-}
-
-function DecorativeArt({ template, category }: { template: Template; category: CelebrationCategory }) {
-  const Icon = template.icon;
-  return <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-    <div className="absolute inset-3 rounded-[18px] border border-white/15" />
-    <CelebrationArtwork category={category} />
-    {template.style === "confetti" && <>
-      <span className="absolute left-[12%] top-[16%] h-3 w-3 rotate-12 rounded-sm bg-white/70" />
-      <span className="absolute left-[82%] top-[20%] h-2 w-7 -rotate-45 rounded-full bg-white/55" />
-      <span className="absolute left-[21%] top-[67%] h-2 w-2 rounded-full bg-white/65" />
-      <span className="absolute left-[76%] top-[72%] h-3 w-3 rotate-45 rounded-sm bg-white/60" />
-      <span className="absolute left-[68%] top-[11%] h-2 w-2 rounded-full bg-white/50" />
-    </>}
-    {template.style === "academic" && <>
-      <div className="absolute -right-10 -top-14 h-48 w-48 rounded-full border border-white/20" />
-      <div className="absolute -right-1 -top-5 h-32 w-32 rounded-full border border-white/15" />
-      <Icon className="absolute bottom-8 right-7 opacity-20" size={88} strokeWidth={1} />
-    </>}
-    {template.style === "romantic" && <>
-      <div className="absolute -left-12 -top-12 h-44 w-44 rounded-full border border-white/20" />
-      <div className="absolute -bottom-16 -right-10 h-48 w-48 rounded-full border border-white/20" />
-      <Heart className="absolute right-8 top-8 opacity-25" size={50} strokeWidth={1} />
-    </>}
-    {template.style === "soft" && <>
-      <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/15 blur-sm" />
-      <div className="absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-white/10 blur-sm" />
-      <Sparkles className="absolute right-8 top-8 opacity-30" size={36} />
-    </>}
-    {template.style === "bold" && <>
-      <div className="absolute inset-x-7 top-7 h-1 rounded-full bg-white/35" />
-      <div className="absolute inset-x-7 bottom-7 h-1 rounded-full bg-white/35" />
-      <Icon className="absolute right-8 top-1/2 -translate-y-1/2 opacity-20" size={76} strokeWidth={1.2} />
-    </>}
-  </div>;
-}
-
-function CelebrationVisual({ card, photoUrl, compact = false }: { card: Pick<FeedCelebration, "title" | "category" | "celebrant_name" | "celebration_at" | "timezone" | "message" | "template_id" | "customization">; photoUrl?: string | null; compact?: boolean }) {
+function CelebrationVisual({ card, photoUrl, compact = false }: { card: Pick<FeedCelebration, "title" | "category" | "celebrant_name" | "celebration_at" | "timezone" | "message" | "whiteshirt_url" | "template_id" | "customization"> & { details?: CelebrationDetails }; photoUrl?: string | null; compact?: boolean }) {
   const template = TEMPLATES.find((item) => item.id === card.template_id) ?? TEMPLATES[TEMPLATES.length - 1]!;
   const theme = card.customization ?? ThemeForTemplate(template.id);
-  const alignment = theme.align === "left" ? "text-left" : theme.align === "right" ? "text-right" : "text-center";
-  const alignedEdge = theme.align === "left" ? "self-start" : theme.align === "right" ? "self-end" : "self-center";
-  return <div className={`relative isolate flex w-full flex-col overflow-hidden rounded-[24px] border border-white/15 shadow-[0_18px_48px_rgba(35,24,20,0.24)] ${compact ? "min-h-[250px] p-4 sm:min-h-[270px] sm:p-5" : "min-h-[480px] p-5 sm:min-h-[520px] sm:p-8"}`} style={{ background: `radial-gradient(circle at 85% 12%, ${theme.accent}35, transparent 34%), linear-gradient(140deg, ${theme.background}, ${theme.background}e8)`, color: theme.text }}>
-    <img aria-hidden="true" alt="" src={CATEGORY_BACKGROUNDS[card.category]} className="absolute inset-0 h-full w-full object-cover opacity-30 mix-blend-soft-light" />
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/15 via-transparent to-black/25" />
-    <DecorativeArt template={template} category={card.category} />
-    <div className={`relative z-10 flex min-h-full flex-1 flex-col ${alignment}`}>
-      <span className={`${alignedEdge} inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] backdrop-blur`}><Sparkles size={12} />{CATEGORY_LABELS[card.category]}</span>
-      <p className={`font-extrabold uppercase tracking-[0.14em] opacity-80 ${compact ? "mt-4 text-[9px]" : "mt-7 text-xs"}`}>{card.title}</p>
-      <h2 className={`mt-2 break-words leading-[1.05] ${theme.font === "serif" ? "font-serif" : theme.font === "display" ? "font-black tracking-tight" : "font-extrabold tracking-tight"} ${compact ? "text-2xl sm:text-3xl" : "text-4xl sm:text-6xl"}`}>{card.celebrant_name}</h2>
-      <span className={`${alignedEdge} h-1 rounded-full ${compact ? "mt-3 w-12" : "mt-4 w-16"}`} style={{ backgroundColor: theme.accent }} />
-      {photoUrl && <div className={`${alignedEdge} relative shrink-0 overflow-hidden rounded-[18px] border-4 border-white/80 shadow-[0_16px_36px_rgba(0,0,0,0.25)] ring-1 ring-white/30 ${compact ? "mt-4 h-16 w-16 sm:h-20 sm:w-20" : "mt-6 h-40 w-40 rounded-[22px]"}`}>
-        <img src={photoUrl} alt={card.celebrant_name} className="h-full w-full object-cover transition-transform" style={{ objectPosition: `${theme.photoX}% ${theme.photoY}%`, transform: `scale(${theme.photoScale})` }} />
-      </div>}
-      <p className={`${alignedEdge === "self-center" ? "mx-auto" : theme.align === "left" ? "mr-auto" : "ml-auto"} max-w-xl whitespace-pre-wrap leading-7 opacity-95 ${compact ? "mt-3 line-clamp-2 text-xs leading-5" : "mt-4 text-base sm:text-lg"}`}>{card.message || "Celebrating a special moment with the CampusConnect community."}</p>
-      <p className={`mt-auto font-bold uppercase tracking-[0.12em] ${compact ? "pt-4 text-[10px]" : "pt-8 text-xs"}`} style={{ color: theme.accent }}>{new Date(card.celebration_at).toLocaleDateString(undefined, { dateStyle: "long", timeZone: card.timezone })}</p>
-    </div>
-  </div>;
+  return <CelebrationPoster card={{ ...card, customization: theme }} photoUrl={photoUrl} square={compact} />;
 }
 
 function CelebrationImage({ card, compact = false }: { card: CelebrationCard | FeedCelebration; compact?: boolean }) {
@@ -293,7 +203,7 @@ export function CreateCelebrationPage() {
   });
   const chooseTemplate = (template: Template) => { setTemplateId(template.id); setTheme(ThemeForTemplate(template.id)); };
   const previewDate = new Date(eventTime);
-  const cardPreview = { title: title || "A special celebration", category, celebrant_name: celebrant || "Your name", celebration_at: Number.isNaN(previewDate.getTime()) ? new Date().toISOString() : previewDate.toISOString(), timezone, message, template_id: templateId, customization: theme };
+  const cardPreview = { title: title || "A special celebration", category, celebrant_name: celebrant || "Your name", celebration_at: Number.isNaN(previewDate.getTime()) ? new Date().toISOString() : previewDate.toISOString(), timezone, message, whiteshirt_url: whiteshirt || null, template_id: templateId, customization: theme };
   const displayImage = imagePreview ?? imageUrl.data;
   if (editing && existing.isLoading) return <LoadingState label="Loading celebration card" variant="panel" />;
   if (editing && (existing.isError || !existing.data)) return <p role="alert" className="err">This card is unavailable or not editable.</p>;
@@ -309,7 +219,7 @@ export function CreateCelebrationPage() {
           <label className="block"><span className="label">Date and time</span><input className="input" type="datetime-local" required value={eventTime} onChange={(event) => setEventTime(event.target.value)} /><span className="mt-1 block text-xs text-muted">Time zone: {timezone}</span></label>
           <label className="block"><span className="label">Personal message</span><textarea className="input min-h-28" maxLength={2000} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Write a warm message for the occasion." /></label>
           <label className="block"><span className="label">Venue <span className="font-normal text-muted">(optional)</span></span><input className="input" maxLength={200} value={venue} onChange={(event) => setVenue(event.target.value)} placeholder="Location or online event" /></label>
-          <label className="block"><span className="label">Whiteshirt celebration board <span className="font-normal text-muted">(optional)</span></span><input className="input" type="url" maxLength={200} value={whiteshirt} onChange={(event) => setWhiteshirt(event.target.value)} placeholder="https://whiteshirt.fun/…" /></label>
+          <label className="block"><span className="label">Whiteshirt.fun celebration board <span className="text-danger" aria-hidden="true">*</span></span><input className="input" type="url" required maxLength={200} value={whiteshirt} onChange={(event) => setWhiteshirt(event.target.value)} placeholder="https://whiteshirt.fun/your-board" /></label>
           {whiteshirt && !celebrationUrlSchema.safeParse(whiteshirt).success && <p role="alert" className="err">Only an approved HTTPS whiteshirt.fun link is allowed.</p>}
         </section>
         <section className="space-y-3 rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-6">
@@ -369,10 +279,10 @@ export function CelebrationDetailsPage() {
   const expired = new Date(c.celebration_at).getTime() <= Date.now();
   const activeReminders = new Set((reminders.data ?? []).filter((row) => row.card_id === c.id).map((row) => row.remind_before_minutes));
   return <div className="mx-auto max-w-3xl space-y-5"><Link to="/app/celebrations" className="inline-flex items-center gap-2 text-sm font-bold text-muted hover:text-primary"><ArrowLeft size={15} />Celebrations</Link>
-    <div className="flex flex-wrap items-start justify-between gap-3"><PageTitle eyebrow={CATEGORY_LABELS[c.category]} title={c.title} description={`For ${c.celebrant_name} · ${daysUntil(c.celebration_at)}`} />{mine && <div className="flex gap-2"><Link className="btn min-h-10 rounded-xl px-3 text-sm" to={`/app/celebrations/${c.id}/edit`}>Edit</Link><button className="btn-danger min-h-10 rounded-xl px-3 text-sm" disabled={remove.isPending} onClick={() => { if (window.confirm("Delete this card?")) remove.mutate(c); }}>Delete</button></div>}</div>
+    <div className="flex flex-wrap items-start justify-between gap-3"><PageTitle eyebrow={CATEGORY_LABELS[c.category] ?? c.category} title={c.title} description={`For ${c.celebrant_name} · ${daysUntil(c.celebration_at)}`} />{mine && <div className="flex gap-2"><Link className="btn min-h-10 rounded-xl px-3 text-sm" to={`/app/celebrations/${c.id}/edit`}>Edit</Link><button className="btn-danger min-h-10 rounded-xl px-3 text-sm" disabled={remove.isPending} onClick={() => { if (window.confirm("Delete this card?")) remove.mutate(c); }}>Delete</button></div>}</div>
     {expired && <p className="rounded-xl bg-bg p-3 text-sm text-muted">This celebration date has passed. The public card remains in the archive; reminders are no longer available.</p>}
     <CelebrationImage card={c} />
-    <section className="grid gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm sm:grid-cols-2 sm:p-5"><p className="flex items-center gap-2 text-sm text-fg"><CalendarDays size={16} className="text-primary" />{new Date(c.celebration_at).toLocaleString(undefined, { dateStyle: "full", timeStyle: "short", timeZone: c.timezone })}</p><p className="flex items-center gap-2 text-sm text-muted"><Clock3 size={16} className="text-primary" />{c.timezone}</p>{c.venue && <p className="text-sm text-fg sm:col-span-2">Venue: {c.venue}</p>}{c.whiteshirt_url && <a className="btn-primary inline-flex min-h-10 w-fit items-center rounded-xl px-4 font-bold sm:col-span-2" href={c.whiteshirt_url} target="_blank" rel="noopener noreferrer">Open Whiteshirt celebration board <ArrowRight size={14} className="ml-2" /></a>}</section>
+    <section className="grid gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm sm:grid-cols-2 sm:p-5"><p className="flex items-center gap-2 text-sm text-fg"><CalendarDays size={16} className="text-primary" />{new Date(c.celebration_at).toLocaleString(undefined, { dateStyle: "full", timeStyle: "short", timeZone: c.timezone })}</p><p className="flex items-center gap-2 text-sm text-muted"><Clock3 size={16} className="text-primary" />{c.timezone}</p>{c.venue && <p className="text-sm text-fg sm:col-span-2">Venue: {c.venue}</p>}{c.whiteshirt_url && <a className="group flex min-h-16 w-full items-center justify-between gap-4 rounded-2xl border border-[#efd9db] bg-gradient-to-r from-[#fff4f1] to-white px-4 py-3 transition hover:border-primary/40 hover:shadow-sm sm:col-span-2 sm:max-w-md" href={c.whiteshirt_url} target="_blank" rel="noopener noreferrer"><span><span className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Continue the celebration</span><span className="mt-1 block text-sm font-bold text-fg">Open their Whiteshirt board</span><span className="mt-0.5 block text-xs text-muted">whiteshirt.fun</span></span><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-sm transition group-hover:translate-x-0.5"><ExternalLink size={16} /></span></a>}</section>
     {!expired && !mine && c.status === "published" && <section className="rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-5"><h2 className="font-extrabold text-fg">Set a reminder</h2><p className="mt-1 text-xs text-muted">Choose a notification reminder. Your notification preferences are respected.</p>{reminders.isLoading ? <LoadingState label="Loading reminders" /> : reminders.isError ? <p role="alert" className="err mt-2">Could not load reminders.</p> : <div className="mt-3 space-y-2">{REMINDER_OPTIONS.map((option) => <label key={option.minutes} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={activeReminders.has(option.minutes)} disabled={reminder.isPending} onChange={(event) => reminder.mutate({ minutes: option.minutes, enabled: event.target.checked })} />{option.label}</label>)}</div>}{reminder.isError && <p role="alert" className="err mt-2">{(reminder.error as Error).message}</p>}</section>}
     {remove.isError && <p role="alert" className="err">{(remove.error as Error).message}</p>}
   </div>;

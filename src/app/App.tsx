@@ -58,6 +58,7 @@ const AuditLogPage = lazy(() => import("@/features/admin/pages/AuditLogPage").th
 const StaffPage = lazy(() => import("@/features/admin/pages/StaffPage").then((m) => ({ default: m.StaffPage })));
 const UsersPage = lazy(() => import("@/features/admin/pages/UsersPage").then((m) => ({ default: m.UsersPage })));
 const StudyNotesReviewPage = lazy(() => import("@/features/admin/pages/StudyNotesReviewPage").then((m) => ({ default: m.StudyNotesReviewPage })));
+const CelebrationCatalogPage = lazy(() => import("@/features/admin/pages/CelebrationCatalogPage").then((m) => ({ default: m.CelebrationCatalogPage })));
 const AssignmentDiscussionsPage = lazy(() => import("@/features/assignment-discussions/AssignmentDiscussionsPages").then((m) => ({ default: m.AssignmentDiscussionsPage })));
 const AssignmentDiscussionRoomPage = lazy(() => import("@/features/assignment-discussions/AssignmentDiscussionsPages").then((m) => ({ default: m.AssignmentDiscussionRoomPage })));
 const FlashcardsLayout = lazy(() => import("@/features/flashcards/FlashcardsPages").then((m) => ({ default: m.FlashcardsLayout })));
@@ -83,7 +84,7 @@ const GroupQuizAttemptPage = lazy(() => import("@/features/group-quiz/GroupQuizP
 const GroupQuizResultPage = lazy(() => import("@/features/group-quiz/GroupQuizPages").then((m) => ({ default: m.GroupQuizResultPage })));
 const GroupQuizPerformancePage = lazy(() => import("@/features/group-quiz/GroupQuizPages").then((m) => ({ default: m.GroupQuizPerformancePage })));
 const CelebrationsHomePage = lazy(() => import("@/features/celebrations/CelebrationsPages").then((m) => ({ default: m.CelebrationsHomePage })));
-const CreateCelebrationPage = lazy(() => import("@/features/celebrations/CelebrationsPages").then((m) => ({ default: m.CreateCelebrationPage })));
+const CelebrationStudioPage = lazy(() => import("@/features/celebrations/CelebrationStudioPage").then((m) => ({ default: m.CelebrationStudioPage })));
 const MyCelebrationsPage = lazy(() => import("@/features/celebrations/CelebrationsPages").then((m) => ({ default: m.MyCelebrationsPage })));
 const CelebrationDetailsPage = lazy(() => import("@/features/celebrations/CelebrationsPages").then((m) => ({ default: m.CelebrationDetailsPage })));
 const PortfolioDashboardPage = lazy(() => import("@/features/portfolio/PortfolioPages").then((m) => ({ default: m.PortfolioDashboardPage })));
@@ -170,9 +171,9 @@ export function App() {
             <Route path="/app/group-quiz/attempts/:attemptId" element={<GroupQuizAttemptPage />} />
             <Route path="/app/group-quiz/attempts/:attemptId/results" element={<GroupQuizResultPage />} />
             <Route path="/app/celebrations" element={<CelebrationsHomePage />} />
-            <Route path="/app/celebrations/create" element={<CreateCelebrationPage />} />
+            <Route path="/app/celebrations/create" element={<CelebrationStudioPage />} />
             <Route path="/app/celebrations/mine" element={<MyCelebrationsPage />} />
-            <Route path="/app/celebrations/:celebrationId/edit" element={<CreateCelebrationPage />} />
+            <Route path="/app/celebrations/:celebrationId/edit" element={<CelebrationStudioPage />} />
             <Route path="/app/celebrations/:celebrationId" element={<CelebrationDetailsPage />} />
             <Route path="/app/portfolio" element={<PortfolioDashboardPage />} />
             <Route path="/app/portfolio/edit" element={<PortfolioEditorPage />} />
@@ -204,6 +205,7 @@ export function App() {
             <Route path="opportunities" element={<OpportunitiesAdminPage />} />
             <Route path="institutions" element={<InstitutionsPage />} />
             <Route path="settings" element={<PlatformSettingsPage />} />
+            <Route path="celebration-studio" element={<CelebrationCatalogPage />} />
             <Route path="audit" element={<AuditLogPage />} />
             <Route path="staff" element={<StaffPage />} />
             <Route path="study-notes/review" element={<StudyNotesReviewPage />} />

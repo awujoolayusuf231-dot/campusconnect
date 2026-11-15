@@ -14,7 +14,7 @@ const card: SaveCelebrationInput = {
   timezone: "Africa/Lagos",
   message: "Wishing you a wonderful year.",
   venue: null,
-  whiteshirt_url: null,
+  whiteshirt_url: "https://whiteshirt.fun/amina-board",
   template_id: "birthday-balloons",
   customization: {
     background: "#8e2433",
@@ -106,6 +106,11 @@ describe("Celebration card validation", () => {
   it("rejects unsupported Whiteshirt hosts and non-HTTPS links", () => {
     expect(validateCelebration({ ...card, whiteshirt_url: "http://whiteshirt.fun/card" })).toMatch(/whiteshirt/i);
     expect(validateCelebration({ ...card, whiteshirt_url: "https://example.com/card" })).toMatch(/whiteshirt/i);
+  });
+
+  it("requires a Whiteshirt celebration board link", () => {
+    expect(validateCelebration({ ...card, whiteshirt_url: null })).toMatch(/required/i);
+    expect(validateCelebration({ ...card, whiteshirt_url: "  " })).toMatch(/required/i);
   });
 
   it("rejects invalid theme colors and photo placement values", () => {
