@@ -12,6 +12,7 @@ import { ProtectedPostImage } from "./ProtectedPostImage";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ReportDialog } from "./ReportDialog";
 import { usePostImpression } from "../usePostImpression";
+import { PostBody } from "./PostBody";
 
 const POST_PREVIEW_LIMIT = 280;
 
@@ -81,7 +82,7 @@ export function PostCard({ post, images, me, defaultOpenComments = false, inComm
             WebkitLineClamp: 6,
             overflow: "hidden",
           } : undefined}>
-          {post.body}
+          <PostBody body={post.body} />
         </p>
         {!fullPost && post.body.length > POST_PREVIEW_LIMIT && <Link to={`/app/p/${post.id}`} className="mt-1 inline-flex min-h-8 items-center rounded-lg px-2 text-sm font-bold text-primary hover:bg-[#fff1f2] hover:underline">
           Show more

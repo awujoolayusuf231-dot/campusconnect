@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { fetchMediaPaths, type FeedPost } from "./api";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { PostCard } from "./components/PostCard";
+import { PostInsights } from "./PostInsights";
 import { LoadingState } from "@/app/LoadingState";
 
 // Landing page for a shared post link (/app/p/:id). Visibility is decided by the database (RLS), not by this page.
@@ -65,6 +66,7 @@ export function PostPage() {
       {q.isError && <div role="alert" className="card"><p className="font-bold">Could not load this post.</p><button className="btn mt-3" onClick={() => void q.refetch()}>Try again</button></div>}
       {q.data === null && <div role="status" className="card text-sm text-muted">This post is not available. It may have been removed, or you may not be able to see it.</div>}
       {q.isFetching && !q.isLoading && <LoadingState label="Checking post access" variant="panel" />}
+      {q.data && !q.isFetching && !q.isError && q.data.post.author_id === me && <PostInsights postId={id} />}
       {q.data && !q.isFetching && !q.isError && <PostCard post={q.data.post} images={q.data.media} me={me} defaultOpenComments fullPost trackImpression />}
     </main>
   );

@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ getSession: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getSession: vi.fn(), from: vi.fn(), insert: vi.fn() }));
 
 vi.mock("@/lib/supabase", () => ({
-  supabase: { auth: { getSession: mocks.getSession } },
+  supabase: { auth: { getSession: mocks.getSession }, from: mocks.from },
   supabaseUrl: "https://campusconnect.example",
   supabasePublishableKey: "publishable-test-key",
 }));
 
-import { fetchPostImage } from "./api";
+import { createPost, fetchPostImage } from "./api";
 
 describe("fetchPostImage", () => {
   const fetchMock = vi.fn();
@@ -17,9 +17,13 @@ describe("fetchPostImage", () => {
     vi.clearAllMocks();
     vi.stubGlobal("fetch", fetchMock);
     mocks.getSession.mockResolvedValue({
-      data: { session: { access_token: "viewer-access-token" } },
+      data: { session: { access_token: "viewer-access-token", user: { id: "author-1" } } },
       error: null,
     });
+    const single = vi.fn().mockResolvedValue({ data: { id: "post-1" }, error: null });
+    const select = vi.fn(() => ({ single }));
+    mocks.insert.mockReturnValue({ select });
+    mocks.from.mockReturnValue({ insert: mocks.insert });
   });
 
   afterEach(() => {
@@ -54,5 +58,14 @@ describe("fetchPostImage", () => {
     fetchMock.mockResolvedValue({ ok: false, status: 404 });
 
     await expect(fetchPostImage("owner-id/photo.png")).rejects.toThrow("no longer available");
+  });
+
+  it("persists the selected audience and forces community posts to community-only", async () => {
+    await expect(createPost("A followers-only update", [], undefined, "followers")).resolves.toEqual({ failedImages: 0 });
+    expect(mocks.from).toHaveBeenCalledWith("posts");
+    expect(mocks.insert).toHaveBeenCalledWith({ body: "A followers-only update", visibility: "followers" });
+
+    await createPost("A community update", [], "community-1", "public");
+    expect(mocks.insert).toHaveBeenLastCalledWith({ body: "A community update", visibility: "community", community_id: "community-1" });
   });
 });

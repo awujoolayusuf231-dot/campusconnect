@@ -18,6 +18,7 @@ vi.mock("@/features/celebrations/api", () => ({
 }));
 vi.mock("@/features/auth/AuthProvider", () => ({ useAuth: () => ({ session: mocks.session }) }));
 vi.mock("./components/Composer", () => ({ Composer: () => null }));
+vi.mock("./CelebrationSpotlight", () => ({ CelebrationSpotlight: () => null }));
 vi.mock("@/features/onboarding/OnboardingCard", () => ({ OnboardingCard: () => null }));
 vi.mock("./components/PostCard", () => ({
   PostCard: ({ post, trackImpression }: { post: { id: string }; trackImpression?: boolean }) =>
@@ -44,17 +45,19 @@ describe("FeedPage", () => {
     mocks.fetchMediaPaths.mockResolvedValue({});
   });
 
-  it("keeps all three feed scopes connected to their existing query scope", async () => {
+  it("offers a ranked For you feed and keeps the existing timeline scopes connected", async () => {
     renderFeed();
 
     expect(screen.getByRole("link", { name: /find students/i })).toHaveAttribute("href", "/app/discover");
+    await waitFor(() => expect(mocks.fetchFeedTimeline).toHaveBeenCalledWith("for_you", null));
+    fireEvent.click(screen.getByRole("tab", { name: "Everyone" }));
     await waitFor(() => expect(mocks.fetchFeedTimeline).toHaveBeenCalledWith("all", null));
     fireEvent.click(screen.getByRole("tab", { name: "Following" }));
     await waitFor(() => expect(mocks.fetchFeedTimeline).toHaveBeenCalledWith("following", null));
     fireEvent.click(screen.getByRole("tab", { name: "My institution" }));
     await waitFor(() => expect(mocks.fetchFeedTimeline).toHaveBeenCalledWith("institution", null));
 
-    expect(screen.getByRole("tab", { name: "Everyone" })).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("tab", { name: "For you" })).toHaveAttribute("aria-selected", "false");
     expect(screen.getByRole("tab", { name: "My institution" })).toHaveAttribute("aria-selected", "true");
   });
 

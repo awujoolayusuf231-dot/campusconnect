@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   followUser: vi.fn(),
   unfollowUser: vi.fn(),
   listActiveInstitutions: vi.fn(),
+  fetchTrendingHashtags: vi.fn(),
+  searchHashtags: vi.fn(),
   session: { user: { id: "student-1" } },
 }));
 
@@ -19,6 +21,8 @@ vi.mock("./api", () => ({
   avatarUrl: () => null,
   followUser: mocks.followUser,
   unfollowUser: mocks.unfollowUser,
+  fetchTrendingHashtags: mocks.fetchTrendingHashtags,
+  searchHashtags: mocks.searchHashtags,
 }));
 
 import { DiscoverPage } from "./DiscoverPage";
@@ -55,6 +59,8 @@ describe("DiscoverPage", () => {
     mocks.followUser.mockResolvedValue(undefined);
     mocks.unfollowUser.mockResolvedValue(undefined);
     mocks.listActiveInstitutions.mockResolvedValue([{ id: "institution-1", name: "Campus University", short_name: "CU" }]);
+    mocks.fetchTrendingHashtags.mockResolvedValue([]);
+    mocks.searchHashtags.mockResolvedValue([]);
   });
 
   it("shows student search results using the existing discovery API", async () => {

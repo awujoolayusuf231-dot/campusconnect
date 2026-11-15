@@ -1,7 +1,9 @@
 import { supabase, supabasePublishableKey, supabaseUrl } from "@/lib/supabase";
 import { optimizeImage } from "@/lib/image";
 
-export type FeedScope = "all" | "following" | "institution";
+export type FeedScope = "for_you" | "all" | "following" | "institution";
+export type MainPostVisibility = "public" | "followers" | "institution" | "private";
+export type PostVisibility = MainPostVisibility | "community";
 export interface FeedPost {
   id: string; author_id: string; body: string; created_at: string; edited_at: string | null;
   like_count: number; comment_count: number; repost_count: number; liked_by_me: boolean; reposted_by_me: boolean;
@@ -39,9 +41,75 @@ export function avatarUrl(path: string | null): string | null {
 }
 
 export async function fetchFeed(scope: FeedScope, cursor: Cursor | null, limit = FEED_PAGE): Promise<FeedPost[]> {
+  if (scope === "for_you") throw new Error("Use the ranked timeline API for the For you feed.");
   const { data, error } = await supabase.rpc("feed_posts", { p_scope: scope, p_before: cursor?.created_at ?? null, p_before_id: cursor?.id ?? null, p_limit: limit });
   if (error) throw error;
   return (data ?? []) as FeedPost[];
+}
+
+export interface HashtagSuggestion { tag: string; post_count: number }
+export interface TrendingHashtag { tag: string; posts: number; authors: number }
+export interface PostImpressionDay { day: string; impressions: number; unique_viewers: number }
+export interface PostImpressionTotals { impressions: number; days_counted: number }
+export interface PostAnalytics {
+  days: PostImpressionDay[];
+  reach: number | null;
+  totals: PostImpressionTotals | null;
+}
+
+export async function fetchPostsByHashtag(tag: string, cursor: Cursor | null, limit = FEED_PAGE): Promise<FeedPost[]> {
+  const { data, error } = await supabase.rpc("posts_by_hashtag", {
+    p_tag: tag,
+    p_before: cursor?.created_at ?? null,
+    p_before_id: cursor?.id ?? null,
+    p_limit: limit,
+  });
+  if (error) throw error;
+  return (data ?? []) as FeedPost[];
+}
+
+export async function searchHashtags(prefix: string, limit = 8): Promise<HashtagSuggestion[]> {
+  const { data, error } = await supabase.rpc("search_hashtags", { p_prefix: prefix, p_limit: limit });
+  if (error) throw error;
+  return ((data ?? []) as { tag: string; post_count: number | string }[]).map((row) => ({
+    tag: row.tag,
+    post_count: Number(row.post_count),
+  }));
+}
+
+export async function fetchTrendingHashtags(days = 7, limit = 10): Promise<TrendingHashtag[]> {
+  const { data, error } = await supabase.rpc("trending_hashtags", { p_days: days, p_limit: limit });
+  if (error) throw error;
+  return ((data ?? []) as { tag: string; posts: number | string; authors: number | string }[]).map((row) => ({
+    tag: row.tag,
+    posts: Number(row.posts),
+    authors: Number(row.authors),
+  }));
+}
+
+export async function fetchPostAnalytics(postId: string): Promise<PostAnalytics> {
+  const [daysResult, reachResult, totalsResult] = await Promise.all([
+    supabase.rpc("post_impression_stats", { p_post: postId, p_days: 28 }),
+    supabase.rpc("post_reach", { p_post: postId, p_days: 28 }),
+    supabase.rpc("my_posts_impression_totals", { p_post_ids: [postId] }),
+  ]);
+  if (daysResult.error) throw daysResult.error;
+  if (reachResult.error) throw reachResult.error;
+  if (totalsResult.error) throw totalsResult.error;
+
+  const totalsRow = ((totalsResult.data ?? []) as { impressions: number | string; days_counted: number | string }[])[0];
+  const reach = reachResult.data === null ? null : Number(reachResult.data);
+  if (reach !== null && !Number.isFinite(reach)) throw new Error("The post reach response was invalid.");
+
+  return {
+    days: ((daysResult.data ?? []) as { day: string; impressions: number | string; unique_viewers: number | string }[]).map((row) => ({
+      day: row.day,
+      impressions: Number(row.impressions),
+      unique_viewers: Number(row.unique_viewers),
+    })),
+    reach,
+    totals: totalsRow ? { impressions: Number(totalsRow.impressions), days_counted: Number(totalsRow.days_counted) } : null,
+  };
 }
 
 export async function fetchMediaPaths(postIds: string[]): Promise<Record<string, string[]>> {
@@ -78,13 +146,21 @@ export async function fetchPostImage(path: string, signal?: AbortSignal): Promis
   return response.blob();
 }
 
-export async function createPost(body: string, files: File[], communityId?: string): Promise<{ failedImages: number }> {
+export async function createPost(
+  body: string,
+  files: File[],
+  communityId?: string,
+  visibility: PostVisibility = "public",
+): Promise<{ failedImages: number }> {
   const problem = validateImages(files);
   if (problem) throw new Error(problem);
   const { data: sess } = await supabase.auth.getSession();
   const uid = sess.session?.user.id;
   if (!uid) throw new Error("forbidden");
-  const { data, error } = await supabase.from("posts").insert({ body: body.trim(), ...(communityId ? { community_id: communityId } : {}) }).select("id").single();
+  const postVisibility = communityId ? "community" : visibility;
+  const { data, error } = await supabase.from("posts")
+    .insert({ body: body.trim(), visibility: postVisibility, ...(communityId ? { community_id: communityId } : {}) })
+    .select("id").single();
   if (error) throw error;
   const postId = (data as { id: string }).id;
   let position = 0; let failed = 0;

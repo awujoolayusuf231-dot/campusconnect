@@ -65,9 +65,15 @@ export type FeedCelebration = {
   creator_username: string | null;
 };
 export type FeedTimelineItem =
-  | { item_type: "post"; item_id: string; activity_at: string; item: FeedPost }
+  | { item_type: "post"; item_id: string; activity_at: string; item: FeedPost; rank_score?: number; ranked_at?: string }
   | { item_type: "celebration"; item_id: string; activity_at: string; item: FeedCelebration };
-export type FeedTimelineCursor = { activity_at: string; item_type: FeedTimelineItem["item_type"]; item_id: string };
+export type FeedTimelineCursor = {
+  activity_at: string;
+  item_type: FeedTimelineItem["item_type"];
+  item_id: string;
+  rank_score?: number;
+  ranked_at?: string;
+};
 export type CelebrationReminder = { id: string; card_id: string; user_id: string; remind_before_minutes: number; reminder_at: string };
 
 const CARD_SELECT = "id,owner_id,title,category,celebrant_name,celebration_at,timezone,message,venue,whiteshirt_url,template_id,customization,photo_path,status,published_at,created_at,updated_at";
@@ -204,6 +210,29 @@ export async function deleteCelebrationCard(card: CelebrationCard): Promise<void
 }
 
 export async function fetchFeedTimeline(scope: FeedScope, cursor: FeedTimelineCursor | null, limit = 20): Promise<FeedTimelineItem[]> {
+  if (scope === "for_you") {
+    const { data, error } = await supabase.rpc("feed_ranked_posts", {
+      p_before_score: cursor?.rank_score ?? null,
+      p_before: cursor?.activity_at ?? null,
+      p_before_id: cursor?.item_id ?? null,
+      p_as_of: cursor?.ranked_at ?? null,
+      p_limit: limit,
+    });
+    if (error) throw error;
+    return ((data ?? []) as (FeedPost & { rank_score: number | string; ranked_at: string })[]).map((row) => {
+      const score = Number(row.rank_score);
+      if (!Number.isFinite(score) || !row.ranked_at) throw new Error("The ranked feed returned an invalid cursor.");
+      return {
+        item_type: "post",
+        item_id: row.id,
+        activity_at: row.activity_at,
+        item: row,
+        rank_score: score,
+        ranked_at: row.ranked_at,
+      };
+    });
+  }
+
   const { data, error } = await supabase.rpc("feed_timeline", {
     p_scope: scope,
     p_before: cursor?.activity_at ?? null,

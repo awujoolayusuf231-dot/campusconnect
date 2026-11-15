@@ -44,9 +44,20 @@ describe("Composer", () => {
     fireEvent.change(within(dialog).getByLabelText("What's happening?"), { target: { value: "Hello campus!" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Post" }));
 
-    await waitFor(() => expect(createPost).toHaveBeenCalledWith("Hello campus!", [], undefined));
+    await waitFor(() => expect(createPost).toHaveBeenCalledWith("Hello campus!", [], undefined, "public"));
     expect(await screen.findByRole("status")).toHaveTextContent("Posted!");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("submits the selected post audience", async () => {
+    renderComposer();
+    fireEvent.click(screen.getByRole("button", { name: "Create a post" }));
+    const dialog = screen.getByRole("dialog", { name: "Create a post" });
+    fireEvent.change(within(dialog).getByLabelText("What's happening?"), { target: { value: "A followers-only update" } });
+    fireEvent.change(within(dialog).getByLabelText("Post audience"), { target: { value: "followers" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Post" }));
+
+    await waitFor(() => expect(createPost).toHaveBeenCalledWith("A followers-only update", [], undefined, "followers"));
   });
 
   it("closes with Escape and returns focus to the trigger", () => {

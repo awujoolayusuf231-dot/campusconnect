@@ -2,14 +2,22 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImagePlus, Send, SquarePen, UsersRound, X } from "lucide-react";
-import { createPost, validateImages } from "../api";
+import { createPost, validateImages, type MainPostVisibility } from "../api";
 import { socialErrorMessage } from "@/lib/errors";
+
+const AUDIENCE_OPTIONS: { value: MainPostVisibility; label: string; description: string }[] = [
+  { value: "public", label: "Everyone (public)", description: "Anyone who can view your profile can see this post." },
+  { value: "followers", label: "Followers", description: "Only students who follow you can see this post." },
+  { value: "institution", label: "My institution", description: "Only students at your institution can see this post. Your profile must have an institution selected." },
+  { value: "private", label: "Only me", description: "Only you can see this post." },
+];
 
 export function Composer({ communityId }: { communityId?: string }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [visibility, setVisibility] = useState<MainPostVisibility>("public");
   const [notice, setNotice] = useState("");
   const [fileError, setFileError] = useState("");
   const input = useRef<HTMLInputElement>(null);
@@ -17,11 +25,12 @@ export function Composer({ communityId }: { communityId?: string }) {
   const trigger = useRef<HTMLButtonElement>(null);
   const posting = useRef(false);
   const openComposer = () => { setNotice(""); setOpen(true); };
+  const selectedAudience = AUDIENCE_OPTIONS.find((option) => option.value === visibility)!;
 
   const m = useMutation({
-    mutationFn: () => createPost(body, files, communityId),
+    mutationFn: () => createPost(body, files, communityId, communityId ? "community" : visibility),
     onSuccess: ({ failedImages }) => {
-      setBody(""); setFiles([]); if (input.current) input.current.value = "";
+      setBody(""); setFiles([]); setVisibility("public"); if (input.current) input.current.value = "";
       setNotice(failedImages ? `Posted, but ${failedImages} image(s) could not be uploaded.` : "Posted!");
       setOpen(false);
       void qc.invalidateQueries({ queryKey: ["feed"] }); void qc.invalidateQueries({ queryKey: ["community-posts"] });
@@ -113,6 +122,28 @@ export function Composer({ communityId }: { communityId?: string }) {
                 value={body}
                 onChange={(event) => { setBody(event.target.value); setNotice(""); }}
               />
+              {communityId ? (
+                <div className="rounded-xl border border-[#eadbdd] bg-white px-3 py-2.5">
+                  <p className="text-xs font-bold text-fg">Audience</p>
+                  <p className="mt-1 text-xs leading-5 text-muted">Members of this community only</p>
+                </div>
+              ) : (
+                <div>
+                  <label className="label" htmlFor="post-audience">Post audience</label>
+                  <select
+                    id="post-audience"
+                    className="input min-h-11 rounded-xl bg-white"
+                    value={visibility}
+                    onChange={(event) => {
+                      const option = AUDIENCE_OPTIONS.find((candidate) => candidate.value === event.target.value);
+                      if (option) setVisibility(option.value);
+                    }}
+                  >
+                    {AUDIENCE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                  <p className="mt-1 text-xs leading-5 text-muted">{selectedAudience.description}</p>
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-3">
                 <label className="btn min-h-10 cursor-pointer gap-2 rounded-xl bg-white font-semibold hover:border-primary/30 hover:text-primary">
                   <ImagePlus size={16} aria-hidden="true" /> Add photos

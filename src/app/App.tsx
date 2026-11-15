@@ -94,6 +94,7 @@ const CvEditorPage = lazy(() => import("@/features/cv-builder/CvBuilderPages").t
 const CvPrintPage = lazy(() => import("@/features/cv-builder/CvBuilderPages").then((m) => ({ default: m.CvPrintPage })));
 const TimetablePage = lazy(() => import("@/features/timetable/TimetablePages").then((m) => ({ default: m.TimetablePage })));
 const TimetableEventEditorPage = lazy(() => import("@/features/timetable/TimetablePages").then((m) => ({ default: m.TimetableEventEditorPage })));
+const HashtagPage = lazy(() => import("@/features/social/HashtagPage").then((m) => ({ default: m.HashtagPage })));
 
 export function App() {
   const location = useLocation();
@@ -119,6 +120,7 @@ export function App() {
           <Route element={<StudentLayout />}>
             <Route path="/app" element={<FeedPage />} />
             <Route path="/app/discover" element={<DiscoverPage />} />
+            <Route path="/app/tags/:tag" element={<HashtagPage />} />
             <Route path="/app/p/:id" element={<PostPage />} />
             <Route path="/app/communities" element={<CommunitiesPage />} />
             <Route path="/app/past-questions" element={<PastQuestionsLayout />}>

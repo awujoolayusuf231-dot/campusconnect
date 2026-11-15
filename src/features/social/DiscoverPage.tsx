@@ -9,6 +9,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { Avatar } from "./components/Avatar";
 import { socialErrorMessage } from "@/lib/errors";
 import { LoadingState } from "@/app/LoadingState";
+import { HashtagDiscovery } from "./HashtagDiscovery";
 
 interface Student { id: string; username: string; display_name: string; avatar_path: string | null; bio: string | null; institution_id: string | null; department: string | null; academic_level: string | null }
 const PAGE = 24;
@@ -52,6 +53,8 @@ export function DiscoverPage() {
           Meet students across your campus by name, institution, department, or shared interests.
         </p>
       </header>
+
+      <HashtagDiscovery />
 
       <section className="rounded-2xl border border-line bg-white p-3 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-4">
         <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); setPage(0); setApplied(form); }}>
