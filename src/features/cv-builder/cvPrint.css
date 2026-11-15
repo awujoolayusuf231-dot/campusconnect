@@ -1,0 +1,65 @@
+.cv-document-heading {
+  border-bottom: 1px solid #d5d9df;
+  color: var(--cv-accent);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding-bottom: 0.2rem;
+  text-transform: uppercase;
+}
+
+.cv-editor-preview {
+  position: sticky;
+  top: 5.5rem;
+}
+
+@media (max-width: 1279px) {
+  .cv-editor-preview {
+    position: static;
+  }
+}
+
+@media print {
+  @page {
+    margin: 0.6in;
+    size: letter;
+  }
+
+  html,
+  body,
+  #root {
+    background: #fff !important;
+    min-height: 0 !important;
+  }
+
+  .cv-print-page {
+    background: #fff !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  .cv-print-toolbar {
+    display: none !important;
+  }
+
+  .cv-print-root {
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .cv-print-section,
+  .cv-print-entry {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .cv-print-root a {
+    color: inherit;
+    text-decoration: none;
+  }
+}

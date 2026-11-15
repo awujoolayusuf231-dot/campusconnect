@@ -117,7 +117,7 @@ export function CommunityPage() {
           {c.status === "archived" && <p className="mt-4 flex items-center gap-2 rounded-xl bg-[#fbf7f4] p-3 text-sm text-muted"><LockKeyhole size={16} />This community is archived and read-only.</p>}
           {c.status === "disabled" && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-danger">This community has been disabled by platform moderators.</p>}
           {err && <p role="alert" className="err mt-3">{socialErrorMessage(err.message)}</p>}
-          {cover.isError && <p role="alert" className="mt-3 text-sm text-danger">Could not load the community cover image.</p>}
+          {cover.isError && <p role="alert" className="mt-3 text-sm text-danger">{cover.error instanceof Error ? cover.error.message : "Could not load the community cover image."}</p>}
           {canEditSettings && c.status !== "disabled" && <ManageCommunity
             community={c}
             institutions={institutions.data ?? []}
@@ -285,7 +285,7 @@ function ManageCommunity({
         <div role="img" aria-label={coverPreview ? "Selected community cover preview" : "Current community cover"} className="h-32 rounded-xl bg-gradient-to-br from-[#741923] via-[#a52432] to-[#df7a80] bg-cover bg-center"
           style={coverPreview ? { backgroundImage: `url("${coverPreview}")` } : !removeCover && savedCover.data ? { backgroundImage: `url("${savedCover.data}")` } : undefined} />
         {!coverPreview && !savedCover.data && !removeCover && !community.cover_path && <p className="mt-2 text-xs text-muted">No cover image has been added.</p>}
-        {savedCover.isError && <p role="alert" className="mt-2 text-sm text-danger">Could not load the current cover preview.</p>}
+        {savedCover.isError && <p role="alert" className="mt-2 text-sm text-danger">{savedCover.error instanceof Error ? savedCover.error.message : "Could not load the current cover preview."}</p>}
         <div className="mt-3 flex flex-wrap gap-2">
           <label className="btn inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl px-3 font-semibold"><ImagePlus size={16} />{community.cover_path ? "Change cover image" : "Upload cover image"}
             <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label="Choose community cover image" onChange={(event) => {

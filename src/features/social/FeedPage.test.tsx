@@ -4,15 +4,17 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  fetchFeed: vi.fn(),
+  fetchFeedTimeline: vi.fn(),
   fetchMediaPaths: vi.fn(),
   session: { user: { id: "student-1" } },
 }));
 
 vi.mock("./api", () => ({
   FEED_PAGE: 20,
-  fetchFeed: mocks.fetchFeed,
   fetchMediaPaths: mocks.fetchMediaPaths,
+}));
+vi.mock("@/features/celebrations/api", () => ({
+  fetchFeedTimeline: mocks.fetchFeedTimeline,
 }));
 vi.mock("@/features/auth/AuthProvider", () => ({ useAuth: () => ({ session: mocks.session }) }));
 vi.mock("./components/Composer", () => ({ Composer: () => null }));
@@ -38,7 +40,7 @@ function renderFeed() {
 describe("FeedPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.fetchFeed.mockResolvedValue([]);
+    mocks.fetchFeedTimeline.mockResolvedValue([]);
     mocks.fetchMediaPaths.mockResolvedValue({});
   });
 
@@ -46,11 +48,11 @@ describe("FeedPage", () => {
     renderFeed();
 
     expect(screen.getByRole("link", { name: /find students/i })).toHaveAttribute("href", "/app/discover");
-    await waitFor(() => expect(mocks.fetchFeed).toHaveBeenCalledWith("all", null));
+    await waitFor(() => expect(mocks.fetchFeedTimeline).toHaveBeenCalledWith("all", null));
     fireEvent.click(screen.getByRole("tab", { name: "Following" }));
-    await waitFor(() => expect(mocks.fetchFeed).toHaveBeenCalledWith("following", null));
+    await waitFor(() => expect(mocks.fetchFeedTimeline).toHaveBeenCalledWith("following", null));
     fireEvent.click(screen.getByRole("tab", { name: "My institution" }));
-    await waitFor(() => expect(mocks.fetchFeed).toHaveBeenCalledWith("institution", null));
+    await waitFor(() => expect(mocks.fetchFeedTimeline).toHaveBeenCalledWith("institution", null));
 
     expect(screen.getByRole("tab", { name: "Everyone" })).toHaveAttribute("aria-selected", "false");
     expect(screen.getByRole("tab", { name: "My institution" })).toHaveAttribute("aria-selected", "true");
@@ -65,23 +67,28 @@ describe("FeedPage", () => {
   });
 
   it("keeps eligible feed posts connected to impression tracking", async () => {
-    mocks.fetchFeed.mockResolvedValue([{
-      id: "post-1",
-      author_id: "student-2",
-      body: "A visible feed post",
-      created_at: "2026-11-11T09:00:00.000Z",
-      edited_at: null,
-      like_count: 0,
-      comment_count: 0,
-      repost_count: 0,
-      liked_by_me: false,
-      reposted_by_me: false,
-      username: "student",
-      display_name: "Student",
-      avatar_path: null,
+    mocks.fetchFeedTimeline.mockResolvedValue([{
+      item_type: "post",
+      item_id: "post-1",
       activity_at: "2026-11-11T09:00:00.000Z",
-      reposter_username: null,
-      reposter_name: null,
+      item: {
+        id: "post-1",
+        author_id: "student-2",
+        body: "A visible feed post",
+        created_at: "2026-11-11T09:00:00.000Z",
+        edited_at: null,
+        like_count: 0,
+        comment_count: 0,
+        repost_count: 0,
+        liked_by_me: false,
+        reposted_by_me: false,
+        username: "student",
+        display_name: "Student",
+        avatar_path: null,
+        activity_at: "2026-11-11T09:00:00.000Z",
+        reposter_username: null,
+        reposter_name: null,
+      },
     }]);
 
     renderFeed();

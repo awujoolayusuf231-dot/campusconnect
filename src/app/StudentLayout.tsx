@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Bell, BookOpen, Briefcase, Compass, GraduationCap, Home, MessageCircle, MessagesSquare, MoreHorizontal, Settings, Sparkles, UserRound, Users } from "lucide-react";
+import { Bell, BookOpen, Brain, Briefcase, CalendarDays, Compass, FileText, GraduationCap, Home, Layers3, MessageCircle, MessagesSquare, MoreHorizontal, PartyPopper, Settings, Sparkles, UserRound, Users, Trophy } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { useUnreadCounts } from "@/features/notifications/useRealtimeCounts";
 import { AnnouncementBanner } from "@/features/announcements/AnnouncementBanner";
 import { Link } from "react-router-dom";
+import { isBrowserPushConfigured, listenForForegroundPushNotifications, unregisterPushNotificationsForSignOut } from "@/features/push/pushNotifications";
 
 export function StudentLayout() {
   const { session, role } = useAuth();
@@ -22,13 +23,19 @@ export function StudentLayout() {
     { to: "/app/past-questions", label: "Past Questions", icon: BookOpen, end: false, badge: 0 },
     { to: "/app/study-notes", label: "Study Notes", icon: BookOpen, end: false, badge: 0 },
     { to: "/app/assignment-discussions", label: "Assignment Discussions", icon: MessagesSquare, end: false, badge: 0 },
+    { to: "/app/flashcards", label: "Flashcards & Quizzes", icon: Brain, end: false, badge: 0 },
+    { to: "/app/group-quiz", label: "Group Quiz", icon: Trophy, end: false, badge: 0 },
+    { to: "/app/celebrations", label: "Celebrations", icon: PartyPopper, end: false, badge: 0 },
+    { to: "/app/portfolio", label: "Portfolio", icon: Layers3, end: false, badge: 0 },
+    { to: "/app/cv-builder", label: "CV Builder", icon: FileText, end: false, badge: 0 },
+    { to: "/app/timetable", label: "Timetable", icon: CalendarDays, end: false, badge: 0 },
     { to: "/app/opportunities", label: "Opportunities", icon: Briefcase, end: false, badge: 0 },
     { to: "/app/messages", label: "Messages", icon: MessageCircle, end: false, badge: counts.messages },
     { to: me.data ? `/app/u/${me.data}` : "/app/profile/edit", label: "My profile", icon: UserRound, end: false, badge: 0 },
     { to: "/app/settings", label: "Settings", icon: Settings, end: false, badge: 0 },
   ];
   const mobileItems = items.filter((i) => ["Home feed", "Discover", "Communities", "Messages"].includes(i.label));
-  const moreItems = items.filter((i) => ["Past Questions", "Study Notes", "Assignment Discussions", "Opportunities", "My profile", "Settings"].includes(i.label));
+  const moreItems = items.filter((i) => ["Past Questions", "Study Notes", "Assignment Discussions", "Flashcards & Quizzes", "Group Quiz", "Celebrations", "Portfolio", "CV Builder", "Timetable", "Opportunities", "My profile", "Settings"].includes(i.label));
   const moreActive = moreItems.some((item) => item.label === "My profile"
     ? pathname.startsWith("/app/u/") || pathname === "/app/profile/edit"
     : pathname === item.to || pathname.startsWith(`${item.to}/`));
@@ -37,6 +44,25 @@ export function StudentLayout() {
   const mobileLink = ({ isActive }: { isActive: boolean }) => `relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-0.5 py-2 text-[9px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:text-xs ${isActive ? "font-bold text-primary" : "text-muted hover:bg-bg"}`;
   const badge = (n: number) => n > 0 ? <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] leading-4 text-white" aria-label={`${n} unread`}>{n > 99 ? "99+" : n}</span> : null;
   useEffect(() => setMoreOpen(false), [pathname]);
+  useEffect(() => {
+    if (!session?.user.id || !isBrowserPushConfigured()) return;
+    let disposed = false;
+    let unsubscribe = () => {};
+    void listenForForegroundPushNotifications().then((stop) => {
+      if (disposed) stop();
+      else unsubscribe = stop;
+    }).catch((error: unknown) => console.error("CampusConnect foreground push notifications could not be started.", error));
+    return () => { disposed = true; unsubscribe(); };
+  }, [session?.user.id]);
+  const signOut = async () => {
+    try {
+      await unregisterPushNotificationsForSignOut();
+    } catch (error) {
+      console.error("CampusConnect could not remove this device's push subscription before sign-out.", error);
+    }
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error("CampusConnect sign-out failed.", error);
+  };
   return (
     <div className="min-h-full bg-bg">
       <a href="#main" className="sr-only z-50 rounded bg-surface px-3 py-2 focus:not-sr-only focus:fixed focus:left-2 focus:top-2">Skip to main content</a>
@@ -67,14 +93,14 @@ export function StudentLayout() {
                 <UserRound size={18} aria-hidden="true" />
               </Link>
               {role !== "student" && <NavLink to="/admin" className="text-sm font-semibold text-muted hover:text-primary">Admin</NavLink>}
-              <button className="text-sm font-semibold text-muted hover:text-primary" onClick={() => void supabase.auth.signOut()}>Log out</button>
+              <button className="text-sm font-semibold text-muted hover:text-primary" onClick={() => void signOut()}>Log out</button>
             </>}
           </div>
         </div>
       </header>
       <div className="mx-auto flex w-full max-w-[1600px]">
         <aside className={inChat ? "hidden" : "fixed bottom-0 top-16 z-10 hidden w-[250px] flex-col border-r border-line/70 bg-[#fbfaf9] px-4 py-6 lg:flex xl:w-[270px] xl:px-5"}>
-          <nav aria-label="Main" className="space-y-1.5">
+          <nav aria-label="Main" className="space-y-1.5 overflow-y-auto">
             {items.map((i) => <NavLink key={i.label} to={i.to} end={i.end} className={desktopLink}><i.icon size={18} aria-hidden="true" /><span>{i.label}</span>{badge(i.badge)}</NavLink>)}
           </nav>
           <div className="mt-auto rounded-2xl border border-[#efd9db] bg-gradient-to-br from-[#faeeee] via-white to-white p-4 shadow-[0_8px_24px_rgba(80,30,30,0.04)]">

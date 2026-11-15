@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { lazy, useState } from "react";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { FEED_PAGE, fetchFeed, fetchMediaPaths, type Cursor, type FeedScope } from "./api";
+import { FEED_PAGE, fetchMediaPaths, type FeedScope } from "./api";
+import { fetchFeedTimeline, type FeedTimelineCursor } from "@/features/celebrations/api";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { Composer } from "./components/Composer";
 import { OnboardingCard } from "@/features/onboarding/OnboardingCard";
@@ -11,6 +12,7 @@ import { ArrowDown, Globe2, UsersRound, GraduationCap, Search, Sparkles } from "
 
 const TABS: [FeedScope, string][] = [["all", "Everyone"], ["following", "Following"], ["institution", "My institution"]];
 const TAB_ICONS = { all: Globe2, following: UsersRound, institution: GraduationCap };
+const CelebrationFeedCard = lazy(() => import("@/features/celebrations/CelebrationsPages").then((module) => ({ default: module.CelebrationFeedCard })));
 
 export function FeedPage() {
   const { session } = useAuth();
@@ -18,14 +20,17 @@ export function FeedPage() {
   const [scope, setScope] = useState<FeedScope>("all");
   const feed = useInfiniteQuery({
     queryKey: ["feed", scope],
-    initialPageParam: null as Cursor | null,
-    queryFn: ({ pageParam }) => fetchFeed(scope, pageParam),
-    getNextPageParam: (last): Cursor | undefined => {
+    initialPageParam: null as FeedTimelineCursor | null,
+    queryFn: ({ pageParam }) => fetchFeedTimeline(scope, pageParam),
+    getNextPageParam: (last): FeedTimelineCursor | undefined => {
       const tail = last[last.length - 1];
-      return last.length === FEED_PAGE && tail ? { created_at: tail.activity_at, id: tail.id } : undefined;
+      return last.length === FEED_PAGE && tail
+        ? { activity_at: tail.activity_at, item_type: tail.item_type, item_id: tail.item_id }
+        : undefined;
     },
   });
-  const posts = feed.data?.pages.flat() ?? [];
+  const items = feed.data?.pages.flat() ?? [];
+  const posts = items.flatMap((item) => item.item_type === "post" ? [item.item] : []);
   const ids = posts.map((p) => p.id);
   const media = useQuery({ queryKey: ["media", ids.join(",")], enabled: ids.length > 0, queryFn: () => fetchMediaPaths(ids) });
 
@@ -81,7 +86,9 @@ export function FeedPage() {
             {scope === "following" ? "Follow students in Discover to see their posts here." : scope === "institution" ? "No posts from your institution yet. Set your institution in your profile." : "No posts yet. Be the first to share something with your community."}
           </p>
         </div>)}
-      {posts.map((p) => <PostCard key={p.id} post={p} images={media.data?.[p.id]} me={me} trackImpression />)}
+      {items.map((item) => item.item_type === "post"
+        ? <PostCard key={`post-${item.item_id}`} post={item.item} images={media.data?.[item.item.id]} me={me} trackImpression />
+        : <CelebrationFeedCard key={`celebration-${item.item_id}`} card={item.item} />)}
       {feed.hasNextPage && <button className="btn group min-h-11 w-full gap-2 bg-white font-semibold text-muted hover:border-primary/25 hover:text-primary" disabled={feed.isFetchingNextPage} onClick={() => void feed.fetchNextPage()}>{feed.isFetchingNextPage ? <LoadingState label="Finding more posts" /> : <>Load more posts <ArrowDown size={16} aria-hidden="true" className="transition-transform group-hover:translate-y-0.5" /></>}</button>}
       </div>
     </div>

@@ -24,6 +24,7 @@ function renderStudentLayout(initialEntry = "/app") {
           <Route path="/app" element={<p>Home content</p>} />
           <Route path="/app/discover" element={<p>Discover content</p>} />
           <Route path="/app/study-notes" element={<p>Study notes content</p>} />
+          <Route path="/app/flashcards" element={<p>Flashcards content</p>} />
           <Route path="/app/messages/:id" element={<p>Conversation content</p>} />
           <Route path="/app/notifications" element={<p>Notification content</p>} />
         </Route>
@@ -67,6 +68,7 @@ describe("StudentLayout navigation", () => {
     const moreMenu = within(mobileNavigation).getByRole("link", { name: "Study Notes" });
     expect(moreMenu).toHaveAttribute("href", "/app/study-notes");
     expect(within(mobileNavigation).getByRole("link", { name: "Past Questions" })).toBeVisible();
+    expect(within(mobileNavigation).getByRole("link", { name: "Flashcards & Quizzes" })).toHaveAttribute("href", "/app/flashcards");
     fireEvent.click(moreMenu);
 
     expect(screen.getByText("Study notes content")).toBeInTheDocument();

@@ -7,12 +7,13 @@ import { App } from "@/app/App";
 import { AppErrorBoundary } from "@/app/AppErrorBoundary";
 import { installGlobalHandlers, reportError } from "@/lib/observability";
 import { PWAInstallButton } from "@/app/PWAInstallButton";
+import { getPushServiceWorkerUrl } from "@/features/push/pushNotifications";
 import "./index.css";
 
 installGlobalHandlers();
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    void navigator.serviceWorker.register("/sw.js").catch((error: unknown) => {
+    void navigator.serviceWorker.register(getPushServiceWorkerUrl(), { scope: "/" }).catch((error: unknown) => {
       console.error("CampusConnect offline support could not be started.", error);
     });
   });

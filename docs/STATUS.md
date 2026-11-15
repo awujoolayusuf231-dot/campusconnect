@@ -202,6 +202,20 @@ Unit/component tests written (link extraction incl. lookalike domains, fixed src
   no third-party service wired. React Query errors are reported too (key name only, never data).
 - Profile Posts/Reposts tabs: "Show more" (20 -> up to 100).
 
+## Student portfolios, CV builder, and timetable (2026-11-15)
+- Implemented authenticated portfolio dashboard/editor with profile import, private-by-default publication, explicit per-item visibility,
+  section ordering, project image upload, and a public `/portfolio/:slug` view that reads through an allowlisted RPC only.
+- Implemented private CV drafts with profile import, reusable sections/entries, eight templates, duplication/default selection, and a
+  print-only route that supports browser Print / Save as PDF without adding a PDF dependency.
+- Implemented private timetable events with course linking, week/day views, weekly recurrence, search/filter, duplicate/delete, and
+  same-time/same-timezone overlap warnings. No push reminder scheduling is claimed; there is no trusted timetable scheduler yet.
+- Added `supabase/migrations/20261115000032_student_portfolio_cv_timetable.sql` and rollback-oriented checks in
+  `supabase/tests/student_tools.sql`. The migration and SQL tests have **not** been executed against Supabase; the migration must be
+  reviewed/applied by the project owner after earlier migrations are current.
+- `npm run typecheck`: PASS. Focused feature and navigation tests: 16/16 PASS. `npx vite build`: PASS (the existing >500 kB
+  main-chunk warning remains). The full test suite was not run. Remote database behavior remains unverified until the owner applies
+  the migration and runs its SQL tests.
+
 ## Onboarding, accessibility, saved tests (latest)
 - Onboarding checklist on the feed (photo, institution, bio, follow 3 students, join a community, first post), progress bar, dismissible per user
   (stored in the browser only). Pure step logic checked in Node (4 checks PASS). Component not run in a browser.

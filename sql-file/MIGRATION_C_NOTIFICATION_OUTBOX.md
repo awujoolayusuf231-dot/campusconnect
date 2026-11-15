@@ -1,8 +1,16 @@
-# Migration C: notification outbox (push + email channels on top of the existing in-app notifications)
+# Migration C: notification outbox (historical design proposal)
 
-STATUS: prepared for your review. NOT applied to any database. The SQL has NOT been executed (no Postgres/Docker in the authoring
-environment). No Edge Function, Firebase or Resend code exists yet; this migration is only the database foundation they need.
-It does not depend on migrations A or B and they do not depend on it.
+> **This is not the current repository contract.** This document describes a separate, un-applied
+> push-and-email design (`notification_outbox`, `claim_notification_outbox`, and related RPCs).
+> The repository's current push migration is
+> [`supabase/migrations/20261113000028_push_notifications.sql`](../supabase/migrations/20261113000028_push_notifications.sql),
+> which instead defines `push_outbox`, `claim_push_outbox`, and `finish_push_outbox`. Do not use
+> the schema or RPC names below to configure the current `process-outbox` Edge Function.
+> Current deployment instructions are in the root README.
+
+STATUS: historical proposal for an alternate schema; it was not applied to the active database. The current
+`process-outbox` Edge Function is implemented in `supabase/functions/process-outbox/`; it uses migration 28's
+push-only outbox and does not implement this proposal's email channel or RPCs.
 
 Files: `supabase/migrations/20261101120000_notification_outbox.sql`, `supabase/rollbacks/20261101120000_notification_outbox_down.sql`,
 `supabase/tests/notification_outbox.sql` (127 assertions).

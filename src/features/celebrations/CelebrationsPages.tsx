@@ -1,0 +1,379 @@
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Award, ArrowLeft, ArrowRight, CalendarDays, Clock3, GraduationCap, Heart, PartyPopper, Sparkles, Trash2 } from "lucide-react";
+import { LoadingState } from "@/app/LoadingState";
+import { useAuth } from "@/features/auth/AuthProvider";
+import { celebrationUrlSchema } from "@/validation/profile";
+import {
+  addCelebrationReminder,
+  cancelCelebrationReminder,
+  deleteCelebrationCard,
+  getCelebration,
+  getCelebrationImageUrl,
+  listMyCelebrationReminders,
+  listMyCelebrations,
+  listRecentPublishedCelebrations,
+  listUpcomingCelebrations,
+  saveCelebrationCard,
+  validateCelebration,
+  type CelebrationCard,
+  type CelebrationCategory,
+  type CelebrationTheme,
+  type FeedCelebration,
+  type SaveCelebrationInput,
+} from "./api";
+
+type Template = { id: string; category: CelebrationCategory; label: string; background: string; accent: string; text: string; icon: typeof PartyPopper; font: CelebrationTheme["font"]; style: "confetti" | "academic" | "romantic" | "soft" | "bold" };
+const CATEGORY_LABELS: Record<CelebrationCategory, string> = {
+  birthday: "Birthday", convocation: "Convocation", graduation: "Graduation", induction: "Induction",
+  sign_out: "Sign-out", naming_ceremony: "Naming ceremony", wedding: "Wedding", anniversary: "Anniversary",
+  achievement: "Personal achievement", other: "Other",
+};
+const TEMPLATES: Template[] = [
+  { id: "birthday-balloons", category: "birthday", label: "Balloons & joy", background: "#8e2433", accent: "#ffd166", text: "#fffaf2", icon: PartyPopper, font: "display", style: "confetti" },
+  { id: "birthday-editorial", category: "birthday", label: "Birthday editorial", background: "#f5d6ca", accent: "#92283a", text: "#4b1821", icon: Sparkles, font: "serif", style: "soft" },
+  { id: "birthday-confetti", category: "birthday", label: "Confetti night", background: "#321b36", accent: "#f2ae4b", text: "#fff8ec", icon: PartyPopper, font: "sans", style: "confetti" },
+  { id: "convocation-classic", category: "convocation", label: "Classic convocation", background: "#1d3150", accent: "#d8b15f", text: "#fffaf1", icon: GraduationCap, font: "serif", style: "academic" },
+  { id: "graduation-honors", category: "graduation", label: "Honors", background: "#6d1e2b", accent: "#e9c47c", text: "#fffaf2", icon: GraduationCap, font: "serif", style: "academic" },
+  { id: "graduation-modern", category: "graduation", label: "Modern graduate", background: "#213b3d", accent: "#d4b670", text: "#f8f6ee", icon: Award, font: "sans", style: "academic" },
+  { id: "induction-professional", category: "induction", label: "Professional welcome", background: "#20374c", accent: "#d8ad5d", text: "#fffaf2", icon: Sparkles, font: "sans", style: "academic" },
+  { id: "signout-campus", category: "sign_out", label: "Campus memories", background: "#5b2733", accent: "#f0b37b", text: "#fff6ee", icon: PartyPopper, font: "display", style: "confetti" },
+  { id: "naming-soft", category: "naming_ceremony", label: "Soft welcome", background: "#d9b7a3", accent: "#874759", text: "#3d2730", icon: Heart, font: "serif", style: "soft" },
+  { id: "wedding-romance", category: "wedding", label: "Romance", background: "#762f43", accent: "#e8c4a0", text: "#fff9f2", icon: Heart, font: "serif", style: "romantic" },
+  { id: "anniversary-elegant", category: "anniversary", label: "Elegant years", background: "#3c293e", accent: "#d9b469", text: "#fff8ed", icon: Heart, font: "serif", style: "romantic" },
+  { id: "achievement-bold", category: "achievement", label: "Bold achievement", background: "#7c2d27", accent: "#f0bd62", text: "#fff9ef", icon: Award, font: "display", style: "bold" },
+  { id: "other-celebration", category: "other", label: "Campus celebration", background: "#422b3b", accent: "#edbd72", text: "#fff9ef", icon: Sparkles, font: "sans", style: "bold" },
+];
+const CATEGORY_BACKGROUNDS: Record<CelebrationCategory, string> = {
+  birthday: "/celebrations/birthday.jpg",
+  convocation: "/celebrations/graduation.jpg",
+  graduation: "/celebrations/graduation.jpg",
+  induction: "/celebrations/achievement.jpg",
+  sign_out: "/celebrations/graduation.jpg",
+  naming_ceremony: "/celebrations/birthday.jpg",
+  wedding: "/celebrations/wedding.jpg",
+  anniversary: "/celebrations/wedding.jpg",
+  achievement: "/celebrations/achievement.jpg",
+  other: "/celebrations/achievement.jpg",
+};
+const DEFAULT_THEME: CelebrationTheme = { background: "#8e2433", accent: "#ffd166", text: "#fffaf2", align: "center", font: "display", photoX: 50, photoY: 72, photoScale: 1 };
+const REMINDER_OPTIONS = [{ minutes: 10080, label: "One week before" }, { minutes: 1440, label: "One day before" }, { minutes: 0, label: "On the day" }];
+
+function PageTitle({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: ReactNode }) {
+  return <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">{eyebrow}</p><h1 className="mt-1 text-2xl font-black tracking-tight text-fg sm:text-3xl">{title}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{description}</p></div>{action}</div>;
+}
+
+function ThemeForTemplate(templateId: string): CelebrationTheme {
+  const template = TEMPLATES.find((item) => item.id === templateId) ?? TEMPLATES[0]!;
+  return { ...DEFAULT_THEME, background: template.background, accent: template.accent, text: template.text, font: template.font };
+}
+
+function CelebrationArtwork({ category }: { category: CelebrationCategory }) {
+  const academic = category === "convocation" || category === "graduation" || category === "sign_out";
+  return <svg aria-hidden="true" viewBox="0 0 360 420" fill="none" className="absolute -bottom-5 right-0 h-[82%] w-[65%] max-w-[340px] text-current opacity-[0.18] sm:right-5">
+    {academic && <>
+      <path d="M105 142 144 123h72l39 19 43 63-40 28-23-27 4 131c-41 22-83 22-124 0l4-131-23 27-40-28 43-63Z" fill="currentColor" />
+      <path d="m138 127 42 46 42-46M180 173v163M148 145l-26 77m110-77 26 77" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
+      <path d="m180 35 115 35-115 35L65 70 180 35Z" fill="currentColor" />
+      <path d="M113 85v46c39 24 95 24 134 0V85M295 70v71" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
+      <circle cx="295" cy="147" r="8" fill="currentColor" />
+    </>}
+    {category === "birthday" && <>
+      <ellipse cx="115" cy="109" rx="38" ry="50" fill="currentColor" />
+      <ellipse cx="208" cy="83" rx="34" ry="45" fill="currentColor" />
+      <ellipse cx="278" cy="128" rx="32" ry="42" fill="currentColor" />
+      <path d="m115 159-17 114m110-145-10 146m80-104-24 110" stroke="currentColor" strokeWidth="4" />
+      <path d="M100 291h167v68H100zM86 275h195v24H86zM120 275v-29m42 29v-38m43 38v-29m39 29v-38" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
+      <path d="M119 237c-9-13 9-18 0-30m43 21c-9-13 9-18 0-30m86 30c-9-13 9-18 0-30" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+    </>}
+    {category === "induction" && <>
+      <path d="M105 95h150v232H105zM135 139h90m-90 42h75m-75 42h56" stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="245" cy="280" r="55" fill="currentColor" />
+      <path d="m220 280 18 18 35-39" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m180 60 8 22 22 8-22 8-8 22-8-22-22-8 22-8 8-22Z" fill="currentColor" />
+    </>}
+    {category === "naming_ceremony" && <>
+      <path d="M73 221h214l-17 103H90L73 221Z" fill="currentColor" />
+      <path d="M95 218c3-51 36-83 85-83s82 32 85 83M118 323v22m124-22v22M145 218c8-26 20-40 35-40s27 14 35 40" stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M180 87c-20-25 16-31 0-57m43 71c-19-24 16-30 0-55" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
+      <circle cx="180" cy="225" r="18" fill="currentColor" />
+    </>}
+    {(category === "wedding" || category === "anniversary") && <>
+      <circle cx="148" cy="210" r="77" stroke="currentColor" strokeWidth="18" />
+      <circle cx="214" cy="210" r="77" stroke="currentColor" strokeWidth="18" />
+      <path d="m178 102 11-27 11 27-11 13-11-13Zm105 27 9-21 9 21-9 10-9-10Z" fill="currentColor" />
+      <path d="M83 325c48 25 147 25 195 0" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+    </>}
+    {category === "achievement" && <>
+      <path d="M115 73h130v91c0 52-28 84-65 84s-65-32-65-84V73Z" fill="currentColor" />
+      <path d="M115 98H72v28c0 43 22 66 64 68m109-96h43v28c0 43-22 66-64 68m-44 62v65m-48 38h96m-77-38h58v38h-58z" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m180 99 10 24 26 2-20 17 6 25-22-14-22 14 6-25-20-17 26-2 10-24Z" fill="currentColor" />
+    </>}
+    {category === "other" && <>
+      <path d="m100 220 165-96-12 189-153-93Z" fill="currentColor" />
+      <path d="m100 220 153 93m-87-142 15 21m35-40 15 20m-95 34 15 21" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+      <path d="m274 91 12-29m21 57 30-7M83 131l-27-15m228 173 24 23" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+    </>}
+  </svg>;
+}
+
+function DecorativeArt({ template, category }: { template: Template; category: CelebrationCategory }) {
+  const Icon = template.icon;
+  return <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div className="absolute inset-3 rounded-[18px] border border-white/15" />
+    <CelebrationArtwork category={category} />
+    {template.style === "confetti" && <>
+      <span className="absolute left-[12%] top-[16%] h-3 w-3 rotate-12 rounded-sm bg-white/70" />
+      <span className="absolute left-[82%] top-[20%] h-2 w-7 -rotate-45 rounded-full bg-white/55" />
+      <span className="absolute left-[21%] top-[67%] h-2 w-2 rounded-full bg-white/65" />
+      <span className="absolute left-[76%] top-[72%] h-3 w-3 rotate-45 rounded-sm bg-white/60" />
+      <span className="absolute left-[68%] top-[11%] h-2 w-2 rounded-full bg-white/50" />
+    </>}
+    {template.style === "academic" && <>
+      <div className="absolute -right-10 -top-14 h-48 w-48 rounded-full border border-white/20" />
+      <div className="absolute -right-1 -top-5 h-32 w-32 rounded-full border border-white/15" />
+      <Icon className="absolute bottom-8 right-7 opacity-20" size={88} strokeWidth={1} />
+    </>}
+    {template.style === "romantic" && <>
+      <div className="absolute -left-12 -top-12 h-44 w-44 rounded-full border border-white/20" />
+      <div className="absolute -bottom-16 -right-10 h-48 w-48 rounded-full border border-white/20" />
+      <Heart className="absolute right-8 top-8 opacity-25" size={50} strokeWidth={1} />
+    </>}
+    {template.style === "soft" && <>
+      <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/15 blur-sm" />
+      <div className="absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-white/10 blur-sm" />
+      <Sparkles className="absolute right-8 top-8 opacity-30" size={36} />
+    </>}
+    {template.style === "bold" && <>
+      <div className="absolute inset-x-7 top-7 h-1 rounded-full bg-white/35" />
+      <div className="absolute inset-x-7 bottom-7 h-1 rounded-full bg-white/35" />
+      <Icon className="absolute right-8 top-1/2 -translate-y-1/2 opacity-20" size={76} strokeWidth={1.2} />
+    </>}
+  </div>;
+}
+
+function CelebrationVisual({ card, photoUrl, compact = false }: { card: Pick<FeedCelebration, "title" | "category" | "celebrant_name" | "celebration_at" | "timezone" | "message" | "template_id" | "customization">; photoUrl?: string | null; compact?: boolean }) {
+  const template = TEMPLATES.find((item) => item.id === card.template_id) ?? TEMPLATES[TEMPLATES.length - 1]!;
+  const theme = card.customization ?? ThemeForTemplate(template.id);
+  const alignment = theme.align === "left" ? "text-left" : theme.align === "right" ? "text-right" : "text-center";
+  const alignedEdge = theme.align === "left" ? "self-start" : theme.align === "right" ? "self-end" : "self-center";
+  return <div className={`relative isolate flex w-full flex-col overflow-hidden rounded-[24px] border border-white/15 shadow-[0_18px_48px_rgba(35,24,20,0.24)] ${compact ? "min-h-[250px] p-4 sm:min-h-[270px] sm:p-5" : "min-h-[480px] p-5 sm:min-h-[520px] sm:p-8"}`} style={{ background: `radial-gradient(circle at 85% 12%, ${theme.accent}35, transparent 34%), linear-gradient(140deg, ${theme.background}, ${theme.background}e8)`, color: theme.text }}>
+    <img aria-hidden="true" alt="" src={CATEGORY_BACKGROUNDS[card.category]} className="absolute inset-0 h-full w-full object-cover opacity-30 mix-blend-soft-light" />
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/15 via-transparent to-black/25" />
+    <DecorativeArt template={template} category={card.category} />
+    <div className={`relative z-10 flex min-h-full flex-1 flex-col ${alignment}`}>
+      <span className={`${alignedEdge} inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] backdrop-blur`}><Sparkles size={12} />{CATEGORY_LABELS[card.category]}</span>
+      <p className={`font-extrabold uppercase tracking-[0.14em] opacity-80 ${compact ? "mt-4 text-[9px]" : "mt-7 text-xs"}`}>{card.title}</p>
+      <h2 className={`mt-2 break-words leading-[1.05] ${theme.font === "serif" ? "font-serif" : theme.font === "display" ? "font-black tracking-tight" : "font-extrabold tracking-tight"} ${compact ? "text-2xl sm:text-3xl" : "text-4xl sm:text-6xl"}`}>{card.celebrant_name}</h2>
+      <span className={`${alignedEdge} h-1 rounded-full ${compact ? "mt-3 w-12" : "mt-4 w-16"}`} style={{ backgroundColor: theme.accent }} />
+      {photoUrl && <div className={`${alignedEdge} relative shrink-0 overflow-hidden rounded-[18px] border-4 border-white/80 shadow-[0_16px_36px_rgba(0,0,0,0.25)] ring-1 ring-white/30 ${compact ? "mt-4 h-16 w-16 sm:h-20 sm:w-20" : "mt-6 h-40 w-40 rounded-[22px]"}`}>
+        <img src={photoUrl} alt={card.celebrant_name} className="h-full w-full object-cover transition-transform" style={{ objectPosition: `${theme.photoX}% ${theme.photoY}%`, transform: `scale(${theme.photoScale})` }} />
+      </div>}
+      <p className={`${alignedEdge === "self-center" ? "mx-auto" : theme.align === "left" ? "mr-auto" : "ml-auto"} max-w-xl whitespace-pre-wrap leading-7 opacity-95 ${compact ? "mt-3 line-clamp-2 text-xs leading-5" : "mt-4 text-base sm:text-lg"}`}>{card.message || "Celebrating a special moment with the CampusConnect community."}</p>
+      <p className={`mt-auto font-bold uppercase tracking-[0.12em] ${compact ? "pt-4 text-[10px]" : "pt-8 text-xs"}`} style={{ color: theme.accent }}>{new Date(card.celebration_at).toLocaleDateString(undefined, { dateStyle: "long", timeZone: card.timezone })}</p>
+    </div>
+  </div>;
+}
+
+function CelebrationImage({ card, compact = false }: { card: CelebrationCard | FeedCelebration; compact?: boolean }) {
+  const image = useQuery({ queryKey: ["celebration-image", card.photo_path], enabled: !!card.photo_path, queryFn: () => getCelebrationImageUrl(card.photo_path!) });
+  return <><CelebrationVisual card={card} photoUrl={image.data} compact={compact} />{image.isError && <p role="alert" className="mt-2 text-xs text-danger">The celebration photo could not be loaded.</p>}</>;
+}
+
+function daysUntil(value: string) {
+  const remaining = new Date(value).getTime() - Date.now();
+  if (remaining <= 0) return "Celebration date passed";
+  const days = Math.floor(remaining / 86_400_000);
+  if (days === 0) return "Celebrating today";
+  if (days === 1) return "1 day to go";
+  return `${days} days to go`;
+}
+
+export function CelebrationFeedCard({ card }: { card: FeedCelebration }) {
+  return <article className="overflow-hidden rounded-2xl border border-[#efd9db] bg-white shadow-[0_10px_28px_rgba(35,24,20,0.07)]">
+    <Link to={`/app/celebrations/${card.id}`} className="block p-3 sm:p-4"><CelebrationImage card={card} compact /></Link>
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-3 text-xs"><span className="font-bold text-fg">Celebrated by {card.creator_name || "CampusConnect student"}{card.creator_username ? ` · @${card.creator_username}` : ""}</span><span className="rounded-full bg-[#fff4f2] px-2.5 py-1 font-bold text-primary">{daysUntil(card.celebration_at)}</span></div>
+  </article>;
+}
+
+function CelebrationListCard({ card }: { card: CelebrationCard }) {
+  const expired = new Date(card.celebration_at).getTime() <= Date.now();
+  return <Link to={`/app/celebrations/${card.id}`} className="group grid overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:border-[#edc9cd] hover:shadow-md sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+    <div className="p-3"><CelebrationImage card={card} compact /></div>
+    <div className="flex min-w-0 flex-col justify-center p-4 sm:p-5"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-[#fff4f2] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary">{CATEGORY_LABELS[card.category]}</span>{expired && <span className="rounded-full bg-bg px-2.5 py-1 text-[10px] font-bold text-muted">Expired</span>}{card.status === "draft" && <span className="rounded-full bg-bg px-2.5 py-1 text-[10px] font-bold text-muted">Draft</span>}</div><h2 className="mt-3 break-words text-lg font-black text-fg group-hover:text-primary">{card.title}</h2><p className="mt-1 text-sm text-muted">For {card.celebrant_name}</p><p className="mt-2 flex items-center gap-1.5 text-xs text-muted"><CalendarDays size={14} />{new Date(card.celebration_at).toLocaleString()}</p><p className="mt-3 line-clamp-2 text-sm leading-5 text-muted">{card.message || "A CampusConnect celebration card."}</p><span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-primary">View card <ArrowRight size={13} /></span></div>
+  </Link>;
+}
+
+export function CelebrationsHomePage() {
+  const [category, setCategory] = useState<CelebrationCategory | "all">("all");
+  const events = useQuery({ queryKey: ["celebrations", "upcoming", category], queryFn: () => listUpcomingCelebrations(category === "all" ? undefined : category) });
+  const recent = useQuery({ queryKey: ["celebrations", "recent", category], queryFn: () => listRecentPublishedCelebrations(category === "all" ? undefined : category) });
+  const active = events.data?.filter((card) => new Date(card.celebration_at).getTime() > Date.now()) ?? [];
+  return <div className="space-y-5">
+    <PageTitle eyebrow="Celebrate campus life" title="Celebrations" description="Share birthdays, achievements and life milestones with students across CampusConnect." action={<Link to="/app/celebrations/create" className="btn-primary inline-flex min-h-10 items-center gap-2 rounded-xl px-4 font-bold"><PartyPopper size={16} />Create a card</Link>} />
+    <section className="overflow-hidden rounded-[26px] border border-[#efd9db] bg-gradient-to-br from-[#fff1ef] via-white to-[#fff4f2] p-5 sm:p-8"><p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-primary">Good moments deserve a beautiful card</p><h2 className="mt-2 max-w-2xl text-2xl font-black tracking-tight text-fg sm:text-3xl">Celebrate together, wherever campus takes you.</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Choose an occasion-specific template, personalize the colors and message, add your own photo, and share it with the whole student community.</p></section>
+    <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Celebration categories"><button type="button" className={`min-h-9 shrink-0 rounded-full px-3 text-xs font-bold ${category === "all" ? "bg-primary text-white" : "border border-line bg-white text-muted"}`} onClick={() => setCategory("all")}>All occasions</button>{Object.entries(CATEGORY_LABELS).map(([key, label]) => <button key={key} type="button" className={`min-h-9 shrink-0 rounded-full px-3 text-xs font-bold ${category === key ? "bg-primary text-white" : "border border-line bg-white text-muted"}`} onClick={() => setCategory(key as CelebrationCategory)}>{label}</button>)}</div>
+    {recent.isLoading ? <LoadingState label="Discovering new celebrations" variant="panel" /> : recent.isError ? <p role="alert" className="err">Could not load recently shared celebrations: {(recent.error as Error).message}</p> : recent.data?.length ? <section className="space-y-3"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Fresh from campus</p><h2 className="mt-1 text-lg font-black text-fg">Recently shared</h2></div><ul className="grid gap-3 sm:grid-cols-2">{recent.data.map((card) => <li key={card.id}><CelebrationListCard card={card} /></li>)}</ul></section> : <section className="rounded-2xl border border-dashed border-[#e6cdcf] bg-white px-5 py-8 text-center"><Sparkles className="mx-auto text-primary" /><h2 className="mt-3 font-extrabold text-fg">No community cards yet</h2><p className="mt-1 text-sm text-muted">Be the first to share a celebration with students across campus.</p></section>}
+    {events.isLoading ? <LoadingState label="Loading upcoming celebrations" variant="panel" /> : events.isError ? <p role="alert" className="err">Could not load upcoming celebrations: {(events.error as Error).message}</p> : active.length ? <section className="space-y-3"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Save the date</p><h2 className="mt-1 text-lg font-black text-fg">Coming up</h2></div><ul className="space-y-3">{active.map((card) => <li key={card.id}><CelebrationListCard card={card} /></li>)}</ul></section> : <section className="rounded-2xl border border-dashed border-[#e6cdcf] bg-white px-5 py-8 text-center"><CalendarDays className="mx-auto text-primary" /><h2 className="mt-3 font-extrabold text-fg">Nothing on the celebration calendar yet</h2><p className="mt-1 text-sm text-muted">Share an upcoming milestone and give your community something to look forward to.</p></section>}
+    <Link to="/app/celebrations/mine" className="inline-flex min-h-10 items-center gap-2 text-sm font-bold text-primary hover:underline">View my cards <ArrowRight size={14} /></Link>
+  </div>;
+}
+
+function defaultLocalTime() {
+  const date = new Date(Date.now() + 7 * 86_400_000);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function toLocalDateTimeInput(value: string) {
+  const date = new Date(value);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
+export function CreateCelebrationPage() {
+  const { celebrationId = "" } = useParams();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const editing = !!celebrationId;
+  const existing = useQuery({ queryKey: ["celebration", celebrationId], queryFn: () => getCelebration(celebrationId), enabled: editing });
+  const [loaded, setLoaded] = useState(false);
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState<CelebrationCategory>("birthday");
+  const [celebrant, setCelebrant] = useState("");
+  const [eventTime, setEventTime] = useState(defaultLocalTime);
+  const [timezone] = useState(() => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+  const [message, setMessage] = useState("");
+  const [venue, setVenue] = useState("");
+  const [whiteshirt, setWhiteshirt] = useState("");
+  const [templateId, setTemplateId] = useState("birthday-balloons");
+  const [theme, setTheme] = useState<CelebrationTheme>(DEFAULT_THEME);
+  const [photoPath, setPhotoPath] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const templates = TEMPLATES.filter((template) => template.category === category);
+  const imageUrl = useQuery({ queryKey: ["celebration-image", photoPath], enabled: !!photoPath && !imageFile, queryFn: () => getCelebrationImageUrl(photoPath!) });
+  useEffect(() => {
+    if (!existing.data || loaded) return;
+    const card = existing.data;
+    setTitle(card.title); setCategory(card.category); setCelebrant(card.celebrant_name);
+    setEventTime(toLocalDateTimeInput(card.celebration_at));
+    setMessage(card.message); setVenue(card.venue ?? ""); setWhiteshirt(card.whiteshirt_url ?? "");
+    setTemplateId(card.template_id); setTheme(card.customization); setPhotoPath(card.photo_path);
+    setLoaded(true);
+  }, [existing.data, loaded]);
+  useEffect(() => {
+    if (!imageFile) { setImagePreview(null); return; }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+  const save = useMutation({
+    mutationFn: (publish: boolean) => {
+      const celebrationDate = new Date(eventTime);
+      if (Number.isNaN(celebrationDate.getTime())) throw new Error("Choose a valid celebration date and time.");
+      const input: SaveCelebrationInput = {
+        id: celebrationId || undefined, title, category, celebrant_name: celebrant,
+        celebration_at: celebrationDate.toISOString(), timezone, message, venue: venue || null,
+        whiteshirt_url: whiteshirt || null, template_id: templateId, customization: theme,
+        photoPath, imageFile, keepCurrentPublication: existing.data?.status === "published", publish,
+      };
+      const issue = validateCelebration(input);
+      if (issue) throw new Error(issue);
+      if (whiteshirt && !celebrationUrlSchema.safeParse(whiteshirt).success) throw new Error("Use a valid HTTPS whiteshirt.fun link.");
+      return saveCelebrationCard(input);
+    },
+    onSuccess: async (id, publish) => {
+      await qc.invalidateQueries({ queryKey: ["celebrations"] });
+      await qc.invalidateQueries({ queryKey: ["celebration", id] });
+      await qc.invalidateQueries({ queryKey: ["feed"] });
+      if (publish) navigate(`/app/celebrations/${id}`);
+      else navigate("/app/celebrations/mine");
+    },
+  });
+  const chooseTemplate = (template: Template) => { setTemplateId(template.id); setTheme(ThemeForTemplate(template.id)); };
+  const previewDate = new Date(eventTime);
+  const cardPreview = { title: title || "A special celebration", category, celebrant_name: celebrant || "Your name", celebration_at: Number.isNaN(previewDate.getTime()) ? new Date().toISOString() : previewDate.toISOString(), timezone, message, template_id: templateId, customization: theme };
+  const displayImage = imagePreview ?? imageUrl.data;
+  if (editing && existing.isLoading) return <LoadingState label="Loading celebration card" variant="panel" />;
+  if (editing && (existing.isError || !existing.data)) return <p role="alert" className="err">This card is unavailable or not editable.</p>;
+  return <div className="space-y-5">
+    <Link to={editing ? `/app/celebrations/${celebrationId}` : "/app/celebrations"} className="inline-flex items-center gap-2 text-sm font-bold text-muted hover:text-primary"><ArrowLeft size={15} />{editing ? "Back to card" : "Celebrations"}</Link>
+    <PageTitle eyebrow={editing ? "Personalize your card" : "Create a celebration"} title={editing ? "Edit celebration card" : "Create a celebration card"} description="Choose a design for the occasion, then make it yours. Your photo sits in a dedicated frame so the message stays clear." />
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.88fr)]">
+      <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); save.mutate(true); }}>
+        <section className="space-y-4 rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-6">
+          <label className="block"><span className="label">Occasion</span><select className="input" value={category} onChange={(event) => { const next = event.target.value as CelebrationCategory; setCategory(next); const template = TEMPLATES.find((row) => row.category === next)!; chooseTemplate(template); }}>{Object.entries(CATEGORY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+          <label className="block"><span className="label">Card title</span><input className="input" required minLength={3} maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. A joyful birthday celebration" /></label>
+          <label className="block"><span className="label">Celebrant's name</span><input className="input" required maxLength={100} value={celebrant} onChange={(event) => setCelebrant(event.target.value)} /></label>
+          <label className="block"><span className="label">Date and time</span><input className="input" type="datetime-local" required value={eventTime} onChange={(event) => setEventTime(event.target.value)} /><span className="mt-1 block text-xs text-muted">Time zone: {timezone}</span></label>
+          <label className="block"><span className="label">Personal message</span><textarea className="input min-h-28" maxLength={2000} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Write a warm message for the occasion." /></label>
+          <label className="block"><span className="label">Venue <span className="font-normal text-muted">(optional)</span></span><input className="input" maxLength={200} value={venue} onChange={(event) => setVenue(event.target.value)} placeholder="Location or online event" /></label>
+          <label className="block"><span className="label">Whiteshirt celebration board <span className="font-normal text-muted">(optional)</span></span><input className="input" type="url" maxLength={200} value={whiteshirt} onChange={(event) => setWhiteshirt(event.target.value)} placeholder="https://whiteshirt.fun/…" /></label>
+          {whiteshirt && !celebrationUrlSchema.safeParse(whiteshirt).success && <p role="alert" className="err">Only an approved HTTPS whiteshirt.fun link is allowed.</p>}
+        </section>
+        <section className="space-y-3 rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-6">
+          <div><h2 className="font-extrabold text-fg">Choose your occasion template</h2><p className="mt-1 text-xs leading-5 text-muted">Every category has its own artwork and layout. Your photo appears in its own frame, separate from the text.</p></div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{templates.map((template) => <button key={template.id} type="button" aria-pressed={template.id === templateId} onClick={() => chooseTemplate(template)} className={`relative min-h-24 overflow-hidden rounded-xl border-2 p-3 text-left text-xs font-bold transition ${template.id === templateId ? "border-primary ring-2 ring-primary/15" : "border-line hover:border-primary/40"}`} style={{ backgroundImage: `linear-gradient(140deg, ${template.background}d9, ${template.background}b8), url(${CATEGORY_BACKGROUNDS[template.category]})`, backgroundPosition: "center", backgroundSize: "cover", color: template.text }}><template.icon size={22} className="mb-2" style={{ color: template.accent }} /><span className="relative z-10">{template.label}</span></button>)}</div>
+        </section>
+        <section className="space-y-4 rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-6">
+          <div><h2 className="font-extrabold text-fg">Make it yours</h2><p className="mt-1 text-xs text-muted">Changes update the preview immediately. Reset any time.</p></div>
+          <div className="grid grid-cols-3 gap-3">{([["background", "Background"], ["accent", "Accent"], ["text", "Text"]] as const).map(([key, label]) => <label key={key} className="flex flex-col gap-1 text-xs font-semibold text-muted">{label}<input type="color" className="h-10 w-full cursor-pointer rounded-lg border border-line bg-white p-1" value={theme[key]} onChange={(event) => setTheme((current) => ({ ...current, [key]: event.target.value }))} /></label>)}</div>
+          <div className="grid gap-3 sm:grid-cols-2"><label><span className="label">Text alignment</span><select className="input" value={theme.align} onChange={(event) => setTheme((current) => ({ ...current, align: event.target.value as CelebrationTheme["align"] }))}><option value="center">Centered</option><option value="left">Left</option><option value="right">Right</option></select></label><label><span className="label">Font style</span><select className="input" value={theme.font} onChange={(event) => setTheme((current) => ({ ...current, font: event.target.value as CelebrationTheme["font"] }))}><option value="serif">Elegant serif</option><option value="sans">Modern sans</option><option value="display">Bold display</option></select></label></div>
+          <label className="block"><span className="label">Add a personal photo <span className="font-normal text-muted">(JPEG, PNG or WebP, up to 5 MB)</span></span><input className="input cursor-pointer" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setImageFile(event.target.files?.[0] ?? null); event.target.value = ""; }} /></label>
+          {imageFile && <button type="button" className="text-xs font-bold text-danger" onClick={() => setImageFile(null)}>Remove selected photo</button>}
+          {(displayImage || photoPath) && <div className="grid gap-3 sm:grid-cols-3"><label><span className="label">Photo crop · horizontal</span><input className="w-full accent-primary" type="range" min={0} max={100} value={theme.photoX} onChange={(event) => setTheme((current) => ({ ...current, photoX: Number(event.target.value) }))} /></label><label><span className="label">Photo crop · vertical</span><input className="w-full accent-primary" type="range" min={0} max={100} value={theme.photoY} onChange={(event) => setTheme((current) => ({ ...current, photoY: Number(event.target.value) }))} /></label><label><span className="label">Photo zoom</span><input className="w-full accent-primary" type="range" min={0.6} max={1.6} step={0.05} value={theme.photoScale} onChange={(event) => setTheme((current) => ({ ...current, photoScale: Number(event.target.value) }))} /></label></div>}
+          <button type="button" className="btn min-h-9 rounded-lg px-3 text-xs font-bold" onClick={() => { setTheme(ThemeForTemplate(templateId)); setImageFile(null); }}>Reset template styling</button>
+        </section>
+        {save.isError && <p role="alert" className="err">{(save.error as Error).message}</p>}
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end"><button type="button" className="btn min-h-11 rounded-xl px-5 font-bold" disabled={save.isPending} onClick={() => save.mutate(false)}>{save.isPending ? "Saving…" : "Save as draft"}</button><button type="submit" className="btn-primary min-h-11 rounded-xl px-5 font-bold" disabled={save.isPending}>{save.isPending ? "Publishing…" : "Publish celebration"}</button></div>
+      </form>
+      <aside className="space-y-3 xl:sticky xl:top-24 xl:self-start"><div className="flex items-center justify-between"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Live preview</p><h2 className="font-extrabold text-fg">Your card</h2></div><span className="rounded-full bg-[#fff4f2] px-2.5 py-1 text-[10px] font-bold text-primary">Preview</span></div><CelebrationVisual card={cardPreview} photoUrl={displayImage} /><p className="text-xs leading-5 text-muted">Published cards are public across CampusConnect. Drafts remain visible only to you. Template artwork stays intact when you add a personal photo.</p></aside>
+    </div>
+  </div>;
+}
+
+export function MyCelebrationsPage() {
+  const qc = useQueryClient();
+  const cards = useQuery({ queryKey: ["celebrations", "mine"], queryFn: listMyCelebrations });
+  const remove = useMutation({ mutationFn: deleteCelebrationCard, onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["celebrations"] }); await qc.invalidateQueries({ queryKey: ["feed"] }); } });
+  const [filter, setFilter] = useState<"all" | "upcoming" | "drafts" | "expired">("all");
+  const shown = useMemo(() => (cards.data ?? []).filter((card) => filter === "all"
+    || (filter === "drafts" && card.status === "draft")
+    || (filter === "upcoming" && card.status === "published" && new Date(card.celebration_at).getTime() > Date.now())
+    || (filter === "expired" && card.status === "published" && new Date(card.celebration_at).getTime() <= Date.now())), [cards.data, filter]);
+  return <div className="space-y-5"><PageTitle eyebrow="Your cards" title="My Celebrations" description="Manage drafts, upcoming cards and past celebrations." action={<Link to="/app/celebrations/create" className="btn-primary inline-flex min-h-10 items-center gap-2 rounded-xl px-4 font-bold"><PartyPopper size={15} />Create card</Link>} />
+    <div className="flex gap-2 overflow-x-auto">{(["all", "upcoming", "drafts", "expired"] as const).map((key) => <button key={key} type="button" className={`min-h-9 shrink-0 rounded-full px-3 text-xs font-bold capitalize ${filter === key ? "bg-primary text-white" : "border border-line bg-white text-muted"}`} onClick={() => setFilter(key)}>{key}</button>)}</div>
+    {cards.isLoading ? <LoadingState label="Loading your cards" variant="panel" /> : cards.isError ? <p role="alert" className="err">Could not load your celebrations: {(cards.error as Error).message}</p> : shown.length ? <ul className="space-y-3">{shown.map((card) => <li key={card.id} className="space-y-2"><CelebrationListCard card={card} /><div className="flex justify-end gap-2"><Link className="btn min-h-9 rounded-lg px-3 text-xs" to={`/app/celebrations/${card.id}/edit`}>Edit</Link><button className="btn-danger min-h-9 rounded-lg px-3 text-xs" disabled={remove.isPending} onClick={() => { if (window.confirm("Delete this celebration card?")) remove.mutate(card); }}><Trash2 size={13} className="mr-1 inline" />Delete</button></div></li>)}</ul> : <p className="card text-center text-sm text-muted">No cards match this view yet.</p>}
+    {remove.isError && <p role="alert" className="err">{(remove.error as Error).message}</p>}
+  </div>;
+}
+
+export function CelebrationDetailsPage() {
+  const { celebrationId = "" } = useParams();
+  const navigate = useNavigate();
+  const { session } = useAuth();
+  const qc = useQueryClient();
+  const card = useQuery({ queryKey: ["celebration", celebrationId], queryFn: () => getCelebration(celebrationId), enabled: !!celebrationId });
+  const reminders = useQuery({ queryKey: ["celebration-reminders"], queryFn: listMyCelebrationReminders });
+  const reminder = useMutation({
+    mutationFn: ({ minutes, enabled }: { minutes: number; enabled: boolean }) => enabled ? addCelebrationReminder(celebrationId, minutes) : cancelCelebrationReminder(celebrationId, minutes),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["celebration-reminders"] }),
+  });
+  const remove = useMutation({ mutationFn: deleteCelebrationCard, onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["celebrations"] }); await qc.invalidateQueries({ queryKey: ["feed"] }); navigate("/app/celebrations/mine"); } });
+  if (card.isLoading) return <LoadingState label="Loading celebration" variant="panel" />;
+  if (card.isError) return <p role="alert" className="err">Could not load this celebration.</p>;
+  if (!card.data) return <p className="card">This card is not published or is not visible to your account.</p>;
+  const c = card.data;
+  const mine = session?.user.id === c.owner_id;
+  const expired = new Date(c.celebration_at).getTime() <= Date.now();
+  const activeReminders = new Set((reminders.data ?? []).filter((row) => row.card_id === c.id).map((row) => row.remind_before_minutes));
+  return <div className="mx-auto max-w-3xl space-y-5"><Link to="/app/celebrations" className="inline-flex items-center gap-2 text-sm font-bold text-muted hover:text-primary"><ArrowLeft size={15} />Celebrations</Link>
+    <div className="flex flex-wrap items-start justify-between gap-3"><PageTitle eyebrow={CATEGORY_LABELS[c.category]} title={c.title} description={`For ${c.celebrant_name} · ${daysUntil(c.celebration_at)}`} />{mine && <div className="flex gap-2"><Link className="btn min-h-10 rounded-xl px-3 text-sm" to={`/app/celebrations/${c.id}/edit`}>Edit</Link><button className="btn-danger min-h-10 rounded-xl px-3 text-sm" disabled={remove.isPending} onClick={() => { if (window.confirm("Delete this card?")) remove.mutate(c); }}>Delete</button></div>}</div>
+    {expired && <p className="rounded-xl bg-bg p-3 text-sm text-muted">This celebration date has passed. The public card remains in the archive; reminders are no longer available.</p>}
+    <CelebrationImage card={c} />
+    <section className="grid gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm sm:grid-cols-2 sm:p-5"><p className="flex items-center gap-2 text-sm text-fg"><CalendarDays size={16} className="text-primary" />{new Date(c.celebration_at).toLocaleString(undefined, { dateStyle: "full", timeStyle: "short", timeZone: c.timezone })}</p><p className="flex items-center gap-2 text-sm text-muted"><Clock3 size={16} className="text-primary" />{c.timezone}</p>{c.venue && <p className="text-sm text-fg sm:col-span-2">Venue: {c.venue}</p>}{c.whiteshirt_url && <a className="btn-primary inline-flex min-h-10 w-fit items-center rounded-xl px-4 font-bold sm:col-span-2" href={c.whiteshirt_url} target="_blank" rel="noopener noreferrer">Open Whiteshirt celebration board <ArrowRight size={14} className="ml-2" /></a>}</section>
+    {!expired && !mine && c.status === "published" && <section className="rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-5"><h2 className="font-extrabold text-fg">Set a reminder</h2><p className="mt-1 text-xs text-muted">Choose a notification reminder. Your notification preferences are respected.</p>{reminders.isLoading ? <LoadingState label="Loading reminders" /> : reminders.isError ? <p role="alert" className="err mt-2">Could not load reminders.</p> : <div className="mt-3 space-y-2">{REMINDER_OPTIONS.map((option) => <label key={option.minutes} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={activeReminders.has(option.minutes)} disabled={reminder.isPending} onChange={(event) => reminder.mutate({ minutes: option.minutes, enabled: event.target.checked })} />{option.label}</label>)}</div>}{reminder.isError && <p role="alert" className="err mt-2">{(reminder.error as Error).message}</p>}</section>}
+    {remove.isError && <p role="alert" className="err">{(remove.error as Error).message}</p>}
+  </div>;
+}
