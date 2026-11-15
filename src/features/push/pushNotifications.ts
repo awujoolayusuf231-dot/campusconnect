@@ -1,47 +1,19 @@
 import { getApps, initializeApp, type FirebaseApp } from "@firebase/app";
 import { deleteToken, getMessaging, getToken, isSupported, onMessage, type MessagePayload, type Messaging } from "@firebase/messaging";
 import { supabase } from "@/lib/supabase";
+import { getFirebaseBrowserConfig, getPushServiceWorkerUrl } from "./pushConfig";
 
-type FirebaseBrowserConfig = {
-  apiKey: string;
-  appId: string;
-  messagingSenderId: string;
-  projectId: string;
-  vapidKey: string;
-};
+export { getPushServiceWorkerUrl, isBrowserPushConfigured } from "./pushConfig";
 
 let firebaseApp: FirebaseApp | undefined;
 const PUSH_TOKEN_KEY = "campusconnect-push-token";
 
-function firebaseConfig(): FirebaseBrowserConfig {
-  const { VITE_FIREBASE_API_KEY, VITE_FIREBASE_APP_ID, VITE_FIREBASE_MESSAGING_SENDER_ID, VITE_FIREBASE_PROJECT_ID, VITE_FIREBASE_VAPID_KEY } = import.meta.env;
-  if (!VITE_FIREBASE_API_KEY || !VITE_FIREBASE_APP_ID || !VITE_FIREBASE_MESSAGING_SENDER_ID || !VITE_FIREBASE_PROJECT_ID || !VITE_FIREBASE_VAPID_KEY) {
+function firebaseConfig() {
+  const config = getFirebaseBrowserConfig();
+  if (!config) {
     throw new Error("Browser push is not configured. Add the Firebase web app values and Web Push certificate key to .env.local.");
   }
-  return {
-    apiKey: VITE_FIREBASE_API_KEY,
-    appId: VITE_FIREBASE_APP_ID,
-    messagingSenderId: VITE_FIREBASE_MESSAGING_SENDER_ID,
-    projectId: VITE_FIREBASE_PROJECT_ID,
-    vapidKey: VITE_FIREBASE_VAPID_KEY,
-  };
-}
-
-export function isBrowserPushConfigured() {
-  const env = import.meta.env;
-  return !!(env.VITE_FIREBASE_API_KEY && env.VITE_FIREBASE_APP_ID && env.VITE_FIREBASE_MESSAGING_SENDER_ID && env.VITE_FIREBASE_PROJECT_ID && env.VITE_FIREBASE_VAPID_KEY);
-}
-
-export function getPushServiceWorkerUrl() {
-  const env = import.meta.env;
-  if (!env.VITE_FIREBASE_API_KEY || !env.VITE_FIREBASE_APP_ID || !env.VITE_FIREBASE_MESSAGING_SENDER_ID || !env.VITE_FIREBASE_PROJECT_ID) return "/sw.js";
-  const params = new URLSearchParams({
-    apiKey: env.VITE_FIREBASE_API_KEY,
-    appId: env.VITE_FIREBASE_APP_ID,
-    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    projectId: env.VITE_FIREBASE_PROJECT_ID,
-  });
-  return `/sw.js?${params.toString()}`;
+  return config;
 }
 
 async function getMessagingContext(): Promise<{ messaging: Messaging; registration: ServiceWorkerRegistration; vapidKey: string }> {

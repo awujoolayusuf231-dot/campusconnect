@@ -9,7 +9,10 @@ export const ADMIN_NAV: AdminNavSection[] = [
     { label: "Users", to: "/admin/users", permission: "users.view" },
     { label: "Staff", to: "/admin/staff", permission: "staff.view" },
     { label: "Institutions", to: "/admin/institutions", permission: "institutions.manage" }] },
-  { title: "Content", items: [{ label: "Reports", to: "/admin/reports", permission: "reports.manage" }] },
+  { title: "Content", items: [
+    { label: "Reports", to: "/admin/reports", permission: "reports.manage" },
+    { label: "Competition verification", to: "/admin/competition-review", permission: "content.moderate" },
+  ] },
   { title: "Academic resources", items: [
     { label: "Study Notes review", to: "/admin/study-notes/review", permission: "study_notes.review" },
     { label: "Question review", to: "/admin/past-questions/review", permission: "past_questions.review" },

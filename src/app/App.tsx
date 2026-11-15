@@ -1,50 +1,52 @@
 import { lazy, Suspense } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { RequireAuth, RequireStaff } from "@/features/auth/guards";
-import { HomePage } from "@/pages/HomePage";
-import { LoginPage } from "@/features/auth/pages/LoginPage";
-import { RegisterPage } from "@/features/auth/pages/RegisterPage";
-import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
-import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
 import { StudentLayout } from "@/app/StudentLayout";
-import { FeedPage } from "@/features/social/FeedPage";
-import { DiscoverPage } from "@/features/social/DiscoverPage";
-import { ProfilePage } from "@/features/profile/ProfilePage";
-import { ProfileEditPage } from "@/features/profile/ProfileEditPage";
-import { CommunitiesPage } from "@/features/community/CommunitiesPage";
-import { CommunityPage } from "@/features/community/CommunityPage";
-import { NotificationsPage } from "@/features/notifications/NotificationsPage";
-import { MessagesPage } from "@/features/messages/MessagesPage";
-import { AboutPage, ContactPage, FeaturesPage, GuidelinesPage, PrivacyPage, TermsPage } from "@/pages/public/pages";
-import { PostPage } from "@/features/social/PostPage";
-import { OpportunitiesPage } from "@/features/opportunities/OpportunitiesPage";
-import { SettingsPage } from "@/features/settings/SettingsPage";
 import { LoadingState } from "@/app/LoadingState";
-import { PastQuestionsLayout } from "@/features/past-questions/PastQuestionsLayout";
-import {
-  MyStudyNotes,
-  SavedStudyNotes,
-  StudyNoteDetails,
-  StudyNotesCourses,
-  StudyNotesCourseDetails,
-  StudyNotesHome,
-  StudyNotesInstitutionDetails,
-  StudyNotesInstitutions,
-  StudyNotesLayout,
-  StudyNotesUpload,
-} from "@/features/study-notes/StudyNotesPages";
-import {
-  CourseBrowser,
-  CourseDetailsPage,
-  CatalogManagementPage,
-  InstitutionBrowser,
-  InstitutionDetailsPage,
-  MyResourcesPage,
-  PastQuestionsHome,
-  QuestionDetailsPage,
-  ResourceManagementPage,
-  UploadPage,
-} from "@/features/past-questions/PastQuestionsPages";
+
+const HomePage = lazy(() => import("@/pages/HomePage").then((m) => ({ default: m.HomePage })));
+const LoginPage = lazy(() => import("@/features/auth/pages/LoginPage").then((m) => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import("@/features/auth/pages/RegisterPage").then((m) => ({ default: m.RegisterPage })));
+const ForgotPasswordPage = lazy(() => import("@/features/auth/pages/ForgotPasswordPage").then((m) => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import("@/features/auth/pages/ResetPasswordPage").then((m) => ({ default: m.ResetPasswordPage })));
+const FeedPage = lazy(() => import("@/features/social/FeedPage").then((m) => ({ default: m.FeedPage })));
+const DiscoverPage = lazy(() => import("@/features/social/DiscoverPage").then((m) => ({ default: m.DiscoverPage })));
+const ProfilePage = lazy(() => import("@/features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
+const ProfileEditPage = lazy(() => import("@/features/profile/ProfileEditPage").then((m) => ({ default: m.ProfileEditPage })));
+const CommunitiesPage = lazy(() => import("@/features/community/CommunitiesPage").then((m) => ({ default: m.CommunitiesPage })));
+const CommunityPage = lazy(() => import("@/features/community/CommunityPage").then((m) => ({ default: m.CommunityPage })));
+const NotificationsPage = lazy(() => import("@/features/notifications/NotificationsPage").then((m) => ({ default: m.NotificationsPage })));
+const MessagesPage = lazy(() => import("@/features/messages/MessagesPage").then((m) => ({ default: m.MessagesPage })));
+const AboutPage = lazy(() => import("@/pages/public/pages").then((m) => ({ default: m.AboutPage })));
+const ContactPage = lazy(() => import("@/pages/public/pages").then((m) => ({ default: m.ContactPage })));
+const FeaturesPage = lazy(() => import("@/pages/public/pages").then((m) => ({ default: m.FeaturesPage })));
+const GuidelinesPage = lazy(() => import("@/pages/public/pages").then((m) => ({ default: m.GuidelinesPage })));
+const PrivacyPage = lazy(() => import("@/pages/public/pages").then((m) => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import("@/pages/public/pages").then((m) => ({ default: m.TermsPage })));
+const PostPage = lazy(() => import("@/features/social/PostPage").then((m) => ({ default: m.PostPage })));
+const OpportunitiesPage = lazy(() => import("@/features/opportunities/OpportunitiesPage").then((m) => ({ default: m.OpportunitiesPage })));
+const SettingsPage = lazy(() => import("@/features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const PastQuestionsLayout = lazy(() => import("@/features/past-questions/PastQuestionsLayout").then((m) => ({ default: m.PastQuestionsLayout })));
+const MyStudyNotes = lazy(() => import("@/features/study-notes/StudyNotesPages").then((m) => ({ default: m.MyStudyNotes })));
+const SavedStudyNotes = lazy(() => import("@/features/study-notes/StudyNotesPages").then((m) => ({ default: m.SavedStudyNotes })));
+const StudyNoteDetails = lazy(() => import("@/features/study-notes/StudyNotesPages").then((m) => ({ default: m.StudyNoteDetails })));
+const StudyNotesCourses = lazy(() => import("@/features/study-notes/StudyNotesPages").then((m) => ({ default: m.StudyNotesCourses })));
+const StudyNotesCourseDetails = lazy(() => import("@/features/study-notes/StudyNotesPages").then((m) => ({ default: m.StudyNotesCourseDetails })));
+const StudyNotesHome = lazy(() => import("@/features/study-notes/StudyNotesPages").then((m) => ({ default: m.StudyNotesHome })));
+const StudyNotesInstitutionDetails = lazy(() => import("@/features/study-notes/StudyNotesPages").then((m) => ({ default: m.StudyNotesInstitutionDetails })));
+const StudyNotesInstitutions = lazy(() => import("@/features/study-notes/StudyNotesPages").then((m) => ({ default: m.StudyNotesInstitutions })));
+const StudyNotesLayout = lazy(() => import("@/features/study-notes/StudyNotesPages").then((m) => ({ default: m.StudyNotesLayout })));
+const StudyNotesUpload = lazy(() => import("@/features/study-notes/StudyNotesPages").then((m) => ({ default: m.StudyNotesUpload })));
+const CourseBrowser = lazy(() => import("@/features/past-questions/PastQuestionsPages").then((m) => ({ default: m.CourseBrowser })));
+const CourseDetailsPage = lazy(() => import("@/features/past-questions/PastQuestionsPages").then((m) => ({ default: m.CourseDetailsPage })));
+const CatalogManagementPage = lazy(() => import("@/features/past-questions/PastQuestionsPages").then((m) => ({ default: m.CatalogManagementPage })));
+const InstitutionBrowser = lazy(() => import("@/features/past-questions/PastQuestionsPages").then((m) => ({ default: m.InstitutionBrowser })));
+const InstitutionDetailsPage = lazy(() => import("@/features/past-questions/PastQuestionsPages").then((m) => ({ default: m.InstitutionDetailsPage })));
+const MyResourcesPage = lazy(() => import("@/features/past-questions/PastQuestionsPages").then((m) => ({ default: m.MyResourcesPage })));
+const PastQuestionsHome = lazy(() => import("@/features/past-questions/PastQuestionsPages").then((m) => ({ default: m.PastQuestionsHome })));
+const QuestionDetailsPage = lazy(() => import("@/features/past-questions/PastQuestionsPages").then((m) => ({ default: m.QuestionDetailsPage })));
+const ResourceManagementPage = lazy(() => import("@/features/past-questions/PastQuestionsPages").then((m) => ({ default: m.ResourceManagementPage })));
+const UploadPage = lazy(() => import("@/features/past-questions/PastQuestionsPages").then((m) => ({ default: m.UploadPage })));
 
 const AdminLayout = lazy(() => import("@/features/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
 const DashboardPage = lazy(() => import("@/features/admin/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
@@ -96,6 +98,13 @@ const CvPrintPage = lazy(() => import("@/features/cv-builder/CvBuilderPages").th
 const TimetablePage = lazy(() => import("@/features/timetable/TimetablePages").then((m) => ({ default: m.TimetablePage })));
 const TimetableEventEditorPage = lazy(() => import("@/features/timetable/TimetablePages").then((m) => ({ default: m.TimetableEventEditorPage })));
 const HashtagPage = lazy(() => import("@/features/social/HashtagPage").then((m) => ({ default: m.HashtagPage })));
+const ProjectBoardPage = lazy(() => import("@/features/projects/ProjectPages").then((m) => ({ default: m.ProjectBoardPage })));
+const ProjectWorkspacePage = lazy(() => import("@/features/projects/ProjectPages").then((m) => ({ default: m.ProjectWorkspacePage })));
+const CompetitionsPage = lazy(() => import("@/features/competitions/CompetitionsPages").then((m) => ({ default: m.CompetitionsPage })));
+const CompetitionDetailsPage = lazy(() => import("@/features/competitions/CompetitionsPages").then((m) => ({ default: m.CompetitionDetailsPage })));
+const CompetitionReviewPage = lazy(() => import("@/features/competitions/CompetitionsPages").then((m) => ({ default: m.CompetitionReviewPage })));
+const VoiceSpacesPage = lazy(() => import("@/features/voice/VoiceSpacesPages").then((m) => ({ default: m.VoiceSpacesPage })));
+const VoiceRoomPage = lazy(() => import("@/features/voice/VoiceSpacesPages").then((m) => ({ default: m.VoiceRoomPage })));
 
 export function App() {
   const location = useLocation();
@@ -186,6 +195,12 @@ export function App() {
             <Route path="/app/assignment-discussions" element={<AssignmentDiscussionsPage />} />
             <Route path="/app/assignment-discussions/courses/:courseId" element={<AssignmentDiscussionRoomPage />} />
             <Route path="/app/opportunities" element={<OpportunitiesPage />} />
+            <Route path="/app/projects" element={<ProjectBoardPage />} />
+            <Route path="/app/projects/:id" element={<ProjectWorkspacePage />} />
+            <Route path="/app/competitions" element={<CompetitionsPage />} />
+            <Route path="/app/competitions/:id" element={<CompetitionDetailsPage />} />
+            <Route path="/app/voice-spaces" element={<VoiceSpacesPage />} />
+            <Route path="/app/voice-spaces/:id" element={<VoiceRoomPage />} />
             <Route path="/app/c/:slug" element={<CommunityPage />} />
             <Route path="/app/notifications" element={<NotificationsPage />} />
             <Route path="/app/messages" element={<MessagesPage />} />
@@ -206,6 +221,7 @@ export function App() {
             <Route path="institutions" element={<InstitutionsPage />} />
             <Route path="settings" element={<PlatformSettingsPage />} />
             <Route path="celebration-studio" element={<CelebrationCatalogPage />} />
+            <Route path="competition-review" element={<CompetitionReviewPage />} />
             <Route path="audit" element={<AuditLogPage />} />
             <Route path="staff" element={<StaffPage />} />
             <Route path="study-notes/review" element={<StudyNotesReviewPage />} />

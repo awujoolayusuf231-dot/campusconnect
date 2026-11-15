@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Bell, BookOpen, Brain, Briefcase, CalendarDays, Compass, FileText, GraduationCap, Home, Layers3, MessageCircle, MessagesSquare, MoreHorizontal, PartyPopper, Settings, Sparkles, UserRound, Users, Trophy } from "lucide-react";
+import { Bell, BookOpen, Brain, Briefcase, CalendarDays, Compass, FileText, GraduationCap, Home, Layers3, MessageCircle, MessagesSquare, Mic, MoreHorizontal, PartyPopper, Settings, Sparkles, UserRound, Users, Trophy } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { useUnreadCounts } from "@/features/notifications/useRealtimeCounts";
 import { AnnouncementBanner } from "@/features/announcements/AnnouncementBanner";
 import { Link } from "react-router-dom";
-import { isBrowserPushConfigured, listenForForegroundPushNotifications, unregisterPushNotificationsForSignOut } from "@/features/push/pushNotifications";
+import { isBrowserPushConfigured } from "@/features/push/pushConfig";
 
 export function StudentLayout() {
   const { session, role } = useAuth();
@@ -16,6 +16,12 @@ export function StudentLayout() {
   const counts = useUnreadCounts();
   const me = useQuery({ queryKey: ["me-username", session?.user.id], enabled: !!session, queryFn: async () => {
     const { data } = await supabase.from("profiles").select("username").eq("id", session!.user.id).maybeSingle(); return (data as { username: string } | null)?.username ?? null; } });
+  const featureFlags = useQuery({ queryKey: ["student-feature-flags"], enabled: !!session, queryFn: async () => {
+    const { data, error } = await supabase.from("feature_flags").select("key,enabled")
+      .in("key", ["project_collaboration", "interuniversity_competitions", "voice_spaces"]);
+    if (error) throw error;
+    return Object.fromEntries((data ?? []).map((flag) => [flag.key, flag.enabled])) as Record<string, boolean>;
+  } });
   const items = [
     { to: "/app", label: "Home feed", icon: Home, end: true, badge: 0 },
     { to: "/app/discover", label: "Discover", icon: Compass, end: false, badge: 0 },
@@ -30,12 +36,24 @@ export function StudentLayout() {
     { to: "/app/cv-builder", label: "CV Builder", icon: FileText, end: false, badge: 0 },
     { to: "/app/timetable", label: "Timetable", icon: CalendarDays, end: false, badge: 0 },
     { to: "/app/opportunities", label: "Opportunities", icon: Briefcase, end: false, badge: 0 },
+    { to: "/app/projects", label: "Project Board", icon: Briefcase, end: false, badge: 0 },
+    { to: "/app/competitions", label: "Competitions", icon: Trophy, end: false, badge: 0 },
+    { to: "/app/voice-spaces", label: "Voice Spaces", icon: Mic, end: false, badge: 0 },
     { to: "/app/messages", label: "Messages", icon: MessageCircle, end: false, badge: counts.messages },
     { to: me.data ? `/app/u/${me.data}` : "/app/profile/edit", label: "My profile", icon: UserRound, end: false, badge: 0 },
     { to: "/app/settings", label: "Settings", icon: Settings, end: false, badge: 0 },
   ];
-  const mobileItems = items.filter((i) => ["Home feed", "Discover", "Communities", "Messages"].includes(i.label));
-  const moreItems = items.filter((i) => ["Past Questions", "Study Notes", "Assignment Discussions", "Flashcards & Quizzes", "Group Quiz", "Celebrations", "Portfolio", "CV Builder", "Timetable", "Opportunities", "My profile", "Settings"].includes(i.label));
+  const featureFlagByPath: Record<string, string> = {
+    "/app/projects": "project_collaboration",
+    "/app/competitions": "interuniversity_competitions",
+    "/app/voice-spaces": "voice_spaces",
+  };
+  const visibleItems = items.filter((item) => {
+    const flag = featureFlagByPath[item.to];
+    return !flag || featureFlags.data?.[flag] !== false;
+  });
+  const mobileItems = visibleItems.filter((i) => ["Home feed", "Discover", "Communities", "Messages"].includes(i.label));
+  const moreItems = visibleItems.filter((i) => ["Past Questions", "Study Notes", "Assignment Discussions", "Flashcards & Quizzes", "Group Quiz", "Celebrations", "Portfolio", "CV Builder", "Timetable", "Opportunities", "Project Board", "Competitions", "Voice Spaces", "My profile", "Settings"].includes(i.label));
   const moreActive = moreItems.some((item) => item.label === "My profile"
     ? pathname.startsWith("/app/u/") || pathname === "/app/profile/edit"
     : pathname === item.to || pathname.startsWith(`${item.to}/`));
@@ -48,7 +66,9 @@ export function StudentLayout() {
     if (!session?.user.id || !isBrowserPushConfigured()) return;
     let disposed = false;
     let unsubscribe = () => {};
-    void listenForForegroundPushNotifications().then((stop) => {
+    void import("@/features/push/pushNotifications").then(({ listenForForegroundPushNotifications }) =>
+      listenForForegroundPushNotifications()
+    ).then((stop) => {
       if (disposed) stop();
       else unsubscribe = stop;
     }).catch((error: unknown) => console.error("CampusConnect foreground push notifications could not be started.", error));
@@ -56,6 +76,7 @@ export function StudentLayout() {
   }, [session?.user.id]);
   const signOut = async () => {
     try {
+      const { unregisterPushNotificationsForSignOut } = await import("@/features/push/pushNotifications");
       await unregisterPushNotificationsForSignOut();
     } catch (error) {
       console.error("CampusConnect could not remove this device's push subscription before sign-out.", error);
@@ -101,7 +122,7 @@ export function StudentLayout() {
       <div className="mx-auto flex w-full max-w-[1600px]">
         <aside className={inChat ? "hidden" : "fixed bottom-0 top-16 z-10 hidden w-[250px] flex-col border-r border-line/70 bg-[#fbfaf9] px-4 py-6 lg:flex xl:w-[270px] xl:px-5"}>
           <nav aria-label="Main" className="space-y-1.5 overflow-y-auto">
-            {items.map((i) => <NavLink key={i.label} to={i.to} end={i.end} className={desktopLink}><i.icon size={18} aria-hidden="true" /><span>{i.label}</span>{badge(i.badge)}</NavLink>)}
+            {visibleItems.map((i) => <NavLink key={i.label} to={i.to} end={i.end} className={desktopLink}><i.icon size={18} aria-hidden="true" /><span>{i.label}</span>{badge(i.badge)}</NavLink>)}
           </nav>
           <div className="mt-auto rounded-2xl border border-[#efd9db] bg-gradient-to-br from-[#faeeee] via-white to-white p-4 shadow-[0_8px_24px_rgba(80,30,30,0.04)]">
             <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-white text-primary shadow-sm"><Sparkles size={17} aria-hidden="true" /></span>

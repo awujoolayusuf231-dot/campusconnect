@@ -198,6 +198,19 @@ Unit/component tests written (link extraction incl. lookalike domains, fixed src
 - Client-side image optimisation (src/lib/image.ts): photos are shrunk to <=1600px (avatars 512px), re-encoded to WebP (JPEG fallback),
   which also strips EXIF/GPS metadata. Students may now pick files up to 15 MB; the optimised file must fit the storage limits (5 MB / 2 MB).
   If optimisation fails the original is uploaded and the server limits still apply.
+
+## Collaboration features (2026-11-15)
+- Added the Project Board and workspace, project assets and milestones, verified competition proposals and registrations, and LiveKit Voice Spaces.
+- Feature flags are seeded enabled and enforced for new feature activity; student navigation hides features an admin disables.
+- Project/competition/voice data uses RLS, private storage buckets, notification hooks, and a moderation queue for feature reports. Group Voice Spaces require project membership even when the room is public or an invitation exists.
+- Live audio attaches subscribed remote audio tracks; the LiveKit SDK and Firebase Messaging code load only when needed.
+- The user manually applied migration `20261115000033` and ran its behavior test: all nine checks passed; the SQL editor displays the test's intentional `P0001: RESULTS` exception after the PASS lines to roll back fixtures.
+- Browser inspection found LiveKit token requests failing at CORS preflight because the Edge gateway JWT check was still enabled. `supabase/config.toml` now disables gateway JWT verification for this function; the function itself validates the Supabase bearer token. Redeploy it for the setting to take effect.
+- Push migration `20261113000028` creates an outbox but does not schedule its Edge Function. Added a manual cron/Vault SQL setup and deployment steps. Firebase service-account credentials and the `PUSH_WORKER_SECRET` are distinct from LiveKit credentials.
+- This turn adds body-portaled, mobile-safe feature dialogs; route-level lazy loading and deferred Firebase bundle loading; debounced project/competition search; and removes per-project member-count requests from the board.
+- Validation: `npm run typecheck`, `npm run build`, the new dialog test, and five push-outbox logic tests passed. Browser checks at 320x640, 375x812, 768x1024, and 1440x900 found no horizontal overflow in the three creation dialogs. The build still reports the 610 KB LiveKit SDK chunk, which is loaded only when entering audio.
+- Previous full Vitest run had 256/257 passing; one unrelated Study Notes test timed out under full-suite load and passed alone.
+- Remaining before release: run the SQL suite against local/staging PostgreSQL; set LiveKit secrets and deploy the token function; implement scheduled-room reminders, automatic host-disconnect cleanup, and Voice Space reactions; finish broader team/judging and moderation actions; exercise authenticated flows on staging.
 - Error boundary + global handlers + scrubbed error reporting (src/lib/observability.ts, src/app/AppErrorBoundary.tsx); pluggable sinks;
   no third-party service wired. React Query errors are reported too (key name only, never data).
 - Profile Posts/Reposts tabs: "Show more" (20 -> up to 100).

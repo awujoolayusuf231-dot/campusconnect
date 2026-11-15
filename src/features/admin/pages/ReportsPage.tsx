@@ -46,8 +46,58 @@ export function ReportsPage() {
         </ul>
         {selected && list.data && <ReportDetail key={selected} report={list.data.rows.find((r) => r.id === selected)!} who={list.data.who} />}
       </div>
+      <FeatureReportsQueue />
     </div>
   );
+}
+
+function FeatureReportsQueue() {
+  const qc = useQueryClient();
+  const [actionError, setActionError] = useState("");
+  const features = useQuery({ queryKey: ["admin", "feature-reports"], queryFn: async () => {
+    const { data, error } = await supabase.from("feature_reports").select("id,reporter_id,target_type,target_id,reason,status,created_at")
+      .in("status", ["open", "reviewing"]).order("created_at", { ascending: false }).limit(50);
+    if (error) throw error;
+    return data ?? [];
+  } });
+  const competitions = useQuery({ queryKey: ["admin", "competition-reports"], queryFn: async () => {
+    const { data, error } = await supabase.from("competition_reports").select("id,reporter_id,competition_id,reason,status,created_at")
+      .in("status", ["open", "reviewing"]).order("created_at", { ascending: false }).limit(50);
+    if (error) throw error;
+    return data ?? [];
+  } });
+  const update = useMutation({ mutationFn: async ({ table, id, status }: { table: "feature_reports" | "competition_reports"; id: string; status: string }) => {
+    const { error } = await supabase.from(table).update({ status }).eq("id", id);
+    if (error) throw error;
+  }, onSuccess: async () => {
+    setActionError("");
+    await qc.invalidateQueries({ queryKey: ["admin", "feature-reports"] });
+    await qc.invalidateQueries({ queryKey: ["admin", "competition-reports"] });
+  }, onError: (error: Error) => setActionError(error.message) });
+  return <section className="space-y-3 border-t border-line pt-5">
+    <div><h2 className="text-xl font-bold">Project, competition and Voice Space reports</h2><p className="text-sm text-muted">Open/reviewing reports are visible to moderators only.</p></div>
+    {(features.isLoading || competitions.isLoading) && <LoadingState label="Loading feature reports" variant="panel" />}
+    {(features.isError || competitions.isError) && <p role="alert" className="err">Could not load all feature reports.</p>}
+    {actionError && <p role="alert" className="err">{actionError}</p>}
+    {!features.data?.length && !competitions.data?.length && !features.isLoading && !competitions.isLoading && <p className="card text-sm text-muted">No open feature reports.</p>}
+    <div className="space-y-2">
+      {features.data?.map((report) => <article key={`feature-${report.id}`} className="card flex flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-1"><p className="font-semibold">{report.target_type.replace("_", " ")} · {report.target_id.slice(0, 8)}</p><p className="text-sm">{report.reason}</p><p className="text-xs text-muted">Reported {timeAgo(report.created_at)}</p></div>
+        <ReportStatusButtons status={report.status} busy={update.isPending} onStatus={(status) => update.mutate({ table: "feature_reports", id: report.id, status })} />
+      </article>)}
+      {competitions.data?.map((report) => <article key={`competition-${report.id}`} className="card flex flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-1"><p className="font-semibold">Competition · {report.competition_id.slice(0, 8)}</p><p className="text-sm">{report.reason}</p><p className="text-xs text-muted">Reported {timeAgo(report.created_at)}</p></div>
+        <ReportStatusButtons status={report.status} busy={update.isPending} onStatus={(status) => update.mutate({ table: "competition_reports", id: report.id, status })} />
+      </article>)}
+    </div>
+  </section>;
+}
+
+function ReportStatusButtons({ status, busy, onStatus }: { status: string; busy: boolean; onStatus: (status: string) => void }) {
+  return <div className="flex flex-wrap gap-1">
+    {["reviewing", "resolved", "dismissed"].filter((next) => next !== status).map((next) =>
+      <button key={next} className="btn px-2 py-1 text-xs" disabled={busy} onClick={() => onStatus(next)}>{next.replace("_", " ")}</button>)}
+  </div>;
 }
 
 function ReportDetail({ report, who }: { report: Report; who: Map<string, string> }) {
