@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useMyPermissions } from "../useMyPermissions";
 
@@ -11,6 +12,7 @@ export function DashboardPage() {
   const [days, setDays] = useState(30);
   const perms = useMyPermissions();
   const allowed = perms.data?.includes("analytics.view") ?? false;
+  const canViewUsers = perms.data?.includes("users.view") ?? false;
 
   const stats = useQuery({ queryKey: ["admin", "stats", days], enabled: allowed, queryFn: async () => {
     const { data, error } = await supabase.rpc("admin_overview_stats", { p_days: days }); if (error) throw error; return data as Stats; } });
@@ -38,7 +40,13 @@ export function DashboardPage() {
       </div>
       {stats.isError && <p role="alert" className="err">Could not load statistics.</p>}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {cards.map(([label, value]) => (<div key={label} className="card"><p className="text-sm text-muted">{label}</p><p className="text-2xl font-semibold">{value ?? "–"}</p></div>))}
+        {cards.map(([label, value]) => (
+          label === "Deletion requests" && canViewUsers
+            ? <Link key={label} to="/admin/deletions" className="card transition hover:border-primary/40 hover:bg-bg">
+                <p className="text-sm text-muted">{label}</p><p className="text-2xl font-semibold">{value ?? "–"}</p>
+              </Link>
+            : <div key={label} className="card"><p className="text-sm text-muted">{label}</p><p className="text-2xl font-semibold">{value ?? "–"}</p></div>
+        ))}
       </div>
       <section className="card">
         <h2 className="mb-3 font-medium">Registrations per day</h2>

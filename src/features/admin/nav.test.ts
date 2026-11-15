@@ -5,7 +5,7 @@ describe("visibleNav", () => {
   it("shows nothing without permissions", () => expect(visibleNav([])).toEqual([]));
   it("moderator (users.view only) sees Users but not Dashboard", () => {
     const labels = visibleNav(["users.view"]).flatMap((s) => s.items.map((i) => i.label));
-    expect(labels).toEqual(["Users"]);
+    expect(labels).toEqual(["Users", "Deletion requests"]);
   });
   it("reports.manage shows the Reports page", () => {
     expect(visibleNav(["reports.manage"]).flatMap((s) => s.items.map((i) => i.label))).toEqual(["Reports"]);
@@ -33,6 +33,6 @@ describe("visibleNav", () => {
     expect(labels).not.toContain("Settings and flags"); expect(labels).not.toContain("Audit log"); expect(labels).not.toContain("Staff");
   });
   it("analytics + users sees both", () => {
-    expect(visibleNav(["analytics.view", "users.view"]).flatMap((s) => s.items)).toHaveLength(2);
+    expect(visibleNav(["analytics.view", "users.view"]).flatMap((s) => s.items)).toHaveLength(3);
   });
 });

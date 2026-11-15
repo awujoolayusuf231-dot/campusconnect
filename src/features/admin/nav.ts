@@ -7,6 +7,7 @@ export const ADMIN_NAV: AdminNavSection[] = [
   { title: "Overview", items: [{ label: "Dashboard", to: "/admin", permission: "analytics.view" }] },
   { title: "People", items: [
     { label: "Users", to: "/admin/users", permission: "users.view" },
+    { label: "Deletion requests", to: "/admin/deletions", permission: "users.view" },
     { label: "Staff", to: "/admin/staff", permission: "staff.view" },
     { label: "Institutions", to: "/admin/institutions", permission: "institutions.manage" }] },
   { title: "Content", items: [
