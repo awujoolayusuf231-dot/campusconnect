@@ -47,7 +47,14 @@ export const setVoiceMicMode = (roomId: string, mode: "open" | "host_controlled"
   rpc<void>("voice_set_mic_mode", { p_room: roomId, p_mode: mode });
 export async function syncVoiceRoomPermissions(roomId: string) {
   const { error } = await supabase.functions.invoke("livekit-room-control", { body: { room_id: roomId } });
-  if (error) throw error;
+  if (!error) return;
+  if (error.name === "FunctionsFetchError") {
+    console.error("LiveKit room-control Edge Function could not be reached.", error.message);
+    throw new Error(
+      "Could not reach the livekit-room-control Edge Function. Confirm it is deployed to this Supabase project with the current CORS and gateway JWT settings.",
+    );
+  }
+  throw error;
 }
 export const setVoiceMemberRole = (roomId: string, userId: string, role: string) =>
   rpc<void>("voice_set_member_role", { p_room: roomId, p_user: userId, p_role: role });

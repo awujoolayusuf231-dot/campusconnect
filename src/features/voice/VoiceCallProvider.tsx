@@ -245,16 +245,16 @@ export function VoiceCallDock() {
   if (!call.roomId || pathname === `/app/voice-spaces/${call.roomId}`) return null;
 
   return (
-    <aside className="fixed inset-x-2 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-xl items-center gap-2 rounded-2xl border border-violet-200 bg-[#202439] p-3 text-white shadow-xl lg:inset-x-auto lg:bottom-4 lg:right-4">
+    <aside className="fixed inset-x-2 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-xl items-center gap-2 rounded-2xl border border-[#f0dadd] bg-white p-3 text-fg shadow-xl lg:inset-x-auto lg:bottom-4 lg:right-4">
       <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${call.connected ? "bg-green-400" : "animate-pulse bg-amber-300"}`} aria-hidden="true" />
       <Link to={`/app/voice-spaces/${call.roomId}`} className="min-w-0 flex-1">
         <span className="block truncate text-xs font-bold">{call.roomTitle || "Voice Space"}</span>
-        <span className="block truncate text-[10px] text-white/70">{call.error || (call.connected ? "Connected · return to conversation" : "Reconnecting to conversation…")}</span>
+        <span className="block truncate text-[10px] text-muted">{call.error || (call.connected ? "Connected · return to conversation" : "Reconnecting to conversation…")}</span>
       </Link>
-      {call.canPublish && <button type="button" className="rounded-lg border border-white/20 p-2" aria-label={call.isMuted ? "Unmute microphone" : "Mute microphone"} onClick={() => void call.toggleMicrophone()}>
+      {call.canPublish && <button type="button" className="rounded-lg border border-line p-2 text-fg hover:bg-[#fff4f2]" aria-label={call.isMuted ? "Unmute microphone" : "Mute microphone"} onClick={() => void call.toggleMicrophone()}>
         {call.isMuted ? <MicOff size={16} /> : <Mic size={16} />}
       </button>}
-      <button type="button" className="rounded-lg border border-white/20 p-2" aria-label="Leave Voice Space" onClick={() => void call.leave()}><PhoneOff size={16} /></button>
+      <button type="button" className="rounded-lg border border-line p-2 text-fg hover:bg-[#fff4f2]" aria-label="Leave Voice Space" onClick={() => void call.leave()}><PhoneOff size={16} /></button>
     </aside>
   );
 }
