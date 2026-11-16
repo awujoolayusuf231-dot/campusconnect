@@ -62,7 +62,13 @@ export function NotificationsPage() {
   const markAll = useMutation({ mutationFn: async () => { const { error } = await supabase.rpc("mark_notifications_read"); if (error) throw error; }, onSuccess: refresh });
   const markOne = useMutation({ mutationFn: async (id: number) => { const { error } = await supabase.rpc("mark_notifications_read", { p_ids: [id] }); if (error) throw error; }, onSuccess: refresh });
   const prefs = useQuery({ queryKey: ["prefs", uid], enabled: !!uid, queryFn: async () => { const { data, error } = await supabase.from("user_preferences").select("*").eq("user_id", uid).maybeSingle(); if (error) throw error; return (data ?? {}) as Record<string, boolean>; } });
-  const savePref = useMutation({ mutationFn: async (v: { key: string; on: boolean }) => { const { error } = await supabase.from("user_preferences").upsert({ user_id: uid, ...(prefs.data ?? {}), [v.key]: v.on, updated_at: undefined }, { onConflict: "user_id" }); if (error) throw error; }, onSuccess: () => void qc.invalidateQueries({ queryKey: ["prefs"] }) });
+  const savePref = useMutation({ mutationFn: async (v: { key: string; on: boolean }) => {
+    const { error } = await supabase.from("user_preferences").upsert({ user_id: uid, [v.key]: v.on }, { onConflict: "user_id" });
+    if (error) {
+      console.error("Could not save notification preference.", error);
+      throw error;
+    }
+  }, onSuccess: () => void qc.invalidateQueries({ queryKey: ["prefs"] }) });
   const pushStatus = useQuery({ queryKey: ["push-subscription", uid], enabled: !!uid && isBrowserPushConfigured(), queryFn: getPushNotificationStatus });
   const enablePush = useMutation({ mutationFn: (permissionRequest: Promise<NotificationPermission>) => enablePushNotifications(permissionRequest, uid), onSuccess: () => void qc.invalidateQueries({ queryKey: ["push-subscription", uid] }) });
   const disablePush = useMutation({ mutationFn: () => disablePushNotifications(uid), onSuccess: () => void qc.invalidateQueries({ queryKey: ["push-subscription", uid] }) });
@@ -81,7 +87,7 @@ export function NotificationsPage() {
       <section className="card space-y-2"><h2 className="font-medium">Notify me about</h2>
         {PREFS.map(([key, label, defaultValue]) => <label key={key} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={prefs.data?.[key] ?? defaultValue ?? true} disabled={savePref.isPending} onChange={(e) => savePref.mutate({ key, on: e.target.checked })} />{label}</label>)}
         <p className="text-xs text-muted">Platform announcements and moderator warnings are always delivered.</p>
-        {savePref.isError && <p role="alert" className="err">Could not save your preference.</p>}</section>
+        {savePref.isError && <p role="alert" className="err">Could not save your preference: {(savePref.error as Error).message}</p>}</section>
       <section className="card space-y-2"><h2 className="font-medium">This device</h2>
         {!isBrowserPushConfigured() ? <p className="text-sm text-muted">Browser push is not configured for this app yet.</p>
           : pushStatus.isLoading ? <LoadingState label="Checking this device" />
