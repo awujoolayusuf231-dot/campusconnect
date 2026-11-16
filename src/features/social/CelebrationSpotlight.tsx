@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, ChevronLeft, ChevronRight, PartyPopper } from "lucide-react";
+import { ChevronLeft, ChevronRight, PartyPopper } from "lucide-react";
 import { listRecentPublishedCelebrations, listUpcomingCelebrations } from "@/features/celebrations/api";
 
 function prefersReducedMotion(): boolean {

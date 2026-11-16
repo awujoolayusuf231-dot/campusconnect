@@ -214,7 +214,9 @@ describe("CommentSection", () => {
 
     vi.useFakeTimers();
     try {
-      observers[0].showAll();
+      const observer = observers[0];
+      if (!observer) throw new Error("Expected a comment impression observer");
+      observer.showAll();
       await vi.advanceTimersByTimeAsync(999);
       expect(mocks.recordCommentImpressions).not.toHaveBeenCalled();
       await vi.advanceTimersByTimeAsync(1);

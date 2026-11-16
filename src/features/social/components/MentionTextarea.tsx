@@ -50,10 +50,17 @@ export function MentionTextarea({
       return;
     }
 
-    const boundaryLength = match[0].length - match[1].length - 1;
+    const username = match[1];
+    if (username === undefined) {
+      mentionRange.current = null;
+      setQuery("");
+      return;
+    }
+
+    const boundaryLength = match[0].length - username.length - 1;
     const start = cursor - match[0].length + boundaryLength;
     mentionRange.current = { start, end: cursor };
-    setQuery(match[1]);
+    setQuery(username);
   }
 
   function choose(username: string) {
