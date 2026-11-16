@@ -44,11 +44,21 @@ describe("push outbox decisions", () => {
 
   it("retries total transient failures but avoids retrying successful partial delivery", () => {
     expect(decideDelivery([])).toEqual({ result: "failed", error: "no_registered_devices" });
-    expect(decideDelivery([{ ok: false, invalidToken: false, retryable: true }]).result).toBe("retry");
+    expect(decideDelivery([{
+      ok: false,
+      invalidToken: false,
+      retryable: true,
+      failureCode: "UNAVAILABLE",
+    }])).toEqual({ result: "retry", error: "fcm_delivery_failed:UNAVAILABLE" });
     expect(decideDelivery([
-      { ok: true, invalidToken: false, retryable: false },
-      { ok: false, invalidToken: false, retryable: true },
+      { ok: true, invalidToken: false, retryable: false, failureCode: null },
+      { ok: false, invalidToken: false, retryable: true, failureCode: "UNAVAILABLE" },
     ])).toEqual({ result: "delivered", error: null });
-    expect(decideDelivery([{ ok: false, invalidToken: true, retryable: false }]).result).toBe("failed");
+    expect(decideDelivery([{
+      ok: false,
+      invalidToken: true,
+      retryable: false,
+      failureCode: "UNREGISTERED",
+    }]).result).toBe("failed");
   });
 });

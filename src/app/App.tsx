@@ -26,6 +26,7 @@ const TermsPage = lazy(() => import("@/pages/public/pages").then((m) => ({ defau
 const PostPage = lazy(() => import("@/features/social/PostPage").then((m) => ({ default: m.PostPage })));
 const SavedPostsPage = lazy(() => import("@/features/social/SavedPostsPage").then((m) => ({ default: m.SavedPostsPage })));
 const AccountAnalyticsPage = lazy(() => import("@/features/social/AccountAnalyticsPage").then((m) => ({ default: m.AccountAnalyticsPage })));
+const SubscriptionPage = lazy(() => import("@/features/payments/SubscriptionPage").then((m) => ({ default: m.SubscriptionPage })));
 const OpportunitiesPage = lazy(() => import("@/features/opportunities/OpportunitiesPage").then((m) => ({ default: m.OpportunitiesPage })));
 const SettingsPage = lazy(() => import("@/features/settings/SettingsPage").then((m) => ({ default: m.SettingsPage })));
 const PastQuestionsLayout = lazy(() => import("@/features/past-questions/PastQuestionsLayout").then((m) => ({ default: m.PastQuestionsLayout })));
@@ -137,6 +138,7 @@ export function App() {
             <Route path="/app/p/:id" element={<PostPage />} />
             <Route path="/app/saved-posts" element={<SavedPostsPage />} />
             <Route path="/app/analytics" element={<AccountAnalyticsPage />} />
+            <Route path="/app/subscription" element={<SubscriptionPage />} />
             <Route path="/app/communities" element={<CommunitiesPage />} />
             <Route path="/app/past-questions" element={<PastQuestionsLayout />}>
               <Route index element={<PastQuestionsHome />} />

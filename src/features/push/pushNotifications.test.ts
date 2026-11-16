@@ -29,6 +29,7 @@ const secureContextDescriptor = Object.getOwnPropertyDescriptor(window, "isSecur
 
 describe("requestPushPermission", () => {
   beforeEach(() => {
+    mocks.requestPermission.mockClear();
     vi.stubGlobal("Notification", {
       permission: "default",
       requestPermission: mocks.requestPermission,

@@ -3,10 +3,24 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useMyPermissions } from "../useMyPermissions";
+import { formatSubscriptionPrice } from "@/features/payments/api";
 
 interface Stats { period_days: number; total_users: number; new_users: number; active_users: number; suspended_accounts: number; restricted_accounts: number; pending_deletions: number; staff_count: number; active_institutions: number }
 interface Content { total_posts: number; new_posts: number; total_comments: number; total_communities: number; total_conversations: number; total_messages: number; new_messages: number; open_reports: number; escalated_reports: number }
 interface Day { day: string; registrations: number }
+interface SubscriptionMetric { currency: string; current_subscribers: number; successful_payments: number; failed_payments: number; gross_revenue_minor: number | string }
+interface DiscoveryMetric { location_opt_ins: number; followed_post_notifications: number; celebration_notifications: number }
+
+function formatGrossRevenue(value: number | string, currency: string): string {
+  const amount = Number(value);
+  if (!Number.isSafeInteger(amount) || amount < 0) return "Amount is too large to display exactly";
+  try {
+    return formatSubscriptionPrice(amount, currency);
+  } catch (error) {
+    if (error instanceof RangeError) return "Unsupported currency";
+    throw error;
+  }
+}
 
 export function DashboardPage() {
   const [days, setDays] = useState(30);
@@ -21,6 +35,17 @@ export function DashboardPage() {
 
   const content = useQuery({ queryKey: ["admin", "content", days], enabled: allowed, queryFn: async () => {
     const { data, error } = await supabase.rpc("admin_content_stats", { p_days: days }); if (error) throw error; return data as Content; } });
+
+  const subscriptions = useQuery({ queryKey: ["admin", "subscriptions", days], enabled: allowed, queryFn: async () => {
+    const { data, error } = await supabase.rpc("admin_subscription_overview", { p_days: days });
+    if (error) throw error;
+    return (data ?? []) as SubscriptionMetric[];
+  } });
+  const discovery = useQuery({ queryKey: ["admin", "discovery", days], enabled: allowed, queryFn: async () => {
+    const { data, error } = await supabase.rpc("admin_discovery_overview", { p_days: days });
+    if (error) throw error;
+    return ((data ?? []) as DiscoveryMetric[])[0] ?? null;
+  } });
 
   if (!allowed) return <p className="card">Your role does not include analytics. Use the menu to open a section you can access.</p>;
   const max = Math.max(1, ...(series.data ?? []).map((d) => d.registrations));
@@ -48,6 +73,39 @@ export function DashboardPage() {
             : <div key={label} className="card"><p className="text-sm text-muted">{label}</p><p className="text-2xl font-semibold">{value ?? "–"}</p></div>
         ))}
       </div>
+      <section className="card space-y-3">
+        <div>
+          <h2 className="font-medium">Subscriptions and Paystack payments</h2>
+          <p className="text-xs text-muted">Payment totals for the last {days} days; subscriber counts include paid access through the current period.</p>
+        </div>
+        {subscriptions.isLoading && <p className="text-sm text-muted">Loading payment metrics…</p>}
+        {subscriptions.isError && <p role="alert" className="err">Could not load subscription metrics.</p>}
+        {subscriptions.data?.length === 0 && <p className="text-sm text-muted">No subscription plans are configured.</p>}
+        {subscriptions.data?.map((row) => {
+          const gross = formatGrossRevenue(row.gross_revenue_minor, row.currency);
+          return <div key={row.currency} className="grid grid-cols-2 gap-3 border-t border-line pt-3 sm:grid-cols-4">
+            <div><p className="text-xs text-muted">Currency</p><p className="font-semibold">{row.currency}</p></div>
+            <div><p className="text-xs text-muted">Current subscribers</p><p className="font-semibold">{row.current_subscribers}</p></div>
+            <div><p className="text-xs text-muted">Payments · successful / failed</p><p className="font-semibold">{row.successful_payments} / {row.failed_payments}</p></div>
+            <div><p className="text-xs text-muted">Gross paid</p><p className="font-semibold">{gross}</p></div>
+          </div>;
+        })}
+      </section>
+      <section className="card space-y-3">
+        <div>
+          <h2 className="font-medium">Discovery and celebration activity</h2>
+          <p className="text-xs text-muted">Aggregate counts only. Private city/state entries, messages, and individual recommendation history are not shown.</p>
+        </div>
+        {discovery.isLoading && <p className="text-sm text-muted">Loading discovery metrics…</p>}
+        {discovery.isError && <p role="alert" className="err">Could not load discovery metrics.</p>}
+        {discovery.data && (
+          <div className="grid grid-cols-2 gap-3 border-t border-line pt-3 sm:grid-cols-3">
+            <div><p className="text-xs text-muted">Location opt-ins</p><p className="font-semibold">{discovery.data.location_opt_ins}</p></div>
+            <div><p className="text-xs text-muted">Followed-post alerts · {days} days</p><p className="font-semibold">{discovery.data.followed_post_notifications}</p></div>
+            <div><p className="text-xs text-muted">Celebration alerts · {days} days</p><p className="font-semibold">{discovery.data.celebration_notifications}</p></div>
+          </div>
+        )}
+      </section>
       <section className="card">
         <h2 className="mb-3 font-medium">Registrations per day</h2>
         <div className="flex h-32 items-end gap-0.5" role="img" aria-label="Bar chart of registrations per day">

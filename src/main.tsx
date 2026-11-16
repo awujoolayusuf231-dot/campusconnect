@@ -1,8 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
+import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { App } from "@/app/App";
 import { AppErrorBoundary } from "@/app/AppErrorBoundary";
@@ -29,8 +29,8 @@ createRoot(document.getElementById("root")!).render(
         <AuthProvider>
           <App />
           <PWAInstallButton />
-          <Analytics />
         </AuthProvider>
+        <Analytics />
       </BrowserRouter>
     </QueryClientProvider>
    </AppErrorBoundary>
