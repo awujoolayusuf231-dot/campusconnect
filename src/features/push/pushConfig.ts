@@ -36,13 +36,14 @@ export function isBrowserPushConfigured(): boolean {
 }
 
 export function getPushServiceWorkerUrl(): string {
+  const serviceWorkerPath = "/firebase-messaging-sw.js";
   const config = getFirebaseBrowserConfig();
-  if (!config) return "/sw.js";
+  if (!config) return serviceWorkerPath;
   const params = new URLSearchParams({
     apiKey: config.apiKey,
     appId: config.appId,
     messagingSenderId: config.messagingSenderId,
     projectId: config.projectId,
   });
-  return `/sw.js?${params.toString()}`;
+  return `${serviceWorkerPath}?${params.toString()}`;
 }

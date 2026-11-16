@@ -69,14 +69,30 @@ export function StudentLayout() {
   useEffect(() => {
     if (!session?.user.id || !isBrowserPushConfigured()) return;
     let disposed = false;
+    let syncing = false;
     let unsubscribe = () => {};
+    const syncPushIfVisible = () => {
+      if (disposed || syncing || document.visibilityState !== "visible"
+        || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+      syncing = true;
+      void import("@/features/push/pushNotifications").then(({ syncPushSubscription }) => {
+        if (!disposed) return syncPushSubscription(session.user.id);
+      }).catch((error: unknown) => console.error("CampusConnect push subscription could not be refreshed.", error))
+        .finally(() => { syncing = false; });
+    };
     void import("@/features/push/pushNotifications").then(({ listenForForegroundPushNotifications }) =>
       listenForForegroundPushNotifications()
     ).then((stop) => {
       if (disposed) stop();
       else unsubscribe = stop;
     }).catch((error: unknown) => console.error("CampusConnect foreground push notifications could not be started.", error));
-    return () => { disposed = true; unsubscribe(); };
+    syncPushIfVisible();
+    document.addEventListener("visibilitychange", syncPushIfVisible);
+    return () => {
+      disposed = true;
+      document.removeEventListener("visibilitychange", syncPushIfVisible);
+      unsubscribe();
+    };
   }, [session?.user.id]);
   const signOut = async () => {
     try {

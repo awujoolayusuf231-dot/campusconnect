@@ -64,8 +64,8 @@ export function NotificationsPage() {
   const prefs = useQuery({ queryKey: ["prefs", uid], enabled: !!uid, queryFn: async () => { const { data, error } = await supabase.from("user_preferences").select("*").eq("user_id", uid).maybeSingle(); if (error) throw error; return (data ?? {}) as Record<string, boolean>; } });
   const savePref = useMutation({ mutationFn: async (v: { key: string; on: boolean }) => { const { error } = await supabase.from("user_preferences").upsert({ user_id: uid, ...(prefs.data ?? {}), [v.key]: v.on, updated_at: undefined }, { onConflict: "user_id" }); if (error) throw error; }, onSuccess: () => void qc.invalidateQueries({ queryKey: ["prefs"] }) });
   const pushStatus = useQuery({ queryKey: ["push-subscription", uid], enabled: !!uid && isBrowserPushConfigured(), queryFn: getPushNotificationStatus });
-  const enablePush = useMutation({ mutationFn: enablePushNotifications, onSuccess: () => void qc.invalidateQueries({ queryKey: ["push-subscription", uid] }) });
-  const disablePush = useMutation({ mutationFn: disablePushNotifications, onSuccess: () => void qc.invalidateQueries({ queryKey: ["push-subscription", uid] }) });
+  const enablePush = useMutation({ mutationFn: (permissionRequest: Promise<NotificationPermission>) => enablePushNotifications(permissionRequest, uid), onSuccess: () => void qc.invalidateQueries({ queryKey: ["push-subscription", uid] }) });
+  const disablePush = useMutation({ mutationFn: () => disablePushNotifications(uid), onSuccess: () => void qc.invalidateQueries({ queryKey: ["push-subscription", uid] }) });
 
   return (
     <div className="space-y-4">
@@ -99,8 +99,8 @@ export function NotificationsPage() {
                   }}>
                   {enablePush.isPending || disablePush.isPending ? "Updating…" : pushStatus.data ? "Disable on this device" : "Enable on this device"}
                 </button>
-                {enablePush.isError && <p role="alert" className="err">{(enablePush.error as Error).message}</p>}
-                {disablePush.isError && <p role="alert" className="err">{(disablePush.error as Error).message}</p>}</>}
+                {enablePush.isError && <p role="alert" className="err">Could not enable notifications: {(enablePush.error as Error).message}</p>}
+                {disablePush.isError && <p role="alert" className="err">Could not disable notifications: {(disablePush.error as Error).message}</p>}</>}
       </section>
     </div>
   );
