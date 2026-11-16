@@ -176,7 +176,7 @@ Audit log entry `owner.provision` recorded; owners_in_system = 1. Further staff 
 No passwords were used or stored by the assistant. A password was pasted in chat earlier by the user; it should be changed.
 
 ## Whiteshirt pop-up (this turn) - WRITTEN, NOT COMPILED OR RUN
-Profile > Edit: "Create my celebration board on whiteshirt.fun" opens an in-app dialog embedding the fixed address https://www.whiteshirt.fun/
+Profile > Edit: "Create my celebration board on whiteshirt.fun" opens an in-app dialog embedding the fixed referral address https://www.whiteshirt.fun/?ref=ecomedge
 (sandboxed iframe; address is a constant, never user input). The student creates the board there, pastes the link (or clipboard), and
 "Use this link" fills the profile field after the same strict whiteshirt.fun validation used by the database. Hidden when the
 campus_celebrations flag is off. Fallback: "Open in a small window" (window.open popup, not a tab).
