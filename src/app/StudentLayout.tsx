@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { BarChart3, Bell, BookOpen, Bookmark, Brain, Briefcase, CalendarDays, Compass, FileText, GraduationCap, Home, Layers3, MessageCircle, MessagesSquare, Mic, MoreHorizontal, PartyPopper, Settings, Sparkles, UserRound, Users, Trophy } from "lucide-react";
+import { BarChart3, Bell, BookOpen, Bookmark, Brain, Briefcase, CalendarDays, Compass, CreditCard, FileText, GraduationCap, Home, Layers3, MessageCircle, MessagesSquare, Mic, MoreHorizontal, PartyPopper, Settings, Sparkles, UserRound, Users, Trophy } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
@@ -27,6 +27,7 @@ export function StudentLayout() {
     { to: "/app", label: "Home feed", icon: Home, end: true, badge: 0 },
     { to: "/app/saved-posts", label: "Saved posts", icon: Bookmark, end: false, badge: 0 },
     { to: "/app/analytics", label: "Analytics", icon: BarChart3, end: false, badge: 0 },
+    { to: "/app/subscription", label: "Membership", icon: CreditCard, end: false, badge: 0 },
     { to: "/app/discover", label: "Discover", icon: Compass, end: false, badge: 0 },
     { to: "/app/communities", label: "Communities", icon: Users, end: false, badge: 0 },
     { to: "/app/past-questions", label: "Past Questions", icon: BookOpen, end: false, badge: 0 },
@@ -56,7 +57,7 @@ export function StudentLayout() {
     return !flag || featureFlags.data?.[flag] !== false;
   });
   const mobileItems = visibleItems.filter((i) => ["Home feed", "Discover", "Communities", "Messages"].includes(i.label));
-  const moreItems = visibleItems.filter((i) => ["Saved posts", "Analytics", "Past Questions", "Study Notes", "Assignment Discussions", "Flashcards & Quizzes", "Group Quiz", "Celebrations", "Portfolio", "CV Builder", "Timetable", "Opportunities", "Project Board", "Competitions", "Voice Spaces", "My profile", "Settings"].includes(i.label));
+  const moreItems = visibleItems.filter((i) => ["Saved posts", "Analytics", "Membership", "Past Questions", "Study Notes", "Assignment Discussions", "Flashcards & Quizzes", "Group Quiz", "Celebrations", "Portfolio", "CV Builder", "Timetable", "Opportunities", "Project Board", "Competitions", "Voice Spaces", "My profile", "Settings"].includes(i.label));
   const moreActive = moreItems.some((item) => item.label === "My profile"
     ? pathname.startsWith("/app/u/") || pathname === "/app/profile/edit"
     : pathname === item.to || pathname.startsWith(`${item.to}/`));

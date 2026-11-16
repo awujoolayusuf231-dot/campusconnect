@@ -52,9 +52,15 @@ function renderDiscoverPage() {
 describe("DiscoverPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.rpc.mockResolvedValue({ data: [student], error: null });
+    mocks.rpc.mockImplementation((name: string) => Promise.resolve({
+      data: name === "discover_students" ? [student] : [],
+      error: null,
+    }));
     mocks.from.mockImplementation(() => ({
-      select: () => ({ eq: () => ({ limit: async () => ({ data: [] }) }) }),
+      select: () => ({ eq: () => ({
+        limit: async () => ({ data: [] }),
+        maybeSingle: async () => ({ data: null, error: null }),
+      }) }),
     }));
     mocks.followUser.mockResolvedValue(undefined);
     mocks.unfollowUser.mockResolvedValue(undefined);
@@ -81,7 +87,7 @@ describe("DiscoverPage", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "Institution" }), { target: { value: "institution-1" } });
     fireEvent.click(screen.getByRole("button", { name: "Search students" }));
 
-    await waitFor(() => expect(mocks.rpc).toHaveBeenLastCalledWith("discover_students", expect.objectContaining({
+    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith("discover_students", expect.objectContaining({
       p_query: "Amina",
       p_institution: "institution-1",
       p_limit: 24,
@@ -95,5 +101,46 @@ describe("DiscoverPage", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Follow" }));
 
     await waitFor(() => expect(mocks.followUser).toHaveBeenCalledWith("student-2"));
+  });
+
+  it("requests nearby students without sending a location supplied by the browser", async () => {
+    renderDiscoverPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Same city/state" }));
+
+    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith("recommend_students", {
+      p_location_only: true,
+      p_limit: 12,
+      p_offset: 0,
+    }));
+    expect(screen.getByText(/without GPS or external services/)).toBeInTheDocument();
+  });
+
+  it("saves a private city/state only when the student explicitly opts in", async () => {
+    renderDiscoverPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Same city/state" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "City or state (not a street address)" }), { target: { value: "Lagos, Nigeria" } });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Share city/state" }));
+
+    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith("set_my_discovery_location", {
+      p_city_state: "Lagos, Nigeria",
+      p_enabled: true,
+    }));
+  });
+
+  it("removes the stored city/state when the student opts out", async () => {
+    mocks.rpc.mockImplementation((name: string) => Promise.resolve({
+      data: name === "get_my_discovery_location" ? [{ city_state: "Lagos, Nigeria", enabled: true }] : [],
+      error: null,
+    }));
+    renderDiscoverPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Same city/state" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Stop sharing" }));
+
+    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith("set_my_discovery_location", {
+      p_city_state: "Lagos, Nigeria",
+      p_enabled: false,
+    }));
   });
 });

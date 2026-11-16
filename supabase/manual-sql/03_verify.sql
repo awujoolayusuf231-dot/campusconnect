@@ -1,4 +1,5 @@
 -- READ-ONLY verification after 01_post_visibility.sql and 02_ranked_feed.sql.
+-- If 04_ranked_feed_fairness.sql was applied, the final column also confirms its private weight exists.
 select
   exists (
     select 1 from information_schema.columns
@@ -37,4 +38,15 @@ select
     where key = 'smart_feed_following_weight'
       and value_type = 'number'
       and is_public = false
-  ) as ranking_settings_are_private;
+  ) as ranking_settings_are_private,
+  exists (
+    select 1 from public.platform_settings
+    where key = 'smart_feed_fairness_weight'
+      and value_type = 'number'
+      and is_public = false
+  ) as fairness_setting_is_private,
+  exists (
+    select 1 from pg_proc p
+    where p.oid = to_regprocedure('public.feed_ranked_posts(double precision,timestamptz,uuid,timestamptz,integer)')
+      and p.prosrc like '%smart_feed_fairness_weight%'
+  ) as fairness_signal_is_installed;

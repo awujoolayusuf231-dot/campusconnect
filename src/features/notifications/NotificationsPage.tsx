@@ -6,14 +6,25 @@ import { timeAgo } from "@/lib/time";
 import { LoadingState } from "@/app/LoadingState";
 import { disablePushNotifications, enablePushNotifications, getPushNotificationStatus, isBrowserPushConfigured, requestPushPermission } from "@/features/push/pushNotifications";
 
-interface Notif { id: number; type: string; actor_username: string | null; actor_display_name: string | null; entity_type: string | null; entity_id: string | null; data: Record<string, unknown>; created_at: string; read_at: string | null }
+export interface Notif { id: number; type: string; actor_username: string | null; actor_display_name: string | null; entity_type: string | null; entity_id: string | null; data: Record<string, unknown>; created_at: string; read_at: string | null }
 const PAGE = 30;
-const PREFS: [string, string][] = [["notify_follows", "New followers"], ["notify_likes", "Likes"], ["notify_comments", "Comments"], ["notify_community", "Community activity"], ["notify_messages", "Messages"], ["notify_discussions", "Assignment discussion replies"], ["notify_push", "Browser push notifications"]];
+const PREFS: [string, string, boolean?][] = [
+  ["notify_follows", "New followers"],
+  ["notify_likes", "Likes"],
+  ["notify_comments", "Comments"],
+  ["notify_community", "Community activity"],
+  ["notify_messages", "Messages"],
+  ["notify_discussions", "Assignment discussion replies"],
+  ["notify_followed_posts", "New posts from people I follow", false],
+  ["notify_celebrations", "Celebration cards"],
+  ["notify_push", "Browser push notifications"],
+];
 
-function describe(n: Notif): { text: string; to?: string } {
+export function describeNotification(n: Notif): { text: string; to?: string } {
   const who = n.actor_display_name ?? "Someone";
   switch (n.type) {
     case "follow": return { text: `${who} started following you`, to: n.actor_username ? `/app/u/${n.actor_username}` : undefined };
+    case "followed_post": return { text: `${who} shared a new post`, to: n.entity_id ? `/app/p/${n.entity_id}` : undefined };
     case "like": return { text: `${who} liked your post` };
     case "repost": return { text: `${who} reposted your post` };
     case "comment": return { text: `${who} commented on your post` };
@@ -25,6 +36,10 @@ function describe(n: Notif): { text: string; to?: string } {
     };
     case "celebration_reminder": return {
       text: `Reminder: ${String(n.data.title ?? "an upcoming celebration")}`,
+      to: n.entity_id ? `/app/celebrations/${n.entity_id}` : "/app/celebrations",
+    };
+    case "celebration_published": return {
+      text: `${who} shared a celebration: ${String(n.data.title ?? "new celebration")}`,
       to: n.entity_id ? `/app/celebrations/${n.entity_id}` : "/app/celebrations",
     };
     case "community_join": return { text: `${who} joined your community`, to: "/app/communities" };
@@ -58,13 +73,13 @@ export function NotificationsPage() {
       {list.isLoading && <LoadingState label="Gathering your notifications" variant="panel" />}
       {list.isError && <p role="alert" className="err">Could not load notifications.</p>}
       {!list.isLoading && items.length === 0 && <p className="card text-center text-muted">You are all caught up.</p>}
-      <ul className="space-y-2">{items.map((n) => { const d = describe(n); const body = <><span className={n.read_at ? "" : "font-semibold"}>{d.text}</span><span className="ml-2 text-xs text-muted">{timeAgo(n.created_at)}</span></>;
+      <ul className="space-y-2">{items.map((n) => { const d = describeNotification(n); const body = <><span className={n.read_at ? "" : "font-semibold"}>{d.text}</span><span className="ml-2 text-xs text-muted">{timeAgo(n.created_at)}</span></>;
         return <li key={n.id} className={`card flex items-center justify-between gap-2 ${n.read_at ? "" : "border-primary"}`}>
           {d.to ? <Link to={d.to} onClick={() => markOne.mutate(n.id)} className="flex-1 hover:underline">{body}</Link> : <span className="flex-1">{body}</span>}
           {!n.read_at && <button className="text-xs underline text-muted" onClick={() => markOne.mutate(n.id)}>Mark read</button>}</li>; })}</ul>
       {list.hasNextPage && <button className="btn w-full" onClick={() => void list.fetchNextPage()}>Load more</button>}
       <section className="card space-y-2"><h2 className="font-medium">Notify me about</h2>
-        {PREFS.map(([key, label]) => <label key={key} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={prefs.data?.[key] ?? true} disabled={savePref.isPending} onChange={(e) => savePref.mutate({ key, on: e.target.checked })} />{label}</label>)}
+        {PREFS.map(([key, label, defaultValue]) => <label key={key} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={prefs.data?.[key] ?? defaultValue ?? true} disabled={savePref.isPending} onChange={(e) => savePref.mutate({ key, on: e.target.checked })} />{label}</label>)}
         <p className="text-xs text-muted">Platform announcements and moderator warnings are always delivered.</p>
         {savePref.isError && <p role="alert" className="err">Could not save your preference.</p>}</section>
       <section className="card space-y-2"><h2 className="font-medium">This device</h2>
