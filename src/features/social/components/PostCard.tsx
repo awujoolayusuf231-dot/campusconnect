@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
-import { blockUser, deletePost, likePost, postShareUrl, repostPost, unlikePost, unrepostPost, type FeedPost } from "../api";
+import { BarChart3, Bookmark, Eye, Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
+import { blockUser, deletePost, likePost, postShareUrl, repostPost, savePost, unlikePost, unsavePost, unrepostPost, type FeedPost, type PublicPostMetrics } from "../api";
 import { socialErrorMessage } from "@/lib/errors";
 import { formatCount } from "@/lib/format";
 import { timeAgo } from "@/lib/time";
@@ -16,10 +16,11 @@ import { PostBody } from "./PostBody";
 
 const POST_PREVIEW_LIMIT = 280;
 
-export function PostCard({ post, images, me, defaultOpenComments = false, inCommunity = false, fullPost = false, trackImpression = false }: {
+export function PostCard({ post, images, me, metrics, defaultOpenComments = false, inCommunity = false, fullPost = false, trackImpression = false }: {
   post: FeedPost;
   images?: string[];
   me: string;
+  metrics?: PublicPostMetrics;
   defaultOpenComments?: boolean;
   inCommunity?: boolean;
   fullPost?: boolean;
@@ -35,7 +36,19 @@ export function PostCard({ post, images, me, defaultOpenComments = false, inComm
 
   const like = useMutation({ mutationFn: () => (post.liked_by_me ? unlikePost(post.id) : likePost(post.id)), onSuccess: refresh });
   const repost = useMutation({ mutationFn: () => (post.reposted_by_me ? unrepostPost(post.id) : repostPost(post.id)), onSuccess: refresh });
-  const del = useMutation({ mutationFn: () => deletePost(post.id), onSuccess: () => { setDialog(null); refresh(); } });
+  const save = useMutation({
+    mutationFn: () => (metrics?.saved_by_me ? unsavePost(post.id) : savePost(post.id)),
+    onSuccess: () => {
+      refresh();
+      void qc.invalidateQueries({ queryKey: ["post-public-metrics"] });
+      void qc.invalidateQueries({ queryKey: ["saved-posts"] });
+    },
+  });
+  const del = useMutation({ mutationFn: () => deletePost(post.id), onSuccess: () => {
+    setDialog(null);
+    refresh();
+    void qc.invalidateQueries({ queryKey: ["saved-posts"] });
+  } });
   const block = useMutation({ mutationFn: () => blockUser(post.author_id), onSuccess: () => { setDialog(null); refresh(); void qc.invalidateQueries({ queryKey: ["discover"] }); } });
 
   // Share = send the link elsewhere (phone share sheet, or copy). Repost = put the post on your own profile and your followers' feed.
@@ -51,7 +64,7 @@ export function PostCard({ post, images, me, defaultOpenComments = false, inComm
     }
   }
   const canRepost = !mine && !inCommunity;
-  const actionError = (like.error ?? repost.error ?? del.error ?? block.error) as Error | null;
+  const actionError = (like.error ?? repost.error ?? save.error ?? del.error ?? block.error) as Error | null;
 
   return (
     <article ref={impressionRef} className={`group min-w-0 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_8px_24px_rgba(35,24,20,0.035)] ${fullPost ? "shadow-[0_12px_36px_rgba(35,24,20,0.06)]" : "transition-shadow hover:shadow-[0_14px_34px_rgba(35,24,20,0.07)]"}`} aria-label={`Post by ${post.display_name}`}>
@@ -93,7 +106,11 @@ export function PostCard({ post, images, me, defaultOpenComments = false, inComm
           {images.map((path) => <ProtectedPostImage key={path} path={path} />)}
         </div>)}
       </div>
-      <footer className="flex items-center justify-between gap-1 border-t border-line/80 px-2 py-2 sm:px-3">
+      {metrics && <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 pb-2 text-xs font-semibold text-muted sm:px-5" aria-label="Public post metrics">
+        <span className="inline-flex items-center gap-1.5"><Eye size={14} aria-hidden="true" />{formatCount(metrics.views)} views</span>
+        <span className="inline-flex items-center gap-1.5"><BarChart3 size={14} aria-hidden="true" />{formatCount(metrics.impressions)} impressions</span>
+      </div>}
+      <footer className="flex flex-wrap items-center justify-between gap-1 border-t border-line/80 px-2 py-2 sm:px-3">
         <button className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-[#fff1f2] sm:px-3 sm:text-sm ${post.liked_by_me ? "text-primary" : "text-muted hover:text-primary"}`} aria-pressed={post.liked_by_me} disabled={like.isPending} onClick={() => like.mutate()}>
           <Heart size={17} fill={post.liked_by_me ? "currentColor" : "none"} aria-hidden="true" /> {formatCount(post.like_count)}<span className="sr-only"> likes</span></button>
         <button className="inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold text-muted transition-colors hover:bg-[#fff1f2] hover:text-primary sm:px-3 sm:text-sm" aria-expanded={showComments} onClick={() => setShowComments((v) => !v)}>
@@ -103,6 +120,11 @@ export function PostCard({ post, images, me, defaultOpenComments = false, inComm
           title={mine ? "You cannot repost your own post" : inCommunity ? "Community posts cannot be reposted" : post.reposted_by_me ? "Undo repost" : "Repost to your profile and followers"}
           onClick={() => repost.mutate()}>
           <Repeat2 size={17} aria-hidden="true" /> <span className="hidden sm:inline">{formatCount(post.repost_count)}</span><span className="sr-only">{formatCount(post.repost_count)} reposts. {post.reposted_by_me ? "Undo repost" : "Repost"}</span></button>
+        <button type="button" className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-[#fff1f2] sm:px-3 sm:text-sm ${metrics?.saved_by_me ? "text-primary" : "text-muted hover:text-primary"}`}
+          aria-pressed={metrics?.saved_by_me ?? false} disabled={save.isPending} onClick={() => save.mutate()}>
+          <Bookmark size={17} fill={metrics?.saved_by_me ? "currentColor" : "none"} aria-hidden="true" />
+          <span>{metrics?.saved_by_me ? "Saved" : "Save"}</span>
+        </button>
         <button className="ml-auto inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold text-muted transition-colors hover:bg-[#fff1f2] hover:text-primary sm:px-3 sm:text-sm" onClick={() => void share()}>
           <Share2 size={17} aria-hidden="true" /> Share</button>
       </footer>
@@ -110,7 +132,7 @@ export function PostCard({ post, images, me, defaultOpenComments = false, inComm
         <div className="px-4 pb-4 sm:px-5">
           {shareNote && <p role="status" className="text-xs text-muted">{shareNote}</p>}
           {actionError && <p role="alert" className="err">{socialErrorMessage(String(actionError.message))}</p>}
-          {showComments && <CommentSection postId={post.id} me={me} />}
+          {showComments && <CommentSection postId={post.id} me={me} canReshare={!inCommunity} />}
         </div>
       )}
       {dialog === "report" && <ReportDialog type="post" targetId={post.id} onClose={() => setDialog(null)} />}

@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { timeAgo } from "@/lib/time";
 import { LoadingState } from "@/app/LoadingState";
-import { disablePushNotifications, enablePushNotifications, getPushNotificationStatus, isBrowserPushConfigured } from "@/features/push/pushNotifications";
+import { disablePushNotifications, enablePushNotifications, getPushNotificationStatus, isBrowserPushConfigured, requestPushPermission } from "@/features/push/pushNotifications";
 
 interface Notif { id: number; type: string; actor_username: string | null; actor_display_name: string | null; entity_type: string | null; entity_id: string | null; data: Record<string, unknown>; created_at: string; read_at: string | null }
 const PAGE = 30;
@@ -73,8 +73,15 @@ export function NotificationsPage() {
             : pushStatus.isError ? <p role="alert" className="err">Could not check this device's push status: {(pushStatus.error as Error).message}</p>
               : <><p className="text-sm text-muted">{pushStatus.data ? "This device is registered for browser push." : "This device is not registered for browser push."}</p>
                 {typeof Notification !== "undefined" && Notification.permission === "denied" && <p className="text-xs text-muted">Notifications are blocked in your browser settings. Allow them for CampusConnect to enable push.</p>}
+                {typeof Notification !== "undefined" && Notification.permission === "default" && <p className="text-xs text-muted">Select “Enable on this device”; your browser will then ask you to allow notifications.</p>}
                 <button className="btn min-h-10 rounded-xl px-4 font-bold" disabled={enablePush.isPending || disablePush.isPending}
-                  onClick={() => pushStatus.data ? disablePush.mutate() : enablePush.mutate()}>
+                  onClick={() => {
+                    if (pushStatus.data) {
+                      disablePush.mutate();
+                      return;
+                    }
+                    enablePush.mutate(requestPushPermission());
+                  }}>
                   {enablePush.isPending || disablePush.isPending ? "Updating…" : pushStatus.data ? "Disable on this device" : "Enable on this device"}
                 </button>
                 {enablePush.isError && <p role="alert" className="err">{(enablePush.error as Error).message}</p>}

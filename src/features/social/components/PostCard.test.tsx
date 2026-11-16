@@ -10,8 +10,12 @@ vi.mock("../api", () => ({
   unlikePost: vi.fn(),
   repostPost: vi.fn(),
   unrepostPost: vi.fn(),
+  savePost: vi.fn(),
+  unsavePost: vi.fn(),
   postShareUrl: (id: string) => `https://campusconnect.example/app/p/${id}`,
   avatarUrl: () => null,
+  searchStudents: vi.fn().mockResolvedValue([]),
+  recordCommentImpressions: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("../usePostImpression", () => ({ usePostImpression: () => ({ current: null }) }));
 vi.mock("./ProtectedPostImage", () => ({
@@ -39,12 +43,12 @@ const post = {
   reposter_name: null,
 };
 
-function renderCard(overrides: Partial<typeof post> = {}, options: { fullPost?: boolean; images?: string[] } = {}) {
+function renderCard(overrides: Partial<typeof post> = {}, options: { fullPost?: boolean; images?: string[]; metrics?: { post_id: string; impressions: number; views: number; saved_by_me: boolean } } = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
-        <PostCard post={{ ...post, ...overrides }} me="student-2" fullPost={options.fullPost} images={options.images} />
+        <PostCard post={{ ...post, ...overrides }} me="student-2" fullPost={options.fullPost} images={options.images} metrics={options.metrics} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -79,5 +83,13 @@ describe("PostCard content preview", () => {
     expect(bodyElement).not.toHaveStyle({ WebkitLineClamp: 6 });
     expect(screen.getByRole("img", { name: "Attached to post" })).toHaveAttribute("src", "owner/photo.png");
     expect(screen.queryByRole("link", { name: "Show more" })).not.toBeInTheDocument();
+  });
+
+  it("shows public view and impression totals and the current saved state", () => {
+    renderCard({}, { metrics: { post_id: "post-1", views: 12000, impressions: 54000, saved_by_me: true } });
+
+    expect(screen.getByLabelText("Public post metrics")).toHaveTextContent("12K views");
+    expect(screen.getByLabelText("Public post metrics")).toHaveTextContent("54K impressions");
+    expect(screen.getByRole("button", { name: "Saved" })).toHaveAttribute("aria-pressed", "true");
   });
 });

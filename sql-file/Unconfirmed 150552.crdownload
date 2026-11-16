@@ -1,0 +1,104 @@
+# LOCAL TEST RUNNER v4 (Windows PowerShell 5.1 or PowerShell 7). NOT EXECUTED: no PowerShell was available where this was written.
+# The bash twin (scripts/local-test.sh) was exercised against a stubbed docker; this file mirrors its logic line for line.
+# Runs ONLY against the local Supabase Docker database through `docker exec`; it opens no connection string and never uses
+# `supabase link`, `db push` or `db pull`. It refuses to run if it cannot prove the target is local.
+# Usage: .\scripts\local-test.ps1 [-Reset] [-SkipExisting] [-SkipConcurrency]
+param([switch]$Reset, [switch]$SkipExisting, [switch]$SkipConcurrency)
+$ErrorActionPreference = "Continue"
+$DB = if ($env:DB_CONTAINER) { $env:DB_CONTAINER } else { "supabase_db_campusconnect-local" }
+$ExpectA = 100; $ExpectB = 129; $ExpectC = 127      # verdict lines per suite, counted statically from the source files
+$script:Failed = $false
+function Die([string]$m) { Write-Host "REFUSING: $m" -ForegroundColor Red; exit 2 }
+
+# ---- safety: prove the target is local ----
+$bad = Get-ChildItem Env: | Where-Object { $_.Name -match '^(SUPABASE_ACCESS_TOKEN|SUPABASE_DB_PASSWORD|SUPABASE_DB_URL)$' -or $_.Value -match 'supabase\.co' }
+if ($bad) { Die "a production-looking Supabase variable is set in this shell; open a clean terminal" }
+$names = @(docker ps --format '{{.Names}}')
+if (-not ($names -contains $DB)) { Die "container '$DB' is not running. Run: npx supabase start (and check project_id in supabase/config.toml)" }
+$status = (npx supabase status 2>$null | Out-String)
+if ($status -match 'supabase\.co') { Die "supabase status shows a remote host" }
+if (Test-Path "supabase\.temp\project-ref") { Write-Host "NOTE: this folder is linked to a remote Supabase project (supabase\.temp\project-ref). This runner never uses that link." }
+Write-Host "Local container: $DB"
+
+# psql runs INSIDE the container and stderr is merged there, so Windows PowerShell 5.1 never sees native stderr
+# (which it would wrap in error records) and the SQL file is copied byte for byte (no console encoding issues).
+function PsqlFile([string]$File, [string]$Flags = "") {
+  docker cp $File "${DB}:/tmp/runner.sql" | Out-Null
+  if ($LASTEXITCODE -ne 0) { return "ERROR: could not copy $File into the container" }
+  return (docker exec $DB sh -c "psql -U postgres -d postgres $Flags -f /tmp/runner.sql 2>&1" | Out-String)
+}
+
+if ($Reset) {
+  Write-Host "== db reset (LOCAL database is dropped and rebuilt from supabase/migrations)"
+  npx supabase db reset
+  if ($LASTEXITCODE -ne 0) { Write-Host "db reset FAILED"; exit 1 }
+}
+
+# ---- preflight: which migrations are present? ----
+$pf = ((PsqlFile "supabase\tests\preflight.sql" "-At -F'|'") -split "`r?`n") | Where-Object { $_ -match '^[tf]\|[tf]\|[tf]\|[tf]$' } | Select-Object -Last 1
+if (-not $pf) { Die "preflight query returned nothing: is the local database up and built? (use -Reset)" }
+$f = $pf -split '\|'
+$AOk = ($f[0] -eq 't'); $BOk = ($f[1] -eq 't'); $COk = ($f[2] -eq 't'); $ROk = ($f[3] -eq 't')
+Write-Host "Preflight: A(hashtags)=$($f[0]) B(impressions)=$($f[1]) C(outbox)=$($f[2]) 0014(reconciliation)=$($f[3])"
+
+# Expect: a number = exact verdict count | min1 = at least one verdict | rollback = no verdicts, but must end in ROLLBACK
+function RunSuite([string]$Name, [string]$File, [string]$Expect) {
+  if (-not (Test-Path $File)) { Write-Host "== ${Name}: NOT RUN (file missing: $File)"; $script:Failed = $true; return }
+  $lines = (PsqlFile $File) -split "`r?`n"
+  $pass = @($lines | Where-Object { $_ -match '^PASS' }).Count
+  $fail = @($lines | Where-Object { $_ -match '^FAIL' }).Count
+  Write-Host "== ${Name}: PASS=$pass FAIL=$fail (expected: $Expect)"
+  $lines | Where-Object { $_ -match '^FAIL' }
+  $errs = @($lines | Where-Object { $_ -match 'ERROR:|FATAL:' -and $_ -notmatch 'RESULTS' })
+  if ($errs.Count -gt 0) { Write-Host "   UNEXPECTED SQL ERROR (the suite stopped early):"; $errs | Select-Object -First 5 | ForEach-Object { "     $_" }; $script:Failed = $true }
+  if ($fail -gt 0) { $script:Failed = $true }
+  switch ($Expect) {
+    'min1'     { if (($pass + $fail) -lt 1) { Write-Host "   NO VERDICT LINES: the suite printed no PASS/FAIL line, so it proves nothing"; $script:Failed = $true } }
+    'rollback' { if (-not ($lines | Where-Object { $_ -match '^ROLLBACK' })) { Write-Host "   NO ROLLBACK SEEN: the suite did not run to its end"; $script:Failed = $true } }
+    default    { if (($pass + $fail) -ne [int]$Expect) { Write-Host "   INCOMPLETE RUN: expected exactly $Expect verdict lines"; $script:Failed = $true } }
+  }
+}
+function SkipSuite([string]$Name, [string]$Why) { Write-Host "== ${Name}: NOT RUN ($Why)"; $script:Failed = $true }
+
+# ---- existing regression suites, in migration order ----
+if (-not $SkipExisting) {
+  RunSuite "existing rls_foundation (0001-0007)"    "supabase\tests\rls_foundation.sql"         "min1"
+  RunSuite "existing social_core (0008)"            "supabase\tests\social_core.sql"            "min1"
+  RunSuite "existing phase6_opportunities (0010)"   "supabase\tests\phase6_opportunities.sql"  "min1"
+  RunSuite "existing google_oauth_usernames (0013)" "supabase\tests\google_oauth_usernames.sql" "rollback"
+  Write-Host "== existing admin_read_layer.sql: NOT RUN (contains only comments, no executable SQL; its checks were run inline in 2026-10-18)"
+  Write-Host "== existing reposts/phase-5 suites: NOT RUN (never saved as SQL; only supabase\tests\reposts_stats_connections.md exists)"
+}
+# ---- new suites ----
+if ($AOk) { RunSuite "hashtags (A)" "supabase\tests\hashtags.sql" "$ExpectA" } else { SkipSuite "hashtags (A)" "migration A not applied" }
+if ($AOk -and $BOk) { RunSuite "impressions + profile views (B)" "supabase\tests\post_impressions_profile_views.sql" "$ExpectB" } else { SkipSuite "impressions + profile views (B)" "migration A and/or B not applied" }
+if ($COk) { RunSuite "notification outbox (C)" "supabase\tests\notification_outbox.sql" "$ExpectC" } else { SkipSuite "notification outbox (C)" "migration C not applied" }
+
+# ---- concurrency ----
+function ConcurrencyVerify([string]$Label) {
+  $v = (PsqlFile "supabase\tests\concurrency\verify.sql" "-At -F'|'") -split "`r?`n"
+  $rows = @($v | Where-Object { $_ -match '\|[tf]$' }); $rows
+  if (@($rows | Where-Object { $_ -match '\|f$' }).Count -gt 0) { Write-Host "   CONCURRENCY CHECK FAILED ($Label)"; $script:Failed = $true }
+  if (@($rows | Where-Object { $_ -match '\|t$' }).Count -lt 1) { Write-Host "   verify printed no result rows ($Label)"; $script:Failed = $true }
+}
+if (-not $SkipConcurrency) {
+  if (-not ($AOk -and $BOk)) { SkipSuite "concurrency" "migrations A and B not applied" }
+  else {
+    docker exec $DB which pgbench | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+      Write-Host "== concurrency"
+      $s = PsqlFile "supabase\tests\concurrency\setup.sql"; if ($s -match 'ERROR:|REFUSING') { Write-Host "   setup failed"; $script:Failed = $true }
+      docker cp "supabase\tests\concurrency\one_viewer.pgbench" "${DB}:/tmp/one_viewer.pgbench" | Out-Null
+      docker cp "supabase\tests\concurrency\many_viewers.pgbench" "${DB}:/tmp/many_viewers.pgbench" | Out-Null
+      docker exec $DB sh -c "pgbench -U postgres -d postgres -n -c 20 -j 4 -T 10 -f /tmp/one_viewer.pgbench 2>&1" | Select-Object -Last 4
+      ConcurrencyVerify "one_viewer"
+      PsqlFile "supabase\tests\concurrency\cleanup.sql" | Out-Null; PsqlFile "supabase\tests\concurrency\setup.sql" | Out-Null
+      docker exec $DB sh -c "pgbench -U postgres -d postgres -n -c 20 -j 4 -T 20 -f /tmp/many_viewers.pgbench 2>&1" | Select-Object -Last 4
+      ConcurrencyVerify "many_viewers"
+      PsqlFile "supabase\tests\concurrency\cleanup.sql" | Select-Object -Last 3
+    } else { SkipSuite "concurrency" "pgbench not found in the container; see docs/LOCAL_TESTING_GUIDE.md section 7" }
+  }
+}
+Write-Host ""
+if ($script:Failed) { Write-Host "NOT GREEN: at least one check failed, stopped early, or was not run. Send me the output above." -ForegroundColor Yellow; exit 1 }
+else { Write-Host "ALL EXECUTED CHECKS PASSED AND NOTHING WAS SKIPPED" -ForegroundColor Green }

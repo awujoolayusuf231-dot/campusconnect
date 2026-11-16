@@ -8,7 +8,7 @@ import { communityCoverUrl, removeCommunityCover, uploadCommunityCover } from ".
 import { listActiveInstitutions, type InstitutionOption } from "@/features/institutions/api";
 import { InstitutionPicker } from "@/features/institutions/InstitutionPicker";
 import { useMyPermissions } from "@/features/admin/useMyPermissions";
-import { fetchMediaPaths, FEED_PAGE, type Cursor, type FeedPost } from "@/features/social/api";
+import { fetchMediaPaths, fetchPostPublicMetrics, FEED_PAGE, type Cursor, type FeedPost } from "@/features/social/api";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { Composer } from "@/features/social/components/Composer";
 import { PostCard } from "@/features/social/components/PostCard";
@@ -340,6 +340,7 @@ function CommunityPosts({ community, isMember, membershipKnown, isMod, me }: { c
   }, [community.id, isMember, me, membershipKnown, qc]);
   const posts = canAccessPosts ? feed.data?.pages.flat() ?? [] : []; const ids = posts.map((p) => p.id);
   const media = useQuery({ queryKey: ["media", ids.join(",")], enabled: canAccessPosts && ids.length > 0, queryFn: () => fetchMediaPaths(ids) });
+  const metrics = useQuery({ queryKey: ["post-public-metrics", ids.join(",")], enabled: canAccessPosts && ids.length > 0, queryFn: () => fetchPostPublicMetrics(ids), refetchOnWindowFocus: false });
   const hide = useMutation({ mutationFn: () => setPostState(hiding!, true, reason), onSuccess: () => { setHiding(null); setReason(""); void qc.invalidateQueries({ queryKey: ["community-posts"] }); void qc.invalidateQueries({ queryKey: ["community-hidden"] }); } });
   return (
     <div className="space-y-3">
@@ -352,7 +353,7 @@ function CommunityPosts({ community, isMember, membershipKnown, isMod, me }: { c
       {canAccessPosts && ids.length > 0 && media.isError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-danger">Some post media could not be loaded.</p>}
       {posts.map((p) => (
         <div key={p.id} className="space-y-1">
-          <PostCard post={p} images={media.data?.[p.id]} me={me} inCommunity />
+          <PostCard post={p} images={media.data?.[p.id]} metrics={metrics.data?.[p.id]} me={me} inCommunity trackImpression />
           {isMod && p.author_id !== me && <button className="text-xs underline text-muted" onClick={() => setHiding(p.id)}>Hide as community moderator</button>}
         </div>))}
       {canAccessPosts && feed.hasNextPage && <button className="btn min-h-11 w-full" disabled={feed.isFetchingNextPage} onClick={() => void feed.fetchNextPage()}>{feed.isFetchingNextPage ? "Loading more posts…" : "Load more posts"}</button>}
@@ -375,6 +376,7 @@ function clearCommunityPostCache(queryClient: QueryClient, communityId: string, 
   if (postIds.length === 0) return;
 
   queryClient.removeQueries({ queryKey: ["media", postIds.join(",")], exact: true });
+  queryClient.removeQueries({ queryKey: ["post-public-metrics", postIds.join(",")], exact: true });
   for (const postId of postIds) {
     queryClient.removeQueries({ queryKey: ["post", postId], exact: true });
     queryClient.removeQueries({ queryKey: ["comments", postId] });

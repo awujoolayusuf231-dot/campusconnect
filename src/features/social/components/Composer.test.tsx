@@ -8,6 +8,7 @@ import { Composer } from "./Composer";
 vi.mock("../api", () => ({
   createPost: vi.fn().mockResolvedValue({ failedImages: 0 }),
   validateImages: vi.fn(() => null),
+  searchStudents: vi.fn().mockResolvedValue([]),
 }));
 
 function renderComposer() {

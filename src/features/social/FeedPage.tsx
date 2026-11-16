@@ -1,7 +1,7 @@
 import { lazy, useState } from "react";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { FEED_PAGE, fetchMediaPaths, type FeedScope } from "./api";
+import { FEED_PAGE, fetchMediaPaths, fetchPostPublicMetrics, type FeedScope } from "./api";
 import { fetchFeedTimeline, type FeedTimelineCursor } from "@/features/celebrations/api";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { Composer } from "./components/Composer";
@@ -44,12 +44,13 @@ export function FeedPage() {
   const posts = items.flatMap((item) => item.item_type === "post" ? [item.item] : []);
   const ids = posts.map((p) => p.id);
   const media = useQuery({ queryKey: ["media", ids.join(",")], enabled: ids.length > 0, queryFn: () => fetchMediaPaths(ids) });
+  const metrics = useQuery({ queryKey: ["post-public-metrics", ids.join(",")], enabled: ids.length > 0, queryFn: () => fetchPostPublicMetrics(ids), refetchOnWindowFocus: false });
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
+      <CelebrationSpotlight />
       <OnboardingCard />
       <Composer />
-      <CelebrationSpotlight />
       <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_8px_24px_rgba(35,24,20,0.035)]">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 sm:px-5">
           <div>
@@ -103,7 +104,7 @@ export function FeedPage() {
           {scope === "for_you" && <Link to="/app/discover" className="mt-3 inline-flex min-h-9 items-center rounded-lg px-3 text-sm font-bold text-primary hover:bg-[#fff1f2]">Explore students and topics</Link>}
         </div>)}
       {items.map((item) => item.item_type === "post"
-        ? <PostCard key={`post-${item.item_id}`} post={item.item} images={media.data?.[item.item.id]} me={me} trackImpression />
+        ? <PostCard key={`post-${item.item_id}`} post={item.item} images={media.data?.[item.item.id]} metrics={metrics.data?.[item.item.id]} me={me} trackImpression />
         : <CelebrationFeedCard key={`celebration-${item.item_id}`} card={item.item} />)}
       {feed.hasNextPage && <button className="btn group min-h-11 w-full gap-2 bg-white font-semibold text-muted hover:border-primary/25 hover:text-primary" disabled={feed.isFetchingNextPage} onClick={() => void feed.fetchNextPage()}>{feed.isFetchingNextPage ? <LoadingState label="Finding more posts" /> : <>Load more posts <ArrowDown size={16} aria-hidden="true" className="transition-transform group-hover:translate-y-0.5" /></>}</button>}
       </div>

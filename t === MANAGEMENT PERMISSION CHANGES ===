@@ -1,0 +1,82 @@
+warning: in the working copy of 'src/features/community/CommunityPage.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/features/community/CommunityPage.tsx b/src/features/community/CommunityPage.tsx[m
+[1mindex 330a18c..f05d004 100644[m
+[1m--- a/src/features/community/CommunityPage.tsx[m
+[1m+++ b/src/features/community/CommunityPage.tsx[m
+[36m@@ -1,9 +1,14 @@[m
+[31m-import { useState } from "react";[m
+[32m+[m[32mimport { useEffect, useState } from "react";[m
+ import { Link, useParams } from "react-router-dom";[m
+ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";[m
+[32m+[m[32mimport { ArrowLeft, Archive, ChevronRight, CircleAlert, ImagePlus, LoaderCircle, LockKeyhole, Pencil, ShieldCheck, Trash2, Upload, Users } from "lucide-react";[m
+ import { supabase } from "@/lib/supabase";[m
+ import { archiveCommunity, COMMUNITY_CATEGORIES, getCommunityBySlug, joinCommunity, leaveCommunity, listMembers, myCommunityRole, setMember, setPostState, updateCommunity } from "./api";[m
+[31m-import { fetchMediaUrls, FEED_PAGE, type Cursor, type FeedPost } from "@/features/social/api";[m
+[32m+[m[32mimport { communityCoverUrl, removeCommunityCover, uploadCommunityCover } from "./communityCover";[m
+[32m+[m[32mimport { listActiveInstitutions, type InstitutionOption } from "@/features/institutions/api";[m
+[32m+[m[32mimport { InstitutionPicker } from "@/features/institutions/InstitutionPicker";[m
+[32m+[m[32mimport { useMyPermissions } from "@/features/admin/useMyPermissions";[m
+[32m+[m[32mimport { fetchMediaPaths, FEED_PAGE, type Cursor, type FeedPost } from "@/features/social/api";[m
+ import { useAuth } from "@/features/auth/AuthProvider";[m
+ import { Composer } from "@/features/social/components/Composer";[m
+ import { PostCard } from "@/features/social/components/PostCard";[m
+[36m@@ -28,41 +33,85 @@[m [mexport function CommunityPage() {[m
+   const community = useQuery({ queryKey: ["community", slug], queryFn: () => getCommunityBySlug(slug) });[m
+   const c = community.data;[m
+   const role = useQuery({ queryKey: ["community-role", c?.id, me], enabled: !!c, queryFn: () => myCommunityRole(c!.id) });[m
+[32m+[m[32m  const permissions = useMyPermissions();[m
+   const isMod = role.data === "owner" || role.data === "moderator";[m
+   const isOwner = role.data === "owner";[m
+[31m-  const refresh = () => { void qc.invalidateQueries({ queryKey: ["community"] }); void qc.invalidateQueries({ queryKey: ["community-role"] }); void qc.invalidateQueries({ queryKey: ["community-members"] }); void qc.invalidateQueries({ queryKey: ["communities"] }); };[m
+[32m+[m[32m  const canManage = isMod || permissions.data?.includes("communities.manage") === true;[m
+[32m+[m[32m  const institutions = useQuery({ queryKey: ["institutions", "active"], queryFn: listActiveInstitutions, enabled: canManage });[m
+[32m+[m[32m  const cover = useQuery({[m
+[32m+[m[32m    queryKey: ["community-cover", c?.id, c?.cover_path],[m
+[32m+[m[32m    enabled: !!c?.cover_path,[m
+[32m+[m[32m    queryFn: () => communityCoverUrl(c!.id, c!.cover_path),[m
+[32m+[m[32m  });[m
+[32m+[m[32m  const refresh = () => {[m
+[32m+[m[32m    void qc.invalidateQueries({ queryKey: ["community", slug] });[m
+[32m+[m[32m    void qc.invalidateQueries({ queryKey: ["community-role", c?.id] });[m
+[32m+[m[32m    void qc.invalidateQueries({ queryKey: ["community-members", c?.id] });[m
+[32m+[m[32m    void qc.invalidateQueries({ queryKey: ["communities"] });[m
+[32m+[m[32m  };[m
+   const join = useMutation({ mutationFn: () => joinCommunity(c!.id), onSuccess: refresh });[m
+   const leave = useMutation({ mutationFn: () => leaveCommunity(c!.id), onSuccess: () => { setLeaving(false); refresh(); } });[m
+   const archive = useMutation({ mutationFn: () => archiveCommunity(c!.id, c!.status === "active"), onSuccess: refresh });[m
+ [m
+   if (community.isLoading) return <LoadingState label="Finding this community" variant="page" />;[m
+[31m-  if (community.isError) return <p role="alert" className="err">Could not load this community.</p>;[m
+[31m-  if (!c) return <div className="card">This community does not exist or is not available. <Link className="underline" to="/app/communities">Back to communities</Link></div>;[m
+[32m+[m[32m  if (community.isError) return <div role="alert" className="card"><p className="font-bold">Could not load this community.</p><button className="btn mt-3" onClick={() => void community.refetch()}>Try again</button></div>;[m
+[32m+[m[32m  if (!c) return <div className="card"><p className="font-bold">This community does not exist or is not available.</p><Link className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline" to="/app/communities"><ArrowLeft size={15} />Back to communities</Link></div>;[m
+   const isMember = !!role.data;[m
+   const err = (join.error ?? leave.error ?? archive.error) as Error | null;[m
+ [m
+   return ([m
+[31m-    <div className="space-y-4">[m
+[31m-      <section className="card space-y-2">[m
+[31m-        <Link to="/app/communities" className="text-sm underline">← Communities</Link>[m
+[31m-        <div className="flex flex-wrap items-start justify-between gap-3">[m
+[31m-          <div><h1 className="text-2xl font-semibold">{c.name}</h1>[m
+[31m-            <p className="text-sm text-muted">{COMMUNITY_CATEGORIES.find(([v]) => v === c.category)?.[1]} · {c.member_count} member{c.member_count === 1 ? "" : "s"}{c.status !== "active" ? ` · ${c.status}` : ""}</p></div>[m
+[31m-          <div className="flex flex-wrap gap-2">[m
+[31m-            {!isMember && c.status === "active" && <button className="btn-primary" disabled={join.isPending} onClick={() => join.mutate()}>Join</button>}[m
+[31m-            {isMember && !isOwner && <button className="btn" onClick={() => setLeaving(true)}>Leave</button>}[m
+[31m-            {isOwner && c.status !== "disabled" && <button className="btn" disabled={archive.isPending} onClick={() => archive.mutate()}>{c.status === "active" ? "Archive" : "Unarchive"}</button>}[m
+[31m-            {!isOwner && <button className="btn" onClick={() => setReporting(true)}>Report</button>}[m
+[32m+[m[32m    <div className="mx-auto max-w-5xl space-y-5">[m
+[32m+[m[32m      <Link to="/app/communities" className="inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-muted transition hover:bg-white hover:text-primary"><ArrowLeft size={16} aria-hidden="true" />All communities</Link>[m
+[32m+[m[32m      <section className="overflow-hidden rounded-[26px] border border-line bg-white shadow-[0_12px_36px_rgba(35,24,20,0.055)]">[m
+[32m+[m[32m        <div className="relative h-36 overflow-hidden bg-gradient-to-br from-[#741923] via-[#a52432] to-[#df7a80] bg-cover bg-center sm:h-52"[m
+[32m+[m[32m          style={cover.data ? { backgroundImage: `linear-gradient(to top, rgba(49,16,20,0.2), rgba(49,16,20,0.02)), url("${cover.data}")` } : undefined}>[m
+[32m+[m[32m          <div aria-hidden="true" className="absolute -right-10 -top-20 h-56 w-56 rounded-full border border-white/15" />[m
+[32m+[m[32m          <div aria-hidden="true" className="absolute right-8 -top-14 h-44 w-44 rounded-full border border-white/10" />[m
+[32m+[m[32m          <div aria-hidden="true" className="absolute -bottom-28 left-[28%] h-56 w-56 rounded-full bg-white/10 blur-2xl" />[m
+[32m+[m[32m          <span className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white/95 backdrop-blur sm:bottom-5 sm:right-6">[m
+[32m+[m[32m            <Users size={13} aria-hidden="true" />{COMMUNITY_CATEGORIES.find(([v]) => v === c.category)?.[1] ?? "Community"}[m
+[32m+[m[32m          </span>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m        <div className="p-4 sm:p-7">[m
+[32m+[m[32m          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">[m
+[32m+[m[32m           

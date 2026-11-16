@@ -7,6 +7,7 @@ export function PostInsights({ postId }: { postId: string }) {
   const insights = useQuery({
     queryKey: ["post-insights", postId],
     queryFn: () => fetchPostAnalytics(postId),
+    refetchOnWindowFocus: false,
   });
 
   return (

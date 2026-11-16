@@ -35,6 +35,8 @@ export function socialErrorMessage(message: string): string {
   if (normalized.includes("rate_limited")) return "You are doing that too quickly. Please try again later.";
   if (normalized.includes("cannot_repost_own")) return "You cannot repost your own post.";
   if (normalized.includes("cannot_repost_community_post")) return "Posts inside communities cannot be reposted.";
+  if (normalized.includes("comment_not_publicly_reshareable")) return "Only comments on public, non-community posts can be reshared.";
+  if (normalized.includes("invalid_parent_comment")) return "Replies can only be added directly under a top-level comment.";
   if (normalized.includes("not_found")) return "That item is no longer available.";
   if (normalized.includes("forbidden")) return "Your account cannot do that right now.";
   if (normalized.includes("name_or_slug_taken") || normalized.includes("name_taken")) return "That name or web address is already taken.";

@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoadingState } from "@/app/LoadingState";
 import { supabase } from "@/lib/supabase";
 import { useMyPermissions } from "../useMyPermissions";
+import { ConfirmDialog } from "@/features/social/components/ConfirmDialog";
 
 type RequestStatus = "pending" | "cancelled" | "completed";
 interface DeletionRequest {
@@ -19,11 +20,18 @@ interface ProfileSummary {
 interface DeletionRequestWithProfile extends DeletionRequest {
   profile: ProfileSummary | null;
 }
+interface ActionTarget {
+  request: DeletionRequestWithProfile;
+  action: "delete" | "reject";
+}
 
 export function AccountDeletionRequestsPage() {
+  const queryClient = useQueryClient();
   const permissions = useMyPermissions();
   const [showAll, setShowAll] = useState(false);
+  const [actionTarget, setActionTarget] = useState<ActionTarget | null>(null);
   const canView = permissions.data?.includes("users.view") ?? false;
+  const canModerate = permissions.data?.includes("users.moderate") ?? false;
   const requests = useQuery({
     queryKey: ["admin", "account-deletion-requests", showAll ? "all" : "pending"],
     enabled: canView,
@@ -52,6 +60,28 @@ export function AccountDeletionRequestsPage() {
       return rows.map((row) => ({ ...row, profile: profiles.get(row.user_id) ?? null }));
     },
   });
+  const processRequest = useMutation({
+    mutationFn: async ({ request, action }: ActionTarget) => {
+      if (action === "delete") {
+        const { error } = await supabase.functions.invoke("admin-delete-account", {
+          body: { user_id: request.user_id },
+        });
+        if (error) throw error;
+        return;
+      }
+      const { error } = await supabase.rpc("admin_reject_account_deletion", {
+        p_target: request.user_id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      setActionTarget(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "account-deletion-requests"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "stats"] }),
+      ]);
+    },
+  });
 
   if (permissions.isLoading) return <LoadingState label="Checking deletion-request access" variant="panel" />;
   if (permissions.isError) return <section role="alert" className="card">Could not verify access to deletion requests.</section>;
@@ -73,7 +103,7 @@ export function AccountDeletionRequestsPage() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Account deletion requests</h1>
-          <p className="mt-1 text-sm text-muted">Review submitted requests. Listing a request does not delete the account.</p>
+          <p className="mt-1 text-sm text-muted">Rejecting keeps the account. Permanent deletion removes the user and cascades associated database records.</p>
         </div>
         <button type="button" className="btn" aria-pressed={showAll} onClick={() => setShowAll((value) => !value)}>
           {showAll ? "Show pending only" : "Show all requests"}
@@ -93,6 +123,7 @@ export function AccountDeletionRequestsPage() {
                 <th scope="col" className="p-3">Status</th>
                 <th scope="col" className="p-3">Requested</th>
                 <th scope="col" className="p-3">Processed</th>
+                {canModerate && <th scope="col" className="p-3">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -105,12 +136,34 @@ export function AccountDeletionRequestsPage() {
                   <td className="p-3 capitalize">{request.status.replace("_", " ")}</td>
                   <td className="p-3">{new Date(request.requested_at).toLocaleString()}</td>
                   <td className="p-3">{request.processed_at ? new Date(request.processed_at).toLocaleString() : "—"}</td>
+                  {canModerate && <td className="p-3">
+                    {request.status === "pending" && <div className="flex flex-wrap gap-2">
+                      <button type="button" className="btn" onClick={() => { processRequest.reset(); setActionTarget({ request, action: "reject" }); }}>
+                        Reject request
+                      </button>
+                      <button type="button" className="btn-danger" onClick={() => { processRequest.reset(); setActionTarget({ request, action: "delete" }); }}>
+                        Delete account
+                      </button>
+                    </div>}
+                  </td>}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+      {processRequest.isError && <p role="alert" className="err">{processRequest.error.message}</p>}
+      {actionTarget && <ConfirmDialog
+        title={actionTarget.action === "delete" ? "Permanently delete this account?" : "Reject this deletion request?"}
+        confirmLabel={actionTarget.action === "delete" ? "Delete permanently" : "Reject request"}
+        busy={processRequest.isPending}
+        onCancel={() => { if (!processRequest.isPending) setActionTarget(null); }}
+        onConfirm={() => processRequest.mutate(actionTarget)}
+      >
+        {actionTarget.action === "delete"
+          ? `This permanently deletes ${actionTarget.request.profile?.display_name ?? "this user's"} account and associated database records. This cannot be undone.`
+          : `This closes the request and keeps ${actionTarget.request.profile?.display_name ?? "the user's"} account active.`}
+      </ConfirmDialog>}
     </div>
   );
 }

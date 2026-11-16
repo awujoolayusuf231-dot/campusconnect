@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Briefcase, GraduationCap, Globe, MapPin, MessageCircle, MoreHorizontal, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { blockUser, fetchMediaPaths, fetchProfileReposts, fetchProfileStats, followUser, unfollowUser, type FeedPost } from "@/features/social/api";
+import { blockUser, fetchMediaPaths, fetchPostPublicMetrics, fetchProfileReposts, fetchProfileStats, followUser, recordProfileView, unfollowUser, type FeedPost } from "@/features/social/api";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { Avatar } from "@/features/social/components/Avatar";
 import { PostCard } from "@/features/social/components/PostCard";
@@ -33,10 +33,20 @@ export function ProfilePage() {
   const [list, setList] = useState<"followers" | "following" | null>(null);
   const [tab, setTab] = useState<Tab>("posts");
   const [limit, setLimit] = useState(20);
+  const recordedProfileViews = useRef(new Set<string>());
 
   const profile = useQuery({ queryKey: ["profile", username], queryFn: async () => {
     const { data, error } = await supabase.from("profiles").select("id,username,display_name,bio,avatar_path,cover_path,institution_id,faculty,department,academic_level,graduation_year,interests,location,website_url,celebration_url,show_celebration,created_at").eq("username", username.toLowerCase()).maybeSingle();
     if (error) throw error; return data as Profile | null; } });
+  const profileId = profile.data?.id;
+  useEffect(() => {
+    if (!profileId || profileId === me || recordedProfileViews.current.has(profileId)) return;
+    recordedProfileViews.current.add(profileId);
+    void recordProfileView(profileId).catch((error: unknown) => {
+      recordedProfileViews.current.delete(profileId);
+      console.error("CampusConnect could not record this profile view.", error);
+    });
+  }, [profileId, me]);
   const p = profile.data; const mine = !!p && p.id === me;
   const coverImage = useQuery({
     queryKey: ["profile-cover-url", p?.id, p?.cover_path],
@@ -60,6 +70,14 @@ export function ProfilePage() {
     }
     return { posts: rows.map((r) => ({ ...r, liked_by_me: liked.has(r.id), reposted_by_me: reposted.has(r.id), username: p!.username, display_name: p!.display_name, avatar_path: p!.avatar_path, activity_at: r.created_at, reposter_username: null, reposter_name: null })), media: await fetchMediaPaths(ids) }; } });
   const reposts = useQuery({ queryKey: ["profile-reposts", p?.id, limit], enabled: !!p && tab === "reposts", queryFn: async () => { const rows = await fetchProfileReposts(p!.id, limit); return { posts: rows, media: await fetchMediaPaths(rows.map((r) => r.id)) }; } });
+  const active = tab === "posts" ? posts : reposts;
+  const activePostIds = active.data?.posts.map((post) => post.id) ?? [];
+  const activeMetrics = useQuery({
+    queryKey: ["post-public-metrics", activePostIds.join(",")],
+    enabled: activePostIds.length > 0,
+    queryFn: () => fetchPostPublicMetrics(activePostIds),
+    refetchOnWindowFocus: false,
+  });
 
   const follow = useMutation({ mutationFn: () => (stats.data?.is_following ? unfollowUser(p!.id) : followUser(p!.id)),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ["profile-stats"] }); void qc.invalidateQueries({ queryKey: ["connections"] }); void qc.invalidateQueries({ queryKey: ["feed"] }); } });
@@ -72,7 +90,6 @@ export function ProfilePage() {
 
   const celebrationOk = !!flag.data && p.show_celebration && !!p.celebration_url && celebrationUrlSchema.safeParse(p.celebration_url).success;
   const details = [p.faculty, p.department, p.academic_level].filter(Boolean).join(" · ");
-  const active = tab === "posts" ? posts : reposts;
   const actionError = (follow.error ?? startChat.error ?? block.error) as Error | null;
 
   return (
@@ -146,7 +163,7 @@ export function ProfilePage() {
             <h2 className="mt-3 font-extrabold text-fg">{tab === "posts" ? "The first post is waiting" : "No reposts just yet"}</h2>
             <p className="mt-1 text-sm text-muted">{tab === "posts" ? "When there are posts to share, they’ll show up here." : "Posts this student shares will appear here."}</p>
           </div>}
-          {active.data?.posts.map((post) => <PostCard key={`${tab}-${post.id}`} post={post} images={active.data?.media[post.id]} me={me} />)}
+          {active.data?.posts.map((post) => <PostCard key={`${tab}-${post.id}`} post={post} images={active.data?.media[post.id]} metrics={activeMetrics.data?.[post.id]} me={me} trackImpression />)}
           {active.data && active.data.posts.length >= limit && limit < 100 && <button className="btn min-h-11 w-full gap-2 bg-white font-semibold text-muted hover:border-primary/25 hover:text-primary" disabled={active.isFetching} onClick={() => setLimit((l) => Math.min(l + 20, 100))}>{active.isFetching ? <LoadingState label="Finding more posts" /> : "Show more posts"}</button>}
         </div>
       </section>

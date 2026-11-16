@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { ArrowDown, Hash } from "lucide-react";
 import { LoadingState } from "@/app/LoadingState";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { fetchMediaPaths, fetchPostsByHashtag, FEED_PAGE, type Cursor } from "./api";
+import { fetchMediaPaths, fetchPostPublicMetrics, fetchPostsByHashtag, FEED_PAGE, type Cursor } from "./api";
 import { PostCard } from "./components/PostCard";
 
 export function HashtagPage() {
@@ -25,6 +25,12 @@ export function HashtagPage() {
     enabled: posts.length > 0,
     queryFn: () => fetchMediaPaths(posts.map((post) => post.id)),
   });
+  const metrics = useQuery({
+    queryKey: ["post-public-metrics", posts.map((post) => post.id).join(",")],
+    enabled: posts.length > 0,
+    queryFn: () => fetchPostPublicMetrics(posts.map((post) => post.id)),
+    refetchOnWindowFocus: false,
+  });
 
   return (
     <main className="mx-auto max-w-3xl space-y-4">
@@ -43,7 +49,7 @@ export function HashtagPage() {
         <p role="status" className="card text-sm text-muted">No posts tagged #{tag} are currently visible to you.</p>
       )}
       {media.isError && <p role="alert" className="text-sm text-danger">Some post images could not be loaded.</p>}
-      {posts.map((post) => <PostCard key={post.id} post={post} images={media.data?.[post.id]} me={session?.user.id ?? ""} trackImpression />)}
+      {posts.map((post) => <PostCard key={post.id} post={post} images={media.data?.[post.id]} metrics={metrics.data?.[post.id]} me={session?.user.id ?? ""} trackImpression />)}
       {feed.hasNextPage && <button className="btn group min-h-11 w-full gap-2 bg-white font-semibold text-muted hover:border-primary/25 hover:text-primary" disabled={feed.isFetchingNextPage} onClick={() => void feed.fetchNextPage()}>
         {feed.isFetchingNextPage ? <LoadingState label="Loading more posts" /> : <>Load more posts <ArrowDown size={16} aria-hidden="true" /></>}
       </button>}

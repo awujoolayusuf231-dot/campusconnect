@@ -1,18 +1,18 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Mic, MicOff, Radio, Users, Hand, Send, PhoneOff, Plus } from "lucide-react";
-import type { Room } from "livekit-client";
+import { Mic, MicOff, Radio, Users, Hand, Send, PhoneOff, Plus, VolumeX, Volume2 } from "lucide-react";
 import { LoadingState } from "@/app/LoadingState";
 import { FeatureDialog } from "@/components/FeatureDialog";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { submitFeatureReport } from "@/features/reports/api";
 import { supabase } from "@/lib/supabase";
 import {
-  createVoiceRoom, endVoiceRoom, getVoiceToken, joinVoiceRoom, listVoiceRooms, requestToSpeak,
-  leaveVoiceRoom, listMyVoiceCommunities, listMyVoiceProjects, respondToVoiceInvitation, resolveRaisedHand,
-  sendVoiceMessage, setVoiceMemberRole, type VoiceRoom,
+  createVoiceRoom, endVoiceRoom, listVoiceRooms, requestToSpeak,
+  listMyVoiceCommunities, listMyVoiceProjects, respondToVoiceInvitation, resolveRaisedHand,
+  sendVoiceMessage, setVoiceMicMode, syncVoiceRoomPermissions, type VoiceRoom,
 } from "./api";
+import { useVoiceCall } from "./VoiceCallProvider";
 
 const card = "rounded-2xl border border-line bg-white p-4 shadow-sm";
 const human = (s: string) => s.split("_").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
@@ -83,7 +83,7 @@ function CreateVoiceRoomDialog({ onClose }: { onClose: () => void }) {
     </div>
     {roomType === "community" && <label className="block"><span className="label">Community</span><select name="communityId" className="input" required><option value="">Choose a community</option>{communities.data?.filter((item) => ["owner","moderator"].includes(item.role)).map((item) => <option value={item.community.id} key={item.community.id}>{item.community.name}</option>)}</select>{communities.isError && <span className="err">Could not load communities you manage.</span>}</label>}
     {roomType === "group" && <label className="block"><span className="label">Project team</span><select name="projectId" className="input" required><option value="">Choose a project</option>{projects.data?.map((item) => <option value={item.id} key={item.id}>{item.title}</option>)}</select>{projects.isError && <span className="err">Could not load your project teams.</span>}</label>}
-    <p className="rounded-xl bg-bg p-3 text-xs leading-5 text-muted">Audio is not recorded. You can listen to public rooms without a microphone; hosts control who becomes a speaker.</p>
+    <p className="rounded-xl bg-bg p-3 text-xs leading-5 text-muted">Audio is not recorded. Participants can talk by default; the host can mute the room and approve raised hands to speak.</p>
     {error && <p role="alert" className="err">{error}</p>}
     <div className="flex justify-end gap-2"><button type="button" className="btn" onClick={onClose}>Cancel</button><button className="btn-primary" disabled={create.isPending}>{create.isPending ? "Scheduling…" : "Create room"}</button></div>
   </form></Dialog>;
@@ -93,18 +93,16 @@ export function VoiceRoomPage() {
   const { id = "" } = useParams();
   const { session } = useAuth();
   const qc = useQueryClient();
-  const roomRef = useRef<Room | null>(null);
-  const remoteAudioRef = useRef(new Set<HTMLMediaElement>());
-  const [connected, setConnected] = useState(false);
-  const [connecting, setConnecting] = useState(false);
+  const voiceCall = useVoiceCall();
+  const { connected, connecting, canPublish, isMuted, roomId: activeCallRoomId } = voiceCall;
+  const connectedToThisRoom = connected && activeCallRoomId === id;
   const [audioError, setAudioError] = useState("");
-  const [canPublish, setCanPublish] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
   const [chatText, setChatText] = useState("");
   const [invitee, setInvitee] = useState("");
   const [messageError, setMessageError] = useState("");
   const [reportReason, setReportReason] = useState("");
   const [reportMessage, setReportMessage] = useState("");
+  const [permissionSyncFailed, setPermissionSyncFailed] = useState(false);
   const room = useQuery({ queryKey: ["voice-room", id], enabled: !!id, refetchInterval: 10000, queryFn: async () => {
     const { data, error } = await supabase.from("voice_rooms").select("*").eq("id", id).maybeSingle();
     if (error) throw error; return data as VoiceRoom | null;
@@ -113,11 +111,11 @@ export function VoiceRoomPage() {
     const { data, error } = await supabase.from("voice_room_members").select("role,left_at").eq("room_id", id).eq("user_id", session!.user.id).maybeSingle();
     if (error) throw error; return data;
   } });
-  const members = useQuery({ queryKey: ["voice-members", id], enabled: !!id && connected, refetchInterval: 10000, queryFn: async () => {
+  const members = useQuery({ queryKey: ["voice-members", id], enabled: !!id && connectedToThisRoom, refetchInterval: 10000, queryFn: async () => {
     const { data, error } = await supabase.from("voice_room_members").select("user_id,role,left_at").eq("room_id", id).is("left_at", null).order("joined_at");
     if (error) throw error; return data ?? [];
   } });
-  const hands = useQuery({ queryKey: ["voice-hands", id], enabled: !!id && connected && ["host","cohost"].includes(myMember.data?.role ?? ""), refetchInterval: 5000, queryFn: async () => {
+  const hands = useQuery({ queryKey: ["voice-hands", id], enabled: !!id && connectedToThisRoom && ["host","cohost"].includes(myMember.data?.role ?? ""), refetchInterval: 5000, queryFn: async () => {
     const { data, error } = await supabase.from("voice_hand_requests").select("user_id,status,created_at").eq("room_id", id).eq("status", "pending").order("created_at");
     if (error) throw error; return data ?? [];
   } });
@@ -125,80 +123,28 @@ export function VoiceRoomPage() {
     const { data, error } = await supabase.from("voice_room_invitations").select("id,requested_role,created_at").eq("room_id", id).eq("invitee_id", session!.user.id).eq("status", "pending");
     if (error) throw error; return data ?? [];
   } });
-  const chat = useQuery({ queryKey: ["voice-chat", id], enabled: !!id && connected, refetchInterval: 5000, queryFn: async () => {
+  const chat = useQuery({ queryKey: ["voice-chat", id], enabled: !!id && connectedToThisRoom, refetchInterval: 5000, queryFn: async () => {
     const { data, error } = await supabase.from("voice_room_messages").select("id,author_id,body,created_at").eq("room_id", id).order("created_at", { ascending: false }).limit(50);
     if (error) throw error; return (data ?? []).reverse();
   } });
   const manager = ["host","cohost"].includes(myMember.data?.role ?? "");
   const host = room.data?.host_id === session?.user.id;
   const currentRole = myMember.data?.role ?? "listener";
-  function clearRemoteAudio() {
-    for (const element of remoteAudioRef.current) element.remove();
-    remoteAudioRef.current.clear();
-  }
-
-  async function connectToRoom(publish = false) {
-    setConnecting(true); setAudioError("");
-    let lk: Room | null = null;
+  async function connectToRoom() {
+    if (!room.data) return;
+    setAudioError("");
     try {
-      if (roomRef.current) {
-        await roomRef.current.disconnect();
-        roomRef.current = null;
-        clearRemoteAudio();
-        setConnected(false);
-      }
-      await joinVoiceRoom(id);
-      const { url, token } = await getVoiceToken(id, publish);
-      const { Room, RoomEvent } = await import("livekit-client");
-      lk = new Room({ adaptiveStream: true, dynacast: true });
-      lk.on(RoomEvent.ConnectionStateChanged, (state) => {
-        setConnected(state === "connected");
-        if (state === "disconnected" && roomRef.current === lk) roomRef.current = null;
-      });
-      lk.on(RoomEvent.ParticipantConnected, () => { void qc.invalidateQueries({ queryKey: ["voice-members", id] }); });
-      lk.on(RoomEvent.ParticipantDisconnected, () => { void qc.invalidateQueries({ queryKey: ["voice-members", id] }); });
-      lk.on(RoomEvent.TrackSubscribed, (track) => {
-        if (track.kind !== "audio") return;
-        const element = track.attach();
-        element.autoplay = true;
-        element.setAttribute("playsinline", "");
-        document.body.appendChild(element);
-        remoteAudioRef.current.add(element);
-        void element.play().catch(() => setAudioError("Audio is connected. Tap the page if your browser blocks playback."));
-      });
-      lk.on(RoomEvent.TrackUnsubscribed, (track) => {
-        for (const element of track.detach()) {
-          element.remove();
-          remoteAudioRef.current.delete(element);
-        }
-      });
-      await lk.connect(url, token);
-      if (publish) await lk.localParticipant.setMicrophoneEnabled(true);
-      roomRef.current = lk;
-      setCanPublish(publish); setIsMuted(!publish); setConnected(true);
+      await voiceCall.connect(id, room.data.title, room.data.mic_mode, currentRole);
       await qc.invalidateQueries({ queryKey: ["voice-room", id] });
       await qc.invalidateQueries({ queryKey: ["voice-member", id] });
       await qc.invalidateQueries({ queryKey: ["voice-rooms"] });
     } catch (error) {
-      if (lk) await lk.disconnect();
-      if (roomRef.current === lk) roomRef.current = null;
-      clearRemoteAudio();
-      setConnected(false);
       setAudioError(error instanceof Error ? error.message : "Could not connect to live audio.");
-    } finally { setConnecting(false); }
+    }
   }
 
-  useEffect(() => () => {
-    setConnected(false);
-    const active = roomRef.current;
-    roomRef.current = null;
-    if (active) void active.disconnect();
-    clearRemoteAudio();
-    void leaveVoiceRoom(id);
-  }, [id]);
-
   useEffect(() => {
-    if (!connected) return;
+    if (!connectedToThisRoom) return;
     const channel = supabase.channel(`voice-room-live-${id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "voice_rooms", filter: `id=eq.${id}` }, () => {
         void qc.invalidateQueries({ queryKey: ["voice-room", id] });
@@ -218,19 +164,68 @@ export function VoiceRoomPage() {
       })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [connected, id, qc, session?.user.id]);
+  }, [connectedToThisRoom, id, qc, session?.user.id]);
 
   const request = useMutation({ mutationFn: () => requestToSpeak(id), onSuccess: () => setAudioError("Hand raised. The host can approve your speaker request.") });
   const respondInvite = useMutation({ mutationFn: ({ invitationId, accept }: { invitationId: string; accept: boolean }) => respondToVoiceInvitation(invitationId, accept), onSuccess: async () => {
     await qc.invalidateQueries({ queryKey: ["voice-invites", id, session?.user.id] });
     await qc.invalidateQueries({ queryKey: ["voice-member", id, session?.user.id] });
   }, onError: (e: Error) => setAudioError(e.message) });
-  const resolve = useMutation({ mutationFn: ({ userId, approve }: { userId: string; approve: boolean }) => resolveRaisedHand(id, userId, approve), onSuccess: async () => {
-    await qc.invalidateQueries({ queryKey: ["voice-hands", id] }); await qc.invalidateQueries({ queryKey: ["voice-members", id] });
-  } });
+  const resolve = useMutation({ mutationFn: async ({ userId, approve }: { userId: string; approve: boolean }) => {
+    await resolveRaisedHand(id, userId, approve);
+    if (approve) {
+      try {
+        await syncVoiceRoomPermissions(id);
+      } catch (error) {
+        setPermissionSyncFailed(true);
+        throw new Error(`Speaker approval was saved, but LiveKit permissions could not be synchronized: ${error instanceof Error ? error.message : "unknown error"}`);
+      }
+    }
+  }, onSuccess: async () => {
+    setPermissionSyncFailed(false);
+    await qc.invalidateQueries({ queryKey: ["voice-hands", id] });
+    await qc.invalidateQueries({ queryKey: ["voice-members", id] });
+    await qc.invalidateQueries({ queryKey: ["voice-member", id, session?.user.id] });
+  }, onError: (error: Error) => setAudioError(error.message) });
   const end = useMutation({ mutationFn: () => endVoiceRoom(id), onSuccess: async () => {
-    await roomRef.current?.disconnect(); roomRef.current = null; clearRemoteAudio(); setConnected(false); await qc.invalidateQueries({ queryKey: ["voice-room", id] }); await qc.invalidateQueries({ queryKey: ["voice-rooms"] });
-  } });
+    await voiceCall.leave();
+    await qc.invalidateQueries({ queryKey: ["voice-room", id] });
+    await qc.invalidateQueries({ queryKey: ["voice-rooms"] });
+  }, onError: (error: Error) => setAudioError(error.message) });
+  const micMode = useMutation({
+    mutationFn: async (mode: "open" | "host_controlled") => {
+      await setVoiceMicMode(id, mode);
+      try {
+        await syncVoiceRoomPermissions(id);
+      } catch (error) {
+        setPermissionSyncFailed(true);
+        throw new Error(`Room microphone mode was saved, but LiveKit permissions could not be synchronized: ${error instanceof Error ? error.message : "unknown error"}`);
+      }
+    },
+    onSuccess: async () => {
+      setPermissionSyncFailed(false);
+      setAudioError("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["voice-room", id] }),
+        qc.invalidateQueries({ queryKey: ["voice-members", id] }),
+        qc.invalidateQueries({ queryKey: ["voice-member", id, session?.user.id] }),
+      ]);
+    },
+    onSettled: async () => {
+      await qc.invalidateQueries({ queryKey: ["voice-room", id] });
+      await qc.invalidateQueries({ queryKey: ["voice-members", id] });
+      await qc.invalidateQueries({ queryKey: ["voice-member", id, session?.user.id] });
+    },
+    onError: (error: Error) => setAudioError(`Room microphone permissions could not be updated: ${error.message}`),
+  });
+  const retryPermissionSync = useMutation({
+    mutationFn: () => syncVoiceRoomPermissions(id),
+    onSuccess: () => {
+      setPermissionSyncFailed(false);
+      setAudioError("");
+    },
+    onError: (error: Error) => setAudioError(`LiveKit permission sync is still failing: ${error.message}`),
+  });
   const postChat = useMutation({ mutationFn: () => sendVoiceMessage(id, chatText.trim()), onSuccess: async () => {
     setChatText(""); setMessageError(""); await qc.invalidateQueries({ queryKey: ["voice-chat", id] });
   }, onError: (error: Error) => setMessageError(error.message) });
@@ -241,23 +236,8 @@ export function VoiceRoomPage() {
   const report = useMutation({ mutationFn: () => submitFeatureReport("voice_room", id, reportReason), onSuccess: () => {
     setReportReason(""); setReportMessage("Report sent to the moderation team.");
   }, onError: (error: Error) => setReportMessage(error.message) });
-  const promote = useMutation({ mutationFn: ({ userId, role }: { userId: string; role: string }) => setVoiceMemberRole(id, userId, role), onSuccess: async () => {
-    await qc.invalidateQueries({ queryKey: ["voice-members", id] });
-  } });
-  const toggleMic = async () => {
-    if (!roomRef.current) return;
-    try {
-      const next = !isMuted;
-      await roomRef.current.localParticipant.setMicrophoneEnabled(next);
-      setIsMuted(!next);
-    } catch (error) { setAudioError(error instanceof Error ? error.message : "Microphone permission failed."); }
-  };
   const leave = async () => {
-    await roomRef.current?.disconnect();
-    roomRef.current = null;
-    clearRemoteAudio();
-    setConnected(false);
-    await leaveVoiceRoom(id);
+    await voiceCall.leave();
     await qc.invalidateQueries({ queryKey: ["voice-members", id] });
     await qc.invalidateQueries({ queryKey: ["voice-member", id, session?.user.id] });
   };
@@ -276,44 +256,48 @@ export function VoiceRoomPage() {
       <div className="grid gap-6 p-4 sm:p-6 lg:grid-cols-[1.4fr,1fr]">
         <div><p className="text-sm leading-6 text-white/75">{value.description || "Welcome to the conversation. Please be respectful and follow the host's directions."}</p>
           <div className="mt-5 flex flex-wrap items-center gap-2">
-            {!connected && <button className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#202439] disabled:opacity-60" disabled={connecting || value.status === "ended" || value.status === "cancelled" || (value.status === "scheduled" && !host)} onClick={() => void connectToRoom(["host", "cohost", "speaker"].includes(currentRole))}>{connecting ? "Connecting…" : value.status === "live" ? "Join room" : host ? "Start room" : "Join room"}</button>}
-            {connected && canPublish && currentRole !== "listener" && <button className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#202439]" onClick={() => void toggleMic()}>{isMuted ? <MicOff size={16} /> : <Mic size={16} />}{isMuted ? "Unmute" : "Mute"}</button>}
-            {connected && currentRole === "listener" && <button className="inline-flex items-center gap-2 rounded-xl border border-white/25 px-4 py-2.5 text-sm font-bold" disabled={request.isPending} onClick={() => request.mutate()}><Hand size={16} /> Raise hand</button>}
-            {connected && <button className="rounded-xl border border-white/25 px-4 py-2.5 text-sm font-bold" onClick={() => void leave()}><PhoneOff className="mr-1 inline" size={16} /> Leave</button>}
-            {host && connected && <button className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold" disabled={end.isPending} onClick={() => end.mutate()}>End for everyone</button>}
+            {!connectedToThisRoom && <button className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#202439] disabled:opacity-60" disabled={connecting || value.status === "ended" || value.status === "cancelled" || (value.status === "scheduled" && !host)} onClick={() => void connectToRoom()}>{connecting ? "Connecting…" : activeCallRoomId ? "Switch to this room" : value.status === "live" ? "Join room" : host ? "Start room" : "Join room"}</button>}
+            {connectedToThisRoom && canPublish && <button className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#202439]" onClick={() => void voiceCall.toggleMicrophone()}>{isMuted ? <MicOff size={16} /> : <Mic size={16} />}{isMuted ? "Unmute" : "Mute"}</button>}
+            {connectedToThisRoom && currentRole === "listener" && value.mic_mode === "host_controlled" && <button className="inline-flex items-center gap-2 rounded-xl border border-white/25 px-4 py-2.5 text-sm font-bold" disabled={request.isPending} onClick={() => request.mutate()}><Hand size={16} /> Raise hand</button>}
+            {connectedToThisRoom && <button className="rounded-xl border border-white/25 px-4 py-2.5 text-sm font-bold" onClick={() => void leave()}><PhoneOff className="mr-1 inline" size={16} /> Leave</button>}
+            {host && connectedToThisRoom && <button className="inline-flex items-center gap-2 rounded-xl bg-violet-500 px-4 py-2.5 text-sm font-bold disabled:opacity-60" disabled={micMode.isPending} onClick={() => micMode.mutate(value.mic_mode === "open" ? "host_controlled" : "open")}>
+              {value.mic_mode === "open" ? <><VolumeX size={16} /> Mute everyone</> : <><Volume2 size={16} /> Allow everyone to speak</>}
+            </button>}
+            {host && connectedToThisRoom && <button className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold" disabled={end.isPending} onClick={() => end.mutate()}>End for everyone</button>}
           </div>
-          {currentRole !== "listener" && connected && !canPublish && <button className="mt-3 text-xs text-violet-200 underline" onClick={() => void connectToRoom(true)}>Refresh microphone access</button>}
+          {connectedToThisRoom && value.mic_mode === "host_controlled" && !canPublish && currentRole === "listener" && <p className="mt-3 text-xs text-violet-200">You are listening. Raise your hand and the host can enable your microphone.</p>}
           {audioError && <p role="status" className="mt-3 text-sm text-violet-100">{audioError}</p>}
+          {permissionSyncFailed && host && connectedToThisRoom && <button className="mt-2 rounded-lg border border-white/30 px-3 py-1.5 text-xs font-semibold disabled:opacity-60" disabled={retryPermissionSync.isPending} onClick={() => retryPermissionSync.mutate()}>{retryPermissionSync.isPending ? "Retrying…" : "Retry speaker permissions"}</button>}
+          {voiceCall.error && <p role="status" className="mt-3 text-sm text-violet-100">{voiceCall.error}</p>}
                 {invitations.data?.map((invitation) => <div key={invitation.id} className="mt-3 rounded-xl bg-white/10 p-3 text-sm">You are invited to join as a {invitation.requested_role}.
                   <div className="mt-2 flex gap-2"><button className="rounded-lg bg-white px-3 py-1 text-xs font-bold text-[#202439]" onClick={() => respondInvite.mutate({ invitationId: invitation.id, accept: true })}>Accept</button><button className="rounded-lg border border-white/30 px-3 py-1 text-xs" onClick={() => respondInvite.mutate({ invitationId: invitation.id, accept: false })}>Decline</button></div>
                 </div>)}
-          {!connected && value.status === "scheduled" && !host && <p className="mt-3 text-xs text-white/60">This room is scheduled. Join when it is live; only the host can start it.</p>}
+          {!connectedToThisRoom && value.status === "scheduled" && !host && <p className="mt-3 text-xs text-white/60">This room is scheduled. Join when it is live; only the host can start it.</p>}
           <div className="mt-5 rounded-2xl bg-white/5 p-4"><h2 className="flex items-center gap-2 font-bold"><Users size={16} /> In the room · {members.data?.length ?? 0}</h2>
             <ul className="mt-3 flex flex-wrap gap-2">{members.data?.map((m) => <li key={m.user_id} className="rounded-full border border-white/15 px-3 py-1.5 text-xs">{m.user_id === session?.user.id ? "You" : `Student ${m.user_id.slice(0, 6)}`} · {m.role}</li>)}</ul>
             {!members.data?.length && <p className="mt-2 text-xs text-white/60">Join the room to see participants.</p>}
           </div>
-          {manager && connected && <div className="mt-4 rounded-2xl bg-white/5 p-4">
+          {manager && connectedToThisRoom && <div className="mt-4 rounded-2xl bg-white/5 p-4">
             <h2 className="font-bold">Speaker requests</h2>
             {hands.data?.map((hand) => <div key={hand.user_id} className="mt-2 flex flex-wrap items-center gap-2 text-sm"><span className="flex-1">Student {hand.user_id.slice(0, 8)} is requesting to speak</span>
-              <button className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-[#202439]" onClick={() => resolve.mutate({ userId: hand.user_id, approve: true })}>Approve</button>
-              <button className="rounded-lg border border-white/20 px-2 py-1 text-xs" onClick={() => resolve.mutate({ userId: hand.user_id, approve: false })}>Decline</button>
+              <button className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-[#202439]" disabled={resolve.isPending} onClick={() => resolve.mutate({ userId: hand.user_id, approve: true })}>Allow to speak</button>
+              <button className="rounded-lg border border-white/20 px-2 py-1 text-xs" disabled={resolve.isPending} onClick={() => resolve.mutate({ userId: hand.user_id, approve: false })}>Decline</button>
             </div>)}
             {!hands.data?.length && <p className="mt-2 text-xs text-white/60">No raised hands.</p>}
             {host && <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (invitee.trim()) invite.mutate(); }}>
               <input className="input min-w-0 bg-white text-fg" aria-label="Invite speaker by user ID" value={invitee} onChange={(e) => setInvitee(e.target.value)} placeholder="Invite speaker by user ID" />
               <button className="rounded-xl bg-white px-3 text-xs font-bold text-[#202439]" disabled={invite.isPending || !invitee.trim()}>Invite</button>
             </form>}
-            {members.data?.filter((m) => m.role === "listener").map((m) => <button key={m.user_id} className="mt-3 mr-2 rounded-lg border border-white/20 px-2 py-1 text-xs" onClick={() => promote.mutate({ userId: m.user_id, role: "speaker" })}>Promote {m.user_id.slice(0, 6)} to speaker</button>)}
           </div>}
         </div>
         <section className="flex min-h-[350px] flex-col rounded-2xl bg-white p-4 text-fg">
           <h2 className="font-extrabold">Room chat</h2>
-          {!connected && <p className="mt-2 text-xs text-muted">Join the room to read and send messages.</p>}
+          {!connectedToThisRoom && <p className="mt-2 text-xs text-muted">Join the room to read and send messages.</p>}
           <div className="mt-3 flex-1 space-y-2 overflow-auto" role="log" aria-live="polite">
             {chat.data?.map((msg) => <div key={msg.id} className="rounded-xl bg-bg p-2.5"><p className="text-[10px] text-muted">{msg.author_id === session?.user.id ? "You" : `Student ${msg.author_id.slice(0, 7)}`}</p><p className="mt-1 break-words text-sm">{msg.body}</p></div>)}
-            {!chat.data?.length && connected && <p className="py-12 text-center text-sm text-muted">Start a friendly room chat.</p>}
+            {!chat.data?.length && connectedToThisRoom && <p className="py-12 text-center text-sm text-muted">Start a friendly room chat.</p>}
           </div>
-          {connected && <form className="mt-3 flex gap-2" onSubmit={send}><input className="input" aria-label="Room chat message" maxLength={500} value={chatText} onChange={(e) => setChatText(e.target.value)} placeholder="Write a message…" />
+          {connectedToThisRoom && <form className="mt-3 flex gap-2" onSubmit={send}><input className="input" aria-label="Room chat message" maxLength={500} value={chatText} onChange={(e) => setChatText(e.target.value)} placeholder="Write a message…" />
             <button className="btn-primary px-3" aria-label="Send chat message" disabled={postChat.isPending || !chatText.trim()}><Send size={16} /></button></form>}
           {messageError && <p role="status" className="mt-2 text-xs text-primary">{messageError}</p>}
         </section>

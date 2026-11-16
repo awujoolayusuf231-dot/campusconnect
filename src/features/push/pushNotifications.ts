@@ -47,12 +47,24 @@ export async function getPushNotificationStatus(): Promise<boolean> {
   return data === true;
 }
 
-export async function enablePushNotifications(): Promise<void> {
-  const { messaging, registration, vapidKey } = await getMessagingContext();
-  const permission = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission;
+export async function requestPushPermission(): Promise<NotificationPermission> {
+  if (!("serviceWorker" in navigator) || !("Notification" in window)) {
+    throw new Error("This browser does not support web push notifications.");
+  }
+  if (window.isSecureContext === false) {
+    throw new Error("Browser push notifications require HTTPS (localhost is supported for development).");
+  }
+  return Notification.permission === "default"
+    ? await Notification.requestPermission()
+    : Notification.permission;
+}
+
+export async function enablePushNotifications(permissionRequest: Promise<NotificationPermission>): Promise<void> {
+  const permission = await permissionRequest;
   if (permission !== "granted") throw new Error(permission === "denied"
     ? "Notifications are blocked in your browser settings. Allow them for CampusConnect, then try again."
     : "Allow notifications to enable browser push.");
+  const { messaging, registration, vapidKey } = await getMessagingContext();
   const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
   if (!token) throw new Error("Firebase did not return a browser push token.");
   const { error } = await supabase.rpc("register_push_subscription", { p_token: token });

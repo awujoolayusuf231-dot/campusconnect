@@ -20,4 +20,13 @@ describe("PostBody hashtags", () => {
     expect(screen.getAllByRole("link")).toHaveLength(1);
     expect(screen.getByRole("link", { name: "View posts tagged okay" })).toBeInTheDocument();
   });
+
+  it("links usernames to profiles without treating email addresses as mentions", () => {
+    const body = "Nice work @Ada_Student, and reach me at ada@example.com.";
+    const { container } = render(<MemoryRouter><PostBody body={body} /></MemoryRouter>);
+
+    expect(container.textContent).toBe(body);
+    expect(screen.getByRole("link", { name: "View @Ada_Student's profile" })).toHaveAttribute("href", "/app/u/Ada_Student");
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+  });
 });

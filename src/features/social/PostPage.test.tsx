@@ -1,14 +1,20 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   fetchMediaPaths: vi.fn(),
+  fetchPostPublicMetrics: vi.fn(),
+  recordPostDetailView: vi.fn(),
 }));
 vi.mock("@/lib/supabase", () => ({ supabase: { from: mocks.from, rpc: vi.fn() } }));
-vi.mock("./api", () => ({ fetchMediaPaths: mocks.fetchMediaPaths }));
+vi.mock("./api", () => ({
+  fetchMediaPaths: mocks.fetchMediaPaths,
+  fetchPostPublicMetrics: mocks.fetchPostPublicMetrics,
+  recordPostDetailView: mocks.recordPostDetailView,
+}));
 vi.mock("@/features/auth/AuthProvider", () => ({ useAuth: () => ({ session: { user: { id: "viewer-1" } } }) }));
 vi.mock("./components/PostCard", () => ({
   PostCard: ({ post, images, fullPost, trackImpression }: {
@@ -58,6 +64,10 @@ function renderPostPage(path = "/app/p/post-1", client = new QueryClient({ defau
 describe("PostPage direct post URLs", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.fetchPostPublicMetrics.mockResolvedValue({
+      "post-1": { post_id: "post-1", impressions: 12, views: 4, saved_by_me: false },
+    });
+    mocks.recordPostDetailView.mockResolvedValue(undefined);
     let postReads = 0;
     mocks.from.mockImplementation((table: string) => {
       if (table === "posts") return queryResult(++postReads === 1 ? { author_id: row.author_id } : row);
@@ -78,6 +88,7 @@ describe("PostPage direct post URLs", () => {
     expect(screen.getByRole("article")).toHaveAttribute("data-track-impression", "true");
     expect(mocks.from).toHaveBeenCalledWith("posts");
     expect(mocks.fetchMediaPaths).toHaveBeenCalledWith(["post-1"]);
+    await waitFor(() => expect(mocks.recordPostDetailView).toHaveBeenCalledWith("post-1"));
   });
 
   it("does not render a post when the RLS-filtered query returns no visible row", async () => {

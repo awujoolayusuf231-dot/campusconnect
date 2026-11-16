@@ -39,27 +39,28 @@ describe("CelebrationSpotlight", () => {
   it("rotates through deduplicated recent and upcoming cards with links to the full discovery page", async () => {
     renderSpotlight();
 
-    expect(await screen.findByRole("heading", { name: "Amina" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /Amina/ })).toBeVisible();
     expect(screen.getByRole("region", { name: "Celebration highlights" })).toHaveClass("sticky", "top-16");
+    expect(screen.getByRole("region", { name: "Celebration highlights" })).toHaveClass("max-w-2xl");
     fireEvent.click(screen.getByRole("button", { name: "Next celebration" }));
 
-    expect(await screen.findByRole("heading", { name: "Tunde" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /Tunde/ })).toBeVisible();
     expect(screen.getByRole("link", { name: "View card" })).toHaveAttribute("href", "/app/celebrations/card-2");
     expect(screen.getByRole("link", { name: "Explore all" })).toHaveAttribute("href", "/app/celebrations");
   });
 
   it("automatically advances the carousel when it is not hovered or focused", async () => {
     renderSpotlight();
-    expect(await screen.findByRole("heading", { name: "Amina" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /Amina/ })).toBeVisible();
     const carousel = screen.getByRole("region", { name: "Celebration highlights" });
     fireEvent.mouseEnter(carousel);
     vi.useFakeTimers();
     try {
       act(() => vi.advanceTimersByTime(12_000));
-      expect(screen.getByRole("heading", { name: "Amina" })).toBeVisible();
+      expect(screen.getByRole("heading", { name: /Amina/ })).toBeVisible();
       fireEvent.mouseLeave(carousel);
       act(() => vi.advanceTimersByTime(6000));
-      expect(screen.getByRole("heading", { name: "Tunde" })).toBeVisible();
+      expect(screen.getByRole("heading", { name: /Tunde/ })).toBeVisible();
     } finally {
       fireEvent.mouseEnter(carousel);
       vi.useRealTimers();

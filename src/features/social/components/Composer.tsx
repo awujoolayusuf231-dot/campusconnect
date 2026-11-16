@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImagePlus, Send, SquarePen, UsersRound, X } from "lucide-react";
 import { createPost, validateImages, type MainPostVisibility } from "../api";
 import { socialErrorMessage } from "@/lib/errors";
+import { MentionTextarea } from "./MentionTextarea";
 
 const AUDIENCE_OPTIONS: { value: MainPostVisibility; label: string; description: string }[] = [
   { value: "public", label: "Everyone (public)", description: "Anyone who can view your profile can see this post." },
@@ -21,7 +22,6 @@ export function Composer({ communityId }: { communityId?: string }) {
   const [notice, setNotice] = useState("");
   const [fileError, setFileError] = useState("");
   const input = useRef<HTMLInputElement>(null);
-  const textarea = useRef<HTMLTextAreaElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const posting = useRef(false);
   const openComposer = () => { setNotice(""); setOpen(true); };
@@ -40,7 +40,6 @@ export function Composer({ communityId }: { communityId?: string }) {
 
   useEffect(() => {
     if (!open) return;
-    textarea.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !posting.current) setOpen(false);
     };
@@ -112,15 +111,15 @@ export function Composer({ communityId }: { communityId?: string }) {
             </div>
             <form className="space-y-4 p-4 sm:p-6" onSubmit={(event) => { event.preventDefault(); if (body.trim() && !m.isPending) m.mutate(); }}>
               <label className="sr-only" htmlFor="post-body">What's happening?</label>
-              <textarea
-                ref={textarea}
+              <MentionTextarea
                 id="post-body"
                 className="input min-h-44 resize-y rounded-2xl border-[#e7dedb] bg-white p-4 leading-7 shadow-inner focus-visible:border-primary"
                 rows={5}
                 maxLength={2000}
                 placeholder="What's happening?"
                 value={body}
-                onChange={(event) => { setBody(event.target.value); setNotice(""); }}
+                autoFocus
+                onValueChange={(value) => { setBody(value); setNotice(""); }}
               />
               {communityId ? (
                 <div className="rounded-xl border border-[#eadbdd] bg-white px-3 py-2.5">

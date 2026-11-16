@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Bell, BookOpen, Brain, Briefcase, CalendarDays, Compass, FileText, GraduationCap, Home, Layers3, MessageCircle, MessagesSquare, Mic, MoreHorizontal, PartyPopper, Settings, Sparkles, UserRound, Users, Trophy } from "lucide-react";
+import { BarChart3, Bell, BookOpen, Bookmark, Brain, Briefcase, CalendarDays, Compass, FileText, GraduationCap, Home, Layers3, MessageCircle, MessagesSquare, Mic, MoreHorizontal, PartyPopper, Settings, Sparkles, UserRound, Users, Trophy } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +8,7 @@ import { useUnreadCounts } from "@/features/notifications/useRealtimeCounts";
 import { AnnouncementBanner } from "@/features/announcements/AnnouncementBanner";
 import { Link } from "react-router-dom";
 import { isBrowserPushConfigured } from "@/features/push/pushConfig";
+import { VoiceCallDock, VoiceCallProvider } from "@/features/voice/VoiceCallProvider";
 
 export function StudentLayout() {
   const { session, role } = useAuth();
@@ -24,6 +25,8 @@ export function StudentLayout() {
   } });
   const items = [
     { to: "/app", label: "Home feed", icon: Home, end: true, badge: 0 },
+    { to: "/app/saved-posts", label: "Saved posts", icon: Bookmark, end: false, badge: 0 },
+    { to: "/app/analytics", label: "Analytics", icon: BarChart3, end: false, badge: 0 },
     { to: "/app/discover", label: "Discover", icon: Compass, end: false, badge: 0 },
     { to: "/app/communities", label: "Communities", icon: Users, end: false, badge: 0 },
     { to: "/app/past-questions", label: "Past Questions", icon: BookOpen, end: false, badge: 0 },
@@ -53,7 +56,7 @@ export function StudentLayout() {
     return !flag || featureFlags.data?.[flag] !== false;
   });
   const mobileItems = visibleItems.filter((i) => ["Home feed", "Discover", "Communities", "Messages"].includes(i.label));
-  const moreItems = visibleItems.filter((i) => ["Past Questions", "Study Notes", "Assignment Discussions", "Flashcards & Quizzes", "Group Quiz", "Celebrations", "Portfolio", "CV Builder", "Timetable", "Opportunities", "Project Board", "Competitions", "Voice Spaces", "My profile", "Settings"].includes(i.label));
+  const moreItems = visibleItems.filter((i) => ["Saved posts", "Analytics", "Past Questions", "Study Notes", "Assignment Discussions", "Flashcards & Quizzes", "Group Quiz", "Celebrations", "Portfolio", "CV Builder", "Timetable", "Opportunities", "Project Board", "Competitions", "Voice Spaces", "My profile", "Settings"].includes(i.label));
   const moreActive = moreItems.some((item) => item.label === "My profile"
     ? pathname.startsWith("/app/u/") || pathname === "/app/profile/edit"
     : pathname === item.to || pathname.startsWith(`${item.to}/`));
@@ -85,6 +88,7 @@ export function StudentLayout() {
     if (error) console.error("CampusConnect sign-out failed.", error);
   };
   return (
+    <VoiceCallProvider>
     <div className="min-h-full bg-bg">
       <a href="#main" className="sr-only z-50 rounded bg-surface px-3 py-2 focus:not-sr-only focus:fixed focus:left-2 focus:top-2">Skip to main content</a>
       <header className="sticky top-0 z-20 border-b border-line/80 bg-white/95 shadow-[0_3px_16px_rgba(35,24,20,0.035)] backdrop-blur-xl">
@@ -105,6 +109,14 @@ export function StudentLayout() {
               {counts.notifications > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-primary px-1 text-center text-[9px] font-bold leading-4 text-white">{counts.notifications > 99 ? "99+" : counts.notifications}</span>}
             </NavLink>
             {!inChat && <>
+              <NavLink
+                to="/app/analytics"
+                aria-label="Your analytics"
+                title="Your analytics"
+                className={({ isActive }) => `flex h-10 w-10 items-center justify-center rounded-xl border bg-white transition hover:border-primary/30 hover:bg-[#fff4f2] hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${isActive ? "border-primary/30 bg-[#fff4f2] text-primary" : "border-line text-muted"}`}
+              >
+                <BarChart3 size={18} aria-hidden="true" />
+              </NavLink>
               <Link
                 to={me.data ? `/app/u/${me.data}` : "/app/profile/edit"}
                 aria-label="My profile"
@@ -148,5 +160,7 @@ export function StudentLayout() {
           </div>}
         </nav>)}
     </div>
+    <VoiceCallDock />
+    </VoiceCallProvider>
   );
 }

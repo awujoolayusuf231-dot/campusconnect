@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, ChevronLeft, ChevronRight, PartyPopper } from "lucide-react";
@@ -15,6 +15,8 @@ export function CelebrationSpotlight() {
   const [direction, setDirection] = useState<1 | -1>(1);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [attentionPulse, setAttentionPulse] = useState(false);
+  const hasShownAttention = useRef(false);
   const [reducedMotion, setReducedMotion] = useState(prefersReducedMotion);
   const cards = useQuery({
     queryKey: ["celebrations", "feed-spotlight"],
@@ -45,6 +47,16 @@ export function CelebrationSpotlight() {
   }, []);
 
   useEffect(() => {
+    if (!count || hasShownAttention.current) return;
+    hasShownAttention.current = true;
+    if (reducedMotion) return;
+
+    setAttentionPulse(true);
+    const timer = window.setTimeout(() => setAttentionPulse(false), 1400);
+    return () => window.clearTimeout(timer);
+  }, [count, reducedMotion]);
+
+  useEffect(() => {
     if (count < 2 || paused || reducedMotion) return;
     const timer = window.setInterval(() => {
       setDirection(1);
@@ -62,7 +74,7 @@ export function CelebrationSpotlight() {
     <section
       aria-label="Celebration highlights"
       aria-roledescription="carousel"
-      className="sticky top-16 z-10 overflow-hidden rounded-2xl border border-[#efd9db] bg-gradient-to-br from-[#fff4f1] via-white to-[#fff0f2] shadow-[0_8px_24px_rgba(35,24,20,0.08)]"
+      className={`sticky top-16 z-10 mx-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-[#efd9db] bg-gradient-to-br from-[#fff4f1] via-white to-[#fff0f2] shadow-[0_6px_18px_rgba(35,24,20,0.07)] ${attentionPulse ? "celebration-spotlight-pulse" : ""}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onFocusCapture={() => setFocused(true)}
@@ -70,13 +82,12 @@ export function CelebrationSpotlight() {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
       }}
     >
-      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:p-5">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-sm"><PartyPopper size={20} aria-hidden="true" /></span>
+      <div className="flex items-center gap-2.5 px-3 py-2.5 sm:gap-3 sm:px-4">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-primary shadow-sm"><PartyPopper size={17} aria-hidden="true" /></span>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-primary">Celebration spotlight</p>
           <div aria-live="off" aria-atomic="true">
             {cards.isLoading ? (
-              <h2 id="celebration-spotlight-title" className="mt-1 text-lg font-black tracking-tight text-fg">Finding a moment to celebrate</h2>
+              <><p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-primary">Celebration spotlight</p><h2 id="celebration-spotlight-title" className="truncate text-sm font-black text-fg">Finding a moment to celebrate</h2></>
             ) : active ? (
               <div
                 key={active.id}
@@ -85,34 +96,36 @@ export function CelebrationSpotlight() {
                 aria-label={`${index % count + 1} of ${count}`}
                 className={`min-w-0 ${direction === 1 ? "celebration-slide-next" : "celebration-slide-prev"}`}
               >
-                <h2 id="celebration-spotlight-title" className="mt-1 text-lg font-black tracking-tight text-fg">{active.celebrant_name}</h2>
-                <p className="mt-1 line-clamp-1 text-sm text-muted">{active.title} · {active.category.replace(/_/g, " ")}</p>
-                <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-muted">
-                  <CalendarDays size={14} aria-hidden="true" />
-                  {new Date(active.celebration_at).toLocaleDateString(undefined, { dateStyle: "long", timeZone: active.timezone })}
+                <p className="truncate text-[9px] font-extrabold uppercase tracking-[0.14em] text-primary">
+                  Celebration spotlight · {active.category.replace(/_/g, " ")} · {new Date(active.celebration_at).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: active.timezone })}
                 </p>
+                <h2 id="celebration-spotlight-title" title={`${active.celebrant_name} — ${active.title}`} className="truncate text-sm font-black tracking-tight text-fg">
+                  {active.celebrant_name}<span className="font-semibold text-muted"> · {active.title}</span>
+                </h2>
               </div>
             ) : cards.isError ? (
-              <p role="alert" className="mt-1 text-xs text-danger">Could not load celebration highlights.</p>
+              <p role="alert" className="truncate text-xs text-danger">Could not load celebration highlights.</p>
             ) : (
-              <div>
-                <h2 id="celebration-spotlight-title" className="mt-1 text-lg font-black tracking-tight text-fg">Celebrate campus milestones</h2>
-                <p className="mt-1 text-sm text-muted">Discover newly shared cards and upcoming milestones from students.</p>
+              <div className="min-w-0">
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-primary">Celebration spotlight</p>
+                <h2 id="celebration-spotlight-title" className="truncate text-sm font-black text-fg">Discover new cards and upcoming milestones</h2>
               </div>
             )}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {active && <div className="flex items-center gap-1" aria-label="Rotate celebration highlights">
-            <button type="button" className="btn min-h-10 w-10 justify-center rounded-xl p-0" aria-label="Previous celebration" disabled={count < 2} onClick={() => move(-1)}>
-              <ChevronLeft size={17} aria-hidden="true" />
+        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+          {active && count > 1 && <div className="flex items-center gap-0.5" aria-label="Rotate celebration highlights">
+            <button type="button" className="btn min-h-8 w-8 justify-center rounded-lg p-0" aria-label="Previous celebration" onClick={() => move(-1)}>
+              <ChevronLeft size={15} aria-hidden="true" />
             </button>
-            <button type="button" className="btn min-h-10 w-10 justify-center rounded-xl p-0" aria-label="Next celebration" disabled={count < 2} onClick={() => move(1)}>
-              <ChevronRight size={17} aria-hidden="true" />
+            <button type="button" className="btn min-h-8 w-8 justify-center rounded-lg p-0" aria-label="Next celebration" onClick={() => move(1)}>
+              <ChevronRight size={15} aria-hidden="true" />
             </button>
           </div>}
-          {active && <Link to={`/app/celebrations/${active.id}`} className="btn-primary inline-flex min-h-10 items-center justify-center rounded-xl px-4 text-xs font-bold">View card</Link>}
-          <Link to="/app/celebrations" className="inline-flex min-h-10 items-center justify-center rounded-xl px-3 text-xs font-bold text-primary hover:bg-white/70">Explore all</Link>
+          {active && <Link to={`/app/celebrations/${active.id}`} aria-label="View card" className="btn-primary inline-flex min-h-8 items-center justify-center rounded-lg px-2.5 text-[11px] font-bold sm:min-h-9 sm:px-3 sm:text-xs">
+            <span className="sm:hidden">View</span><span className="hidden sm:inline">View card</span>
+          </Link>}
+          <Link to="/app/celebrations" className="hidden min-h-8 items-center justify-center rounded-lg px-2.5 text-[11px] font-bold text-primary hover:bg-white/70 sm:inline-flex sm:min-h-9 sm:px-3 sm:text-xs">Explore all</Link>
         </div>
       </div>
     </section>

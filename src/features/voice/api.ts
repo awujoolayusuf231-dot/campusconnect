@@ -11,6 +11,7 @@ export interface VoiceRoom {
   room_type: "personal" | "community" | "group";
   visibility: "public" | "followers" | "community" | "invite_only";
   status: "scheduled" | "live" | "ended" | "cancelled";
+  mic_mode: "open" | "host_controlled";
   scheduled_at: string;
   created_at: string;
 }
@@ -42,6 +43,12 @@ export const joinVoiceRoom = (roomId: string) => rpc<string>("voice_join_room", 
 export const requestToSpeak = (roomId: string) => rpc<void>("voice_request_to_speak", { p_room: roomId });
 export const resolveRaisedHand = (roomId: string, userId: string, approve: boolean) =>
   rpc<void>("voice_resolve_hand", { p_room: roomId, p_user: userId, p_approve: approve });
+export const setVoiceMicMode = (roomId: string, mode: "open" | "host_controlled") =>
+  rpc<void>("voice_set_mic_mode", { p_room: roomId, p_mode: mode });
+export async function syncVoiceRoomPermissions(roomId: string) {
+  const { error } = await supabase.functions.invoke("livekit-room-control", { body: { room_id: roomId } });
+  if (error) throw error;
+}
 export const setVoiceMemberRole = (roomId: string, userId: string, role: string) =>
   rpc<void>("voice_set_member_role", { p_room: roomId, p_user: userId, p_role: role });
 export const endVoiceRoom = (roomId: string) => rpc<void>("voice_end_room", { p_room: roomId });

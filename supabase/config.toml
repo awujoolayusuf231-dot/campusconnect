@@ -431,3 +431,9 @@ verify_jwt = false
 
 [functions.livekit-token]
 verify_jwt = false
+
+[functions.admin-delete-account]
+verify_jwt = false
+
+[functions.livekit-room-control]
+verify_jwt = false

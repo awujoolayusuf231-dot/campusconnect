@@ -17,7 +17,14 @@ export interface CommentRow {
   body: string;
   created_at: string;
   edited_at: string | null;
+  parent_comment_id: string | null;
+  like_count: number;
+  repost_count: number;
+  metrics: { impressions: number; views: number } | null;
+  liked_by_me: boolean;
+  reposted_by_me: boolean;
   author: { username: string; display_name: string; avatar_path: string | null } | null;
+  replies: CommentRow[];
 }
 
 export const FEED_PAGE = 20;
@@ -55,6 +62,110 @@ export interface PostAnalytics {
   days: PostImpressionDay[];
   reach: number | null;
   totals: PostImpressionTotals | null;
+}
+export interface PublicPostMetrics {
+  post_id: string;
+  impressions: number;
+  views: number;
+  saved_by_me: boolean;
+}
+export interface MentionStudent {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_path: string | null;
+}
+export interface SocialAccountAnalytics {
+  profile_views: number;
+  profile_views_28d: number;
+  profile_unique_viewers_28d: number | null;
+  post_impressions: number;
+  comment_impressions: number;
+  total_impressions: number;
+  post_views: number;
+  comment_views: number;
+  total_views: number;
+  post_likes: number;
+  comment_likes: number;
+  total_likes: number;
+  comments_received: number;
+  replies_received: number;
+  post_reposts: number;
+  comment_reshares: number;
+  total_engagement: number;
+}
+
+export async function searchStudents(query: string, limit = 8): Promise<MentionStudent[]> {
+  const { data, error } = await supabase.rpc("discover_students", {
+    p_query: query,
+    p_institution: null,
+    p_department: null,
+    p_level: null,
+    p_interest: null,
+    p_limit: limit,
+    p_offset: 0,
+  });
+  if (error) throw error;
+  return (data ?? []) as MentionStudent[];
+}
+
+export async function fetchMySocialAnalytics(): Promise<SocialAccountAnalytics> {
+  const { data, error } = await supabase.rpc("my_social_analytics", { p_days: 28 });
+  if (error) throw error;
+  const row = (data as Record<string, number | string | null>[] | null)?.[0];
+  if (!row) throw new Error("Your account analytics were not returned.");
+  const numberValue = (key: keyof SocialAccountAnalytics) => {
+    const value = row[key];
+    return value === null && key === "profile_unique_viewers_28d" ? null : Number(value ?? 0);
+  };
+  return {
+    profile_views: numberValue("profile_views") ?? 0,
+    profile_views_28d: numberValue("profile_views_28d") ?? 0,
+    profile_unique_viewers_28d: numberValue("profile_unique_viewers_28d"),
+    post_impressions: numberValue("post_impressions") ?? 0,
+    comment_impressions: numberValue("comment_impressions") ?? 0,
+    total_impressions: numberValue("total_impressions") ?? 0,
+    post_views: numberValue("post_views") ?? 0,
+    comment_views: numberValue("comment_views") ?? 0,
+    total_views: numberValue("total_views") ?? 0,
+    post_likes: numberValue("post_likes") ?? 0,
+    comment_likes: numberValue("comment_likes") ?? 0,
+    total_likes: numberValue("total_likes") ?? 0,
+    comments_received: numberValue("comments_received") ?? 0,
+    replies_received: numberValue("replies_received") ?? 0,
+    post_reposts: numberValue("post_reposts") ?? 0,
+    comment_reshares: numberValue("comment_reshares") ?? 0,
+    total_engagement: numberValue("total_engagement") ?? 0,
+  };
+}
+
+export async function fetchPostPublicMetrics(postIds: string[]): Promise<Record<string, PublicPostMetrics>> {
+  if (postIds.length === 0) return {};
+  const uniqueIds = [...new Set(postIds)];
+  const batches: string[][] = [];
+  for (let index = 0; index < uniqueIds.length; index += 100) batches.push(uniqueIds.slice(index, index + 100));
+  const results = await Promise.all(batches.map(async (batch) => {
+    const { data, error } = await supabase.rpc("post_public_metrics", { p_post_ids: batch });
+    if (error) throw error;
+    return ((data ?? []) as {
+      post_id: string; impressions: number | string; views: number | string; saved_by_me: boolean;
+    }[]).map((row) => [row.post_id, {
+      post_id: row.post_id,
+      impressions: Number(row.impressions),
+      views: Number(row.views),
+      saved_by_me: row.saved_by_me,
+    }] as const);
+  }));
+  return Object.fromEntries(results.flat());
+}
+
+export async function fetchSavedPosts(page = 0, pageSize = FEED_PAGE): Promise<FeedPost[]> {
+  const { data, error } = await supabase.rpc("saved_posts", {
+    p_limit: pageSize,
+    p_offset: page * pageSize,
+  });
+  if (error) throw error;
+  return (data ?? []) as FeedPost[];
 }
 
 export async function fetchPostsByHashtag(tag: string, cursor: Cursor | null, limit = FEED_PAGE): Promise<FeedPost[]> {
@@ -188,6 +299,18 @@ export const repostPost = (postId: string) => rpc("repost_post", { p_post: postI
 export const unrepostPost = (postId: string) => rpc("unrepost_post", { p_post: postId });
 export const deletePost = (postId: string) => rpc("delete_own_post", { p_post: postId });
 export const addComment = (postId: string, body: string) => rpc("add_comment", { p_post: postId, p_body: body });
+export const replyToComment = (postId: string, body: string, parentCommentId: string) =>
+  rpc("reply_to_comment", { p_post: postId, p_body: body, p_parent_comment: parentCommentId });
+export const likeComment = (commentId: string) => rpc("comment_like", { p_comment: commentId });
+export const unlikeComment = (commentId: string) => rpc("comment_unlike", { p_comment: commentId });
+export const repostComment = (commentId: string) => rpc("repost_comment", { p_comment: commentId });
+export const unrepostComment = (commentId: string) => rpc("unrepost_comment", { p_comment: commentId });
+export const savePost = (postId: string) => rpc("save_post", { p_post: postId });
+export const unsavePost = (postId: string) => rpc("unsave_post", { p_post: postId });
+export const recordPostDetailView = (postId: string) => rpc("record_post_detail_view", { p_post: postId });
+export const recordCommentImpressions = (commentIds: string[]) =>
+  rpc("record_comment_impressions", { p_comment_ids: commentIds });
+export const recordProfileView = (profileId: string) => rpc("record_profile_view", { p_profile: profileId });
 export const deleteComment = (id: string) => rpc("delete_own_comment", { p_comment: id });
 export const followUser = (id: string) => rpc("follow_user", { p_target: id });
 export const unfollowUser = (id: string) => rpc("unfollow_user", { p_target: id });
@@ -202,11 +325,60 @@ export async function blockUser(id: string) {
 }
 
 export async function fetchComments(postId: string, page = 0, pageSize = COMMENT_PAGE_SIZE): Promise<CommentRow[]> {
+  const columns = "id,author_id,body,created_at,edited_at,parent_comment_id,like_count,repost_count,author:profiles!comments_author_id_fkey(username,display_name,avatar_path)";
   const { data, error } = await supabase.from("comments")
-    .select("id,author_id,body,created_at,edited_at,author:profiles!comments_author_id_fkey(username,display_name,avatar_path)")
-    .eq("post_id", postId).eq("status", "visible").order("created_at").range(page * pageSize, page * pageSize + pageSize - 1);
+    .select(columns)
+    .eq("post_id", postId).eq("status", "visible").is("parent_comment_id", null)
+    .order("created_at").range(page * pageSize, page * pageSize + pageSize - 1);
   if (error) throw error;
-  return (data ?? []) as unknown as CommentRow[];
+  const roots = (data ?? []) as unknown as Omit<CommentRow, "liked_by_me" | "reposted_by_me" | "replies" | "metrics">[];
+  const rootIds = roots.map((comment) => comment.id);
+  if (rootIds.length === 0) return [];
+
+  const { data: replyData, error: replyError } = await supabase.from("comments")
+    .select(columns)
+    .eq("post_id", postId).eq("status", "visible").in("parent_comment_id", rootIds)
+    .order("created_at");
+  if (replyError) throw replyError;
+  const replies = (replyData ?? []) as unknown as Omit<CommentRow, "liked_by_me" | "reposted_by_me" | "replies" | "metrics">[];
+  const ids = [...rootIds, ...replies.map((comment) => comment.id)];
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+  const userId = sessionData.session?.user.id;
+  const liked = new Set<string>();
+  const reposted = new Set<string>();
+  const analytics = new Map<string, { impressions: number; views: number }>();
+  if (userId) {
+    const analyticsBatches: string[][] = [];
+    for (let index = 0; index < ids.length; index += 100) analyticsBatches.push(ids.slice(index, index + 100));
+    const [likesResult, repostsResult, analyticsResults] = await Promise.all([
+      supabase.from("comment_likes").select("comment_id").eq("user_id", userId).in("comment_id", ids),
+      supabase.from("comment_reposts").select("comment_id").eq("user_id", userId).in("comment_id", ids),
+      Promise.all(analyticsBatches.map((batch) => supabase.rpc("my_comment_analytics", { p_comment_ids: batch }))),
+    ]);
+    if (likesResult.error) throw likesResult.error;
+    if (repostsResult.error) throw repostsResult.error;
+    for (const result of analyticsResults) if (result.error) throw result.error;
+    (likesResult.data ?? []).forEach((row) => liked.add(row.comment_id as string));
+    (repostsResult.data ?? []).forEach((row) => reposted.add(row.comment_id as string));
+    analyticsResults.flatMap((result) => (result.data ?? []) as { comment_id: string; impressions: number | string; views: number | string }[])
+      .forEach((row) => analytics.set(row.comment_id, {
+        impressions: Number(row.impressions),
+        views: Number(row.views),
+      }));
+  }
+  const repliesByParent = new Map<string, CommentRow[]>();
+  for (const reply of replies) {
+    const row: CommentRow = { ...reply, metrics: analytics.get(reply.id) ?? null, liked_by_me: liked.has(reply.id), reposted_by_me: reposted.has(reply.id), replies: [] };
+    if (reply.parent_comment_id) repliesByParent.set(reply.parent_comment_id, [...(repliesByParent.get(reply.parent_comment_id) ?? []), row]);
+  }
+  return roots.map((comment) => ({
+    ...comment,
+    metrics: analytics.get(comment.id) ?? null,
+    liked_by_me: liked.has(comment.id),
+    reposted_by_me: reposted.has(comment.id),
+    replies: repliesByParent.get(comment.id) ?? [],
+  }));
 }
 
 export const REPORT_CATEGORIES: [string, string][] = [
