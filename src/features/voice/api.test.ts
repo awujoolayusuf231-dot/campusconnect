@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 
 const mocks = vi.hoisted(() => ({ invoke: vi.fn() }));
 
@@ -9,7 +10,7 @@ vi.mock("@/features/community/api", () => ({
   listMyCommunities: vi.fn(),
 }));
 
-import { syncVoiceRoomPermissions } from "./api";
+import { getVoiceToken, syncVoiceRoomPermissions } from "./api";
 
 describe("syncVoiceRoomPermissions", () => {
   beforeEach(() => {
@@ -38,5 +39,58 @@ describe("syncVoiceRoomPermissions", () => {
     mocks.invoke.mockResolvedValue({ error: functionError });
 
     await expect(syncVoiceRoomPermissions("room-1")).rejects.toBe(functionError);
+  });
+});
+
+describe("getVoiceToken", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns the server-minted token without accepting a client-selected identity", async () => {
+    const token = { url: "wss://livekit.example", token: "server-minted-token" };
+    mocks.invoke.mockResolvedValue({ data: token, error: null });
+
+    await expect(getVoiceToken("room-1", true)).resolves.toEqual(token);
+    expect(mocks.invoke).toHaveBeenCalledWith("livekit-token", {
+      body: { room_id: "room-1", can_publish: true },
+    });
+  });
+
+  it("explains when LiveKit secrets are missing from the Edge Function", async () => {
+    mocks.invoke.mockResolvedValue({
+      data: null,
+      error: new FunctionsHttpError(new Response(JSON.stringify({ error: "livekit_not_configured" }), { status: 503 })),
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(getVoiceToken("room-1", true)).rejects.toThrow(
+      "Set LIVEKIT_URL, LIVEKIT_API_KEY, and LIVEKIT_API_SECRET",
+    );
+    expect(mocks.invoke).toHaveBeenCalledWith("livekit-token", { body: { room_id: "room-1", can_publish: true } });
+  });
+
+  it("points to the required host-controls migration when speaker authorization fails", async () => {
+    mocks.invoke.mockResolvedValue({
+      data: null,
+      error: new FunctionsHttpError(new Response(JSON.stringify({ error: "speaker_permission_required" }), { status: 403 })),
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(getVoiceToken("room-1", true)).rejects.toThrow("Confirm migration 20261115000035 is applied");
+  });
+
+  it("asks the user to refresh after Supabase rejects an expired session", async () => {
+    mocks.invoke.mockResolvedValue({
+      data: null,
+      error: new FunctionsHttpError(new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })),
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(getVoiceToken("room-1", true)).rejects.toThrow("Refresh your session or sign in again");
   });
 });

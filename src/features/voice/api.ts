@@ -1,3 +1,4 @@
+import { FunctionsFetchError, FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { listMyCommunities } from "@/features/community/api";
 
@@ -79,6 +80,47 @@ export async function listMyVoiceProjects(userId: string) {
 
 export async function getVoiceToken(roomId: string, canPublish: boolean) {
   const { data, error } = await supabase.functions.invoke("livekit-token", { body: { room_id: roomId, can_publish: canPublish } });
+  if (error instanceof FunctionsFetchError) {
+    console.error("LiveKit token Edge Function could not be reached.", error.message);
+    throw new Error("Could not reach the livekit-token Edge Function. Confirm it is deployed to this Supabase project and check the network connection.");
+  }
+  if (error instanceof FunctionsHttpError) {
+    const response = error.context;
+    if (response instanceof Response) {
+      const body = await response.clone().text();
+      let code: string | undefined;
+      try {
+        const parsed: unknown = JSON.parse(body);
+        if (typeof parsed === "object" && parsed !== null && "error" in parsed && typeof parsed.error === "string") {
+          code = parsed.error;
+        }
+      } catch (parseError) {
+        if (!(parseError instanceof SyntaxError)) throw parseError;
+      }
+      console.error("LiveKit token Edge Function returned an error.", { status: response.status, code });
+      switch (code) {
+        case "livekit_not_configured":
+          throw new Error("LiveKit is not configured for this Supabase project. Set LIVEKIT_URL, LIVEKIT_API_KEY, and LIVEKIT_API_SECRET, then deploy livekit-token.");
+        case "voice_database_not_ready":
+          throw new Error("Voice Spaces token authorization is missing from this database. Apply migrations 20261115000033 and 20261115000035.");
+        case "room_not_live":
+          throw new Error("Only the host can start a scheduled Voice Space. Check that you are signed in as its host.");
+        case "join_room_before_token":
+          throw new Error("Voice Space membership could not be established. Apply migrations 20261115000033 and 20261115000035.");
+        case "speaker_permission_required":
+          throw new Error("Speaker permission was not granted. Confirm migration 20261115000035 is applied, then retry.");
+        case "room_access_denied":
+          throw new Error("Supabase denied access to this Voice Space. Confirm the room is joinable and your account is allowed to join.");
+        case "unauthorized":
+          throw new Error("Supabase could not validate your session for the LiveKit token function. Refresh your session or sign in again; if it persists, check the function's Supabase project URL and anon key.");
+        case "token_creation_failed":
+          throw new Error("LiveKit could not create a token. Verify LIVEKIT_URL, LIVEKIT_API_KEY, and LIVEKIT_API_SECRET belong to the same LiveKit project.");
+        default:
+          throw new Error(`livekit-token returned HTTP ${response.status}${code ? ` (${code})` : ""}. Check Supabase Edge Function logs.`);
+      }
+    }
+    throw new Error("livekit-token returned an error without a readable response. Check Supabase Edge Function logs.");
+  }
   if (error) throw error;
   const result = data as { url: string; token: string };
   if (!result.url || !result.token) throw new Error("LiveKit did not return a room token.");
