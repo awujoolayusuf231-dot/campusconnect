@@ -4,7 +4,8 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { timeAgo } from "@/lib/time";
 import { LoadingState } from "@/app/LoadingState";
-import { disablePushNotifications, enablePushNotifications, getPushNotificationStatus, isBrowserPushConfigured, requestPushPermission } from "@/features/push/pushNotifications";
+import { disablePushNotifications, enablePushNotifications, getPushNotificationStatus, requestPushPermission } from "@/features/push/pushNotifications";
+import { getFirebaseBrowserConfigStatus, PUSH_CONFIG_MISCONFIGURED_MESSAGE } from "@/features/push/pushConfig";
 
 export interface Notif { id: number; type: string; actor_username: string | null; actor_display_name: string | null; entity_type: string | null; entity_id: string | null; data: Record<string, unknown>; created_at: string; read_at: string | null }
 const PAGE = 30;
@@ -54,6 +55,7 @@ export function NotificationsPage() {
   const qc = useQueryClient();
   const { session } = useAuth();
   const uid = session?.user.id ?? "";
+  const pushConfigStatus = getFirebaseBrowserConfigStatus();
   const list = useInfiniteQuery({ queryKey: ["notifications"], initialPageParam: null as number | null,
     queryFn: async ({ pageParam }) => { const { data, error } = await supabase.rpc("notifications_list", { p_before: pageParam, p_limit: PAGE }); if (error) throw error; return (data ?? []) as Notif[]; },
     getNextPageParam: (last): number | undefined => (last.length === PAGE ? last[last.length - 1]?.id : undefined) });
@@ -69,7 +71,7 @@ export function NotificationsPage() {
       throw error;
     }
   }, onSuccess: () => void qc.invalidateQueries({ queryKey: ["prefs"] }) });
-  const pushStatus = useQuery({ queryKey: ["push-subscription", uid], enabled: !!uid && isBrowserPushConfigured(), queryFn: getPushNotificationStatus });
+  const pushStatus = useQuery({ queryKey: ["push-subscription", uid], enabled: !!uid && pushConfigStatus === "configured", queryFn: getPushNotificationStatus });
   const enablePush = useMutation({ mutationFn: (permissionRequest: Promise<NotificationPermission>) => enablePushNotifications(permissionRequest, uid), onSuccess: () => void qc.invalidateQueries({ queryKey: ["push-subscription", uid] }) });
   const disablePush = useMutation({ mutationFn: () => disablePushNotifications(uid), onSuccess: () => void qc.invalidateQueries({ queryKey: ["push-subscription", uid] }) });
 
@@ -89,7 +91,8 @@ export function NotificationsPage() {
         <p className="text-xs text-muted">Platform announcements and moderator warnings are always delivered.</p>
         {savePref.isError && <p role="alert" className="err">Could not save your preference: {(savePref.error as Error).message}</p>}</section>
       <section className="card space-y-2"><h2 className="font-medium">This device</h2>
-        {!isBrowserPushConfigured() ? <p className="text-sm text-muted">Browser push is not configured for this app yet.</p>
+        {pushConfigStatus === "invalid" ? <p role="alert" className="err">{PUSH_CONFIG_MISCONFIGURED_MESSAGE}</p>
+          : pushConfigStatus === "missing" ? <p className="text-sm text-muted">Browser push is not configured for this app yet.</p>
           : pushStatus.isLoading ? <LoadingState label="Checking this device" />
             : pushStatus.isError ? <p role="alert" className="err">Could not check this device's push status: {(pushStatus.error as Error).message}</p>
               : <><p className="text-sm text-muted">{pushStatus.data ? "This device is registered for browser push." : "This device is not registered for browser push."}</p>

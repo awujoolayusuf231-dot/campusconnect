@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     projectId: string;
     vapidKey: string;
   } | null => null),
+  getFirebaseBrowserConfigStatus: vi.fn((): "configured" | "missing" | "invalid" => "configured"),
   getPushServiceWorkerUrl: vi.fn(() => "/firebase-messaging-sw.js"),
   getApps: vi.fn(() => []),
   initializeApp: vi.fn(() => ({ name: "test-app" })),
@@ -34,7 +35,9 @@ vi.mock("@firebase/messaging", () => ({
 vi.mock("@/lib/supabase", () => ({ supabase: { rpc: mocks.rpc } }));
 vi.mock("./pushConfig", () => ({
   getFirebaseBrowserConfig: mocks.getFirebaseBrowserConfig,
+  getFirebaseBrowserConfigStatus: mocks.getFirebaseBrowserConfigStatus,
   getPushServiceWorkerUrl: mocks.getPushServiceWorkerUrl,
+  PUSH_CONFIG_MISCONFIGURED_MESSAGE: "Push notifications are misconfigured.",
   isBrowserPushConfigured: vi.fn(() => false),
 }));
 
@@ -54,6 +57,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   localStorage.clear();
   mocks.getPushServiceWorkerUrl.mockReturnValue("/firebase-messaging-sw.js");
+  mocks.getFirebaseBrowserConfigStatus.mockReturnValue("configured");
   mocks.getFirebaseBrowserConfig.mockReturnValue({
     apiKey: "web-api-key",
     appId: "web-app-id",
@@ -109,6 +113,18 @@ describe("requestPushPermission", () => {
 });
 
 describe("push subscription registration", () => {
+  it("rejects malformed configuration before initializing Firebase", async () => {
+    mocks.getFirebaseBrowserConfigStatus.mockReturnValue("invalid");
+    mocks.getFirebaseBrowserConfig.mockReturnValue(null);
+
+    await expect(enablePushNotifications(Promise.resolve("granted"), "user-1"))
+      .rejects.toThrow("Push notifications are misconfigured.");
+
+    expect(mocks.initializeApp).not.toHaveBeenCalled();
+    expect(mocks.getMessaging).not.toHaveBeenCalled();
+    expect(mocks.getToken).not.toHaveBeenCalled();
+  });
+
   it("registers the FCM token through the RPC read by the outbox worker", async () => {
     await enablePushNotifications(Promise.resolve("granted"), "user-1");
 

@@ -1,7 +1,12 @@
 import { getApps, initializeApp, type FirebaseApp } from "@firebase/app";
 import { deleteToken, getMessaging, getToken, isSupported, onMessage, type MessagePayload, type Messaging } from "@firebase/messaging";
 import { supabase } from "@/lib/supabase";
-import { getFirebaseBrowserConfig, getPushServiceWorkerUrl } from "./pushConfig";
+import {
+  getFirebaseBrowserConfig,
+  getFirebaseBrowserConfigStatus,
+  getPushServiceWorkerUrl,
+  PUSH_CONFIG_MISCONFIGURED_MESSAGE,
+} from "./pushConfig";
 
 export { getPushServiceWorkerUrl, isBrowserPushConfigured } from "./pushConfig";
 
@@ -14,6 +19,9 @@ function unsupportedPushMessage() {
 }
 
 function firebaseConfig() {
+  if (getFirebaseBrowserConfigStatus() === "invalid") {
+    throw new Error(PUSH_CONFIG_MISCONFIGURED_MESSAGE);
+  }
   const config = getFirebaseBrowserConfig();
   if (!config) {
     throw new Error("Browser push is not configured. Add the Firebase web app values and Web Push certificate key to .env.local.");

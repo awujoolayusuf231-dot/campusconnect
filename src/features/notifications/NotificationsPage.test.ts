@@ -1,5 +1,40 @@
-import { describe, expect, it } from "vitest";
-import { describeNotification, type Notif } from "./NotificationsPage";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen } from "@testing-library/react";
+import { createElement } from "react";
+import { MemoryRouter } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
+import { describeNotification, NotificationsPage, type Notif } from "./NotificationsPage";
+
+const mocks = vi.hoisted(() => ({
+  rpc: vi.fn(),
+  getPushNotificationStatus: vi.fn(),
+}));
+
+vi.mock("@/lib/supabase", () => ({
+  supabase: {
+    rpc: mocks.rpc,
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: () => Promise.resolve({ data: {}, error: null }),
+        }),
+      }),
+    }),
+  },
+}));
+vi.mock("@/features/auth/AuthProvider", () => ({
+  useAuth: () => ({ session: { user: { id: "user-1" } } }),
+}));
+vi.mock("@/features/push/pushNotifications", () => ({
+  disablePushNotifications: vi.fn(),
+  enablePushNotifications: vi.fn(),
+  getPushNotificationStatus: mocks.getPushNotificationStatus,
+  requestPushPermission: vi.fn(),
+}));
+vi.mock("@/features/push/pushConfig", () => ({
+  getFirebaseBrowserConfigStatus: () => "invalid",
+  PUSH_CONFIG_MISCONFIGURED_MESSAGE: "Push notifications are misconfigured.",
+}));
 
 function notification(type: string, entityId: string | null, data: Record<string, unknown> = {}): Notif {
   return {
@@ -20,6 +55,20 @@ describe("describeNotification", () => {
     expect(describeNotification(notification("followed_post", "post-1"))).toEqual({
       text: "Amina Bello shared a new post",
       to: "/app/p/post-1",
+    });
+  });
+
+  describe("NotificationsPage push configuration", () => {
+    it("shows a misconfiguration error without querying push status", async () => {
+      mocks.rpc.mockResolvedValue({ data: [], error: null });
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+      render(createElement(MemoryRouter, null,
+        createElement(QueryClientProvider, { client }, createElement(NotificationsPage)),
+      ));
+
+      expect(await screen.findByText("Push notifications are misconfigured.")).toBeInTheDocument();
+      expect(mocks.getPushNotificationStatus).not.toHaveBeenCalled();
     });
   });
 
