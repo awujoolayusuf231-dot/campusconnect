@@ -1,5 +1,24 @@
 # CampusConnect - build status (honest ledger, updated 2026-10-16)
 
+## Current repository status (2026-11-16)
+
+- Implemented repository-side Paystack subscriptions, ranked-feed fairness,
+  local student recommendations, private city/state discovery, followed-post
+  and Celebration notifications, and aggregate admin discovery metrics. See
+  [`PLATFORM_UPGRADE_HANDOFF.md`](./PLATFORM_UPGRADE_HANDOFF.md) for behavior,
+  prerequisites, and the frontend continuation prompt.
+- `npm run build` and `npm run typecheck` pass. The build retains the existing
+  large-chunk warning. Focused discovery, notification, and admin tests pass.
+- The full Vitest run had one test-isolation failure in the push-permission
+  test because its mock call history was not cleared between cases. The mock
+  is now reset per test, and the focused push-permission tests pass (2/2);
+  the full suite was not rerun after this test-only correction.
+- The Paystack and local-discovery SQL remain repository-only. The local
+  discovery SQL regression suite was not run: Docker/Podman is unavailable in
+  this environment. No hosted SQL, migration history, Edge Functions, or
+  secrets were changed. Reconcile the previously observed hosted migration
+  drift before any production application.
+
 ## Supabase target
 CampusConnect01 (ref `yfyssczefqicdpbtqmlh`, eu-west-1). The other project on the account was never touched.
 

@@ -10,6 +10,7 @@ export type DeviceResult = {
   ok: boolean;
   invalidToken: boolean;
   retryable: boolean;
+  failureCode: string | null;
 };
 
 export type DeliveryDecision = {
@@ -88,7 +89,16 @@ export function decideDelivery(results: DeviceResult[]): DeliveryDecision {
     return { result: "delivered", error: null };
   }
   if (results.some((result) => result.retryable)) {
-    return { result: "retry", error: "fcm_delivery_failed" };
+    const failureCodes = [...new Set(
+      results
+        .filter((result) => result.retryable && result.failureCode)
+        .map((result) => result.failureCode)
+        .filter((code): code is string => code !== null),
+    )].slice(0, 3);
+    return {
+      result: "retry",
+      error: failureCodes.length ? `fcm_delivery_failed:${failureCodes.join(",")}` : "fcm_delivery_failed",
+    };
   }
   return { result: "failed", error: "all_devices_unregistered" };
 }

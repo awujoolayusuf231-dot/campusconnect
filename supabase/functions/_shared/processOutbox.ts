@@ -53,6 +53,11 @@ function decodePem(pem: string): Uint8Array {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
+function providerErrorCode(value: unknown, fallback: string): string {
+  if (typeof value !== "string" || !/^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(value)) return fallback;
+  return value.toUpperCase();
+}
+
 async function firebaseAccessToken(account: FirebaseAccount): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
@@ -85,6 +90,8 @@ async function firebaseAccessToken(account: FirebaseAccount): Promise<string> {
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok || typeof result.access_token !== "string") {
+    const errorCode = providerErrorCode(result?.error, `HTTP_${response.status}`);
+    console.error("Firebase OAuth token request failed.", { httpStatus: response.status, errorCode });
     throw new Error("Firebase OAuth token request failed.");
   }
   return result.access_token;
@@ -122,9 +129,19 @@ async function sendToDevice(
     );
     const result = await response.json().catch(() => ({}));
     const invalidToken = result?.error?.status === "UNREGISTERED";
-    return { ok: response.ok, invalidToken, retryable: !response.ok && !invalidToken };
-  } catch {
-    return { ok: false, invalidToken: false, retryable: true };
+    const failureCode = response.ok
+      ? null
+      : providerErrorCode(result?.error?.status, `HTTP_${response.status}`);
+    if (failureCode) {
+      console.error("FCM message delivery failed.", { httpStatus: response.status, errorCode: failureCode });
+    }
+    return { ok: response.ok, invalidToken, retryable: !response.ok && !invalidToken, failureCode };
+  } catch (error) {
+    const failureCode = "NETWORK_OR_TIMEOUT_ERROR";
+    console.error("FCM message request failed.", {
+      errorCode: error instanceof Error ? error.name : failureCode,
+    });
+    return { ok: false, invalidToken: false, retryable: true, failureCode };
   }
 }
 

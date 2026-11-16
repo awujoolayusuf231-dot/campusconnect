@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../api", () => ({
@@ -23,6 +23,11 @@ vi.mock("./ProtectedPostImage", () => ({
 }));
 
 import { PostCard } from "./PostCard";
+
+function CurrentPath() {
+  const { pathname } = useLocation();
+  return <output data-testid="current-path">{pathname}</output>;
+}
 
 const post = {
   id: "post-1",
@@ -47,7 +52,8 @@ function renderCard(overrides: Partial<typeof post> = {}, options: { fullPost?: 
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={["/app/feed"]}>
+        <CurrentPath />
         <PostCard post={{ ...post, ...overrides }} me="student-2" fullPost={options.fullPost} images={options.images} metrics={options.metrics} />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -74,6 +80,30 @@ describe("PostCard content preview", () => {
     expect(screen.getByRole("button", { name: /comments/i })).toBeVisible();
   });
 
+  it("opens the post when clicking non-interactive card content", () => {
+    renderCard();
+
+    fireEvent.click(screen.getByText(/A short post with/));
+
+    expect(screen.getByTestId("current-path")).toHaveTextContent("/app/p/post-1");
+  });
+
+  it("keeps links inside the card navigable without triggering the post route", () => {
+    renderCard();
+
+    fireEvent.click(screen.getByRole("link", { name: "Campus Student" }));
+
+    expect(screen.getByTestId("current-path")).toHaveTextContent("/app/u/student");
+  });
+
+  it("does not navigate when using post actions", () => {
+    renderCard();
+
+    fireEvent.click(screen.getByRole("button", { name: /likes/i }));
+
+    expect(screen.getByTestId("current-path")).toHaveTextContent("/app/feed");
+  });
+
   it("renders full content and attached media without a preview link on the details page", () => {
     const body = "A complete post.\nWith paragraph formatting preserved.";
     renderCard({ body }, { fullPost: true, images: ["owner/photo.png"] });
@@ -83,6 +113,8 @@ describe("PostCard content preview", () => {
     expect(bodyElement).not.toHaveStyle({ WebkitLineClamp: 6 });
     expect(screen.getByRole("img", { name: "Attached to post" })).toHaveAttribute("src", "owner/photo.png");
     expect(screen.queryByRole("link", { name: "Show more" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText(/A complete post/));
+    expect(screen.getByTestId("current-path")).toHaveTextContent("/app/feed");
   });
 
   it("shows public view and impression totals and the current saved state", () => {

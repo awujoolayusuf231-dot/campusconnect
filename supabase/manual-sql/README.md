@@ -43,7 +43,13 @@ local database. If either is already present, do not apply it again.
 5. Review and apply [`02_ranked_feed.sql`](./02_ranked_feed.sql). It adds a
    ranked-feed RPC and private numeric settings in the existing
    `platform_settings` table.
-6. Run [`03_verify.sql`](./03_verify.sql). It is read-only. Then run the
+6. If the ranked-feed RPC is already installed and its prerequisites are
+   confirmed, review and apply
+   [`04_ranked_feed_fairness.sql`](./04_ranked_feed_fairness.sql). It adds a
+   bounded recent-exposure signal to the existing RPC without changing its
+   result shape. Do not apply it until production schema/migration drift has
+   been reconciled.
+7. Run [`03_verify.sql`](./03_verify.sql). It is read-only. Then run the
    existing local hashtag, impression, and social RLS test suites before
    enabling the new UI for users.
 
@@ -70,6 +76,10 @@ preflight checks or run a partial excerpt.
 - Ranking weights are private `platform_settings` entries. Staff with
   `settings.manage` can adjust them in Admin → Settings. The SQL clamps each
   value to a safe range; malformed values fall back to defaults.
+- The fairness signal uses the previous seven complete Lagos calendar days of
+  post impressions. Lower-exposure creators receive a bounded additive boost;
+  no creator exposure counts are returned to clients. The weight is private
+  and clamped to 0–3.
 - Analytics continue to use Migration B's privacy threshold. The frontend
   must not show per-viewer data or figures below the threshold.
 

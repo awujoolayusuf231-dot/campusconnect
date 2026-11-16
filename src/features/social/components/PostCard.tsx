@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, type MouseEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Bookmark, Eye, Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
 import { blockUser, deletePost, likePost, postShareUrl, repostPost, savePost, unlikePost, unsavePost, unrepostPost, type FeedPost, type PublicPostMetrics } from "../api";
@@ -27,6 +27,7 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
   trackImpression?: boolean;
 }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [showComments, setShowComments] = useState(defaultOpenComments);
   const [dialog, setDialog] = useState<"report" | "delete" | "block" | null>(null);
   const [shareNote, setShareNote] = useState("");
@@ -66,8 +67,13 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
   const canRepost = !mine && !inCommunity;
   const actionError = (like.error ?? repost.error ?? save.error ?? del.error ?? block.error) as Error | null;
 
+  function openPostFromCard(event: MouseEvent<HTMLElement>) {
+    if (event.target instanceof Element && event.target.closest("a, button, input, textarea, select, [role='button']")) return;
+    navigate(`/app/p/${post.id}`);
+  }
+
   return (
-    <article ref={impressionRef} className={`group min-w-0 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_8px_24px_rgba(35,24,20,0.035)] ${fullPost ? "shadow-[0_12px_36px_rgba(35,24,20,0.06)]" : "transition-shadow hover:shadow-[0_14px_34px_rgba(35,24,20,0.07)]"}`} aria-label={`Post by ${post.display_name}`}>
+    <article ref={impressionRef} onClick={fullPost ? undefined : openPostFromCard} className={`group min-w-0 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_8px_24px_rgba(35,24,20,0.035)] ${fullPost ? "shadow-[0_12px_36px_rgba(35,24,20,0.06)]" : "cursor-pointer transition-shadow hover:shadow-[0_14px_34px_rgba(35,24,20,0.07)]"}`} aria-label={`Post by ${post.display_name}`}>
       <div className="space-y-4 p-4 sm:p-5">
       {post.reposter_name && (
         <p className="flex items-center gap-1.5 text-xs font-medium text-muted"><Repeat2 size={14} aria-hidden="true" /> <Link className="font-semibold hover:text-primary hover:underline" to={`/app/u/${post.reposter_username ?? ""}`}>{post.reposter_name}</Link> reposted</p>)}
