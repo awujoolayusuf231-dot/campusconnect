@@ -8,8 +8,10 @@ import {
   PUSH_CONFIG_MISCONFIGURED_MESSAGE,
 } from "./pushConfig";
 import { safeAppPath } from "../../../supabase/functions/_shared/notificationRoute";
+import { claimNotificationForDisplay } from "@/features/notifications/realtimeNotificationLogic";
 
 export { getPushServiceWorkerUrl, isBrowserPushConfigured } from "./pushConfig";
+export { requestPushPermission } from "./pushPermission";
 
 let firebaseApp: FirebaseApp | undefined;
 const PUSH_TOKEN_KEY = "campusconnect-push-token";
@@ -61,18 +63,6 @@ export async function getPushNotificationStatus(): Promise<boolean> {
   return data === true;
 }
 
-export async function requestPushPermission(): Promise<NotificationPermission> {
-  if (!("serviceWorker" in navigator) || !("Notification" in window)) {
-    throw new Error(unsupportedPushMessage());
-  }
-  if (window.isSecureContext === false) {
-    throw new Error("Browser push notifications require HTTPS (localhost is supported for development).");
-  }
-  return Notification.permission === "default"
-    ? await Notification.requestPermission()
-    : Notification.permission;
-}
-
 async function registerCurrentPushToken(userId: string): Promise<void> {
   if (!userId) throw new Error("Sign in to enable notifications.");
   const { messaging, registration, vapidKey } = await getMessagingContext();
@@ -102,6 +92,19 @@ export async function enablePushNotifications(
     ? "Notifications are blocked in your browser settings. Allow them for CampusConnect, then try again."
     : "Allow notifications to enable browser push.");
   await registerCurrentPushToken(userId);
+}
+
+export async function showPushTestNotification(): Promise<void> {
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") {
+    throw new Error("Allow notifications in your browser before sending a test notification.");
+  }
+  const { registration } = await getMessagingContext();
+  await registration.showNotification("Notifications are on", {
+    body: "You'll get alerts from CampusConnect here.",
+    tag: "push-test",
+    icon: "/icons/campusconnect-192.png",
+    data: { url: "/app/notifications" },
+  });
 }
 
 export async function syncPushSubscription(userId: string): Promise<void> {
@@ -153,19 +156,37 @@ function notificationContent(payload: MessagePayload) {
     body: data.body || "You have a new update.",
     url: safeAppPath(data.url),
     tag: data.tag || "",
+    notificationId: data.notification_id || "",
   };
 }
 
-export async function listenForForegroundPushNotifications(): Promise<() => void> {
+export type ForegroundPushToast = { id: string; title?: string; text: string; to: string };
+
+export async function listenForForegroundPushNotifications(
+  showToast?: (toast: ForegroundPushToast) => void,
+): Promise<() => void> {
   const { messaging } = await getMessagingContext();
   return onMessage(messaging, (payload) => {
-    if (Notification.permission !== "granted") return;
     const content = notificationContent(payload);
+    if (document.visibilityState === "visible" && showToast) {
+      if ((content.notificationId || content.tag)
+        && !claimNotificationForDisplay(content.notificationId, content.tag)) return;
+      showToast({
+        id: content.notificationId || content.tag,
+        title: content.title,
+        text: content.body,
+        to: content.url,
+      });
+      return;
+    }
+    if (Notification.permission !== "granted") return;
+    if ((content.notificationId || content.tag)
+      && !claimNotificationForDisplay(content.notificationId, content.tag)) return;
     void navigator.serviceWorker.ready.then((registration) => registration.showNotification(content.title, {
       body: content.body,
       icon: "/icons/campusconnect-192.png",
       ...(content.tag ? { tag: content.tag, renotify: true } : {}),
       data: { url: content.url },
-    }));
+    })).catch((error: unknown) => console.error("Could not display a foreground push notification.", error));
   });
 }

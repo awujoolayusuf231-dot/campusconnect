@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/features/auth/AuthProvider", () => ({ useAuth: () => mocks.auth }));
 vi.mock("@tanstack/react-query", () => ({ useQuery: () => ({ data: "student" }) }));
 vi.mock("@/features/notifications/useRealtimeCounts", () => ({ useUnreadCounts: () => mocks.counts }));
+vi.mock("@/features/notifications/NotificationAlerts", () => ({ NotificationAlerts: () => null }));
 vi.mock("@/features/announcements/AnnouncementBanner", () => ({ AnnouncementBanner: () => null }));
 vi.mock("@/lib/supabase", () => ({ supabase: { auth: { signOut: mocks.signOut } } }));
 

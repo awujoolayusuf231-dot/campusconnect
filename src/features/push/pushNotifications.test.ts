@@ -47,12 +47,13 @@ import {
   enablePushNotifications,
   requestPushPermission,
   listenForForegroundPushNotifications,
+  showPushTestNotification,
   syncPushSubscription,
 } from "./pushNotifications";
 
 const serviceWorkerDescriptor = Object.getOwnPropertyDescriptor(navigator, "serviceWorker");
 const secureContextDescriptor = Object.getOwnPropertyDescriptor(window, "isSecureContext");
-const registration = { installing: null, waiting: null };
+const registration = { installing: null, waiting: null, showNotification: mocks.showNotification };
 const messaging = { name: "test-messaging" };
 
 beforeEach(() => {
@@ -119,6 +120,28 @@ describe("requestPushPermission", () => {
 });
 
 describe("push subscription registration", () => {
+  it("sends a local test notification through the service worker", async () => {
+    vi.stubGlobal("Notification", {
+      permission: "granted",
+      requestPermission: mocks.requestPermission,
+    });
+
+    await showPushTestNotification();
+
+    expect(mocks.showNotification).toHaveBeenCalledWith("Notifications are on", {
+      body: "You'll get alerts from CampusConnect here.",
+      tag: "push-test",
+      icon: "/icons/campusconnect-192.png",
+      data: { url: "/app/notifications" },
+    });
+  });
+
+  it("does not attempt a test notification without granted permission", async () => {
+    await expect(showPushTestNotification()).rejects.toThrow("Allow notifications");
+    expect(mocks.getMessaging).not.toHaveBeenCalled();
+    expect(mocks.showNotification).not.toHaveBeenCalled();
+  });
+
   it("shows foreground data-only messages with their tag and safe route", async () => {
     vi.stubGlobal("Notification", {
       permission: "granted",
@@ -146,6 +169,39 @@ describe("push subscription registration", () => {
         data: { url: "/app/messages/conversation-1" },
       }),
     ));
+  });
+
+  it("uses a toast for visible messages and suppresses duplicate FCM deliveries", async () => {
+    const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+    const showToast = vi.fn();
+    let receiveMessage: ((payload: { data?: Record<string, string> }) => void) | undefined;
+    mocks.onMessage.mockImplementation((_messaging, handler) => {
+      receiveMessage = handler;
+      return () => {};
+    });
+
+    await listenForForegroundPushNotifications(showToast);
+    const payload = {
+      data: {
+        title: "New message",
+        body: "Amina sent you a message",
+        url: "/app/messages/conversation-1",
+        tag: "message:conversation-1",
+        notification_id: "foreground-notification-1",
+      },
+    };
+    receiveMessage?.(payload);
+    receiveMessage?.(payload);
+
+    expect(showToast).toHaveBeenCalledOnce();
+    expect(showToast).toHaveBeenCalledWith({
+      id: "foreground-notification-1",
+      title: "New message",
+      text: "Amina sent you a message",
+      to: "/app/messages/conversation-1",
+    });
+    expect(mocks.showNotification).not.toHaveBeenCalled();
+    visibility.mockRestore();
   });
 
   it("rejects malformed configuration before initializing Firebase", async () => {

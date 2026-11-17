@@ -20,6 +20,30 @@ export type DeliveryDecision = {
   error: string | null;
 };
 
+export type PushCopy = {
+  title: string;
+  body: string;
+  url: string;
+  tag: string;
+};
+
+export function pushData(copy: PushCopy, notificationId: string): Record<string, string> {
+  return {
+    title: copy.title,
+    body: copy.body,
+    url: copy.url,
+    tag: copy.tag,
+    notification_id: notificationId,
+  };
+}
+
+export function webpushHeaders(notificationType: string): { TTL: string; Urgency: "high" | "normal" } {
+  return {
+    TTL: "259200",
+    Urgency: notificationType === "message" ? "high" : "normal",
+  };
+}
+
 export function preferenceForNotification(type: string): NotificationPreference | null {
   switch (type) {
     case "follow":

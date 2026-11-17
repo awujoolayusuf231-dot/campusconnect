@@ -1,14 +1,21 @@
 import { Link } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { timeAgo } from "@/lib/time";
 import { LoadingState } from "@/app/LoadingState";
-import { disablePushNotifications, enablePushNotifications, getPushNotificationStatus, requestPushPermission } from "@/features/push/pushNotifications";
+import { disablePushNotifications, enablePushNotifications, getPushNotificationStatus, requestPushPermission, showPushTestNotification } from "@/features/push/pushNotifications";
 import { getFirebaseBrowserConfigStatus, PUSH_CONFIG_MISCONFIGURED_MESSAGE } from "@/features/push/pushConfig";
-import { notificationRoute } from "../../../supabase/functions/_shared/notificationRoute";
+import { isIOSDevice, isStandalone, supportsPush } from "@/features/push/PushPermissionPrompt";
+import { describeNotification, type NotificationCopyInput } from "./notificationCopy";
 
-export interface Notif { id: number; type: string; actor_username: string | null; actor_display_name: string | null; entity_type: string | null; entity_id: string | null; data: Record<string, unknown>; created_at: string; read_at: string | null }
+export interface Notif extends NotificationCopyInput {
+  id: number;
+  created_at: string;
+  read_at: string | null;
+}
+export { describeNotification } from "./notificationCopy";
 const PAGE = 30;
 const PREFS: [string, string, boolean?][] = [
   ["notify_follows", "New followers"],
@@ -22,47 +29,36 @@ const PREFS: [string, string, boolean?][] = [
   ["notify_push", "Browser push notifications"],
 ];
 
-export function describeNotification(n: Notif): { text: string; to?: string } {
-  const who = n.actor_display_name ?? "Someone";
-  const to = notificationRoute({
-    type: n.type,
-    entityType: n.entity_type,
-    entityId: n.entity_id,
-    actorUsername: n.actor_username,
-    data: n.data,
-  });
-  switch (n.type) {
-    case "follow": return { text: `${who} started following you`, to };
-    case "followed_post": return { text: `${who} shared a new post`, to };
-    case "like": return { text: `${who} liked your post`, to };
-    case "repost": return { text: `${who} reposted your post`, to };
-    case "comment": return { text: `${who} commented on your post`, to };
-    case "discussion_reply": return {
-      text: `${who} replied to your course discussion`,
-      to,
-    };
-    case "celebration_reminder": return {
-      text: `Reminder: ${String(n.data.title ?? "an upcoming celebration")}`,
-      to,
-    };
-    case "celebration_published": return {
-      text: `${who} shared a celebration: ${String(n.data.title ?? "new celebration")}`,
-      to,
-    };
-    case "community_join": return { text: `${who} joined your community`, to };
-    case "message": return { text: `${who} sent you a message`, to };
-    case "project_application": return { text: `${who} applied to your project`, to };
-    case "announcement": return { text: `Announcement: ${String(n.data.title ?? "")}`, to };
-    case "moderation_warning": return { text: `A moderator sent you a warning: ${String(n.data.reason ?? "")}`, to };
-    default: return { text: "New notification", to };
-  }
-}
-
 export function NotificationsPage() {
   const qc = useQueryClient();
   const { session } = useAuth();
   const uid = session?.user.id ?? "";
   const pushConfigStatus = getFirebaseBrowserConfigStatus();
+  const [testFeedback, setTestFeedback] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [testPending, setTestPending] = useState(false);
+  const testFeedbackTimer = useRef<number | null>(null);
+  const iosInstallRequired = isIOSDevice() && !isStandalone();
+  const pushSupported = supportsPush();
+  useEffect(() => () => {
+    if (testFeedbackTimer.current !== null) window.clearTimeout(testFeedbackTimer.current);
+  }, []);
+  const sendTestNotification = async () => {
+    setTestPending(true);
+    try {
+      await showPushTestNotification();
+      setTestFeedback({ kind: "success", text: "Notifications enabled. A test notification was sent." });
+    } catch (error) {
+      console.error("CampusConnect could not show the test notification.", error);
+      setTestFeedback({
+        kind: "error",
+        text: "The test notification could not be shown. Check your browser and OS notification settings.",
+      });
+    } finally {
+      setTestPending(false);
+      if (testFeedbackTimer.current !== null) window.clearTimeout(testFeedbackTimer.current);
+      testFeedbackTimer.current = window.setTimeout(() => setTestFeedback(null), 5000);
+    }
+  };
   const list = useInfiniteQuery({ queryKey: ["notifications"], initialPageParam: null as number | null,
     queryFn: async ({ pageParam }) => { const { data, error } = await supabase.rpc("notifications_list", { p_before: pageParam, p_limit: PAGE }); if (error) throw error; return (data ?? []) as Notif[]; },
     getNextPageParam: (last): number | undefined => (last.length === PAGE ? last[last.length - 1]?.id : undefined) });
@@ -79,7 +75,10 @@ export function NotificationsPage() {
     }
   }, onSuccess: () => void qc.invalidateQueries({ queryKey: ["prefs"] }) });
   const pushStatus = useQuery({ queryKey: ["push-subscription", uid], enabled: !!uid && pushConfigStatus === "configured", queryFn: getPushNotificationStatus });
-  const enablePush = useMutation({ mutationFn: (permissionRequest: Promise<NotificationPermission>) => enablePushNotifications(permissionRequest, uid), onSuccess: () => void qc.invalidateQueries({ queryKey: ["push-subscription", uid] }) });
+  const enablePush = useMutation({ mutationFn: (permissionRequest: Promise<NotificationPermission>) => enablePushNotifications(permissionRequest, uid), onSuccess: () => {
+    void qc.invalidateQueries({ queryKey: ["push-subscription", uid] });
+    void sendTestNotification();
+  } });
   const disablePush = useMutation({ mutationFn: () => disablePushNotifications(uid), onSuccess: () => void qc.invalidateQueries({ queryKey: ["push-subscription", uid] }) });
 
   return (
@@ -98,12 +97,19 @@ export function NotificationsPage() {
         <p className="text-xs text-muted">Platform announcements and moderator warnings are always delivered.</p>
         {savePref.isError && <p role="alert" className="err">Could not save your preference: {(savePref.error as Error).message}</p>}</section>
       <section className="card space-y-2"><h2 className="font-medium">This device</h2>
+        {typeof Notification !== "undefined" && Notification.permission === "denied" && <p className="text-xs text-muted">Notifications are blocked. Open this site's browser settings, change Notifications to Allow, then reload CampusConnect.</p>}
         {pushConfigStatus === "invalid" ? <p role="alert" className="err">{PUSH_CONFIG_MISCONFIGURED_MESSAGE}</p>
           : pushConfigStatus === "missing" ? <p className="text-sm text-muted">Browser push is not configured for this app yet.</p>
+          : iosInstallRequired ? <div className="text-sm text-muted">
+            <p>Add CampusConnect to your Home Screen to receive notifications:</p>
+            <ol className="mt-1 list-inside list-decimal">
+              <li>In Safari, tap Share.</li><li>Choose “Add to Home Screen”.</li><li>Open CampusConnect from your Home Screen.</li>
+            </ol>
+          </div>
+          : !pushSupported ? <p className="text-sm text-muted">Browser push is not supported on this device. Try a supported browser over HTTPS.</p>
           : pushStatus.isLoading ? <LoadingState label="Checking this device" />
             : pushStatus.isError ? <p role="alert" className="err">Could not check this device's push status: {(pushStatus.error as Error).message}</p>
               : <><p className="text-sm text-muted">{pushStatus.data ? "This device is registered for browser push." : "This device is not registered for browser push."}</p>
-                {typeof Notification !== "undefined" && Notification.permission === "denied" && <p className="text-xs text-muted">Notifications are blocked in your browser settings. Allow them for CampusConnect to enable push.</p>}
                 {typeof Notification !== "undefined" && Notification.permission === "default" && <p className="text-xs text-muted">Select “Enable on this device”; your browser will then ask you to allow notifications.</p>}
                 <button className="btn min-h-10 rounded-xl px-4 font-bold" disabled={enablePush.isPending || disablePush.isPending}
                   onClick={() => {
@@ -115,6 +121,10 @@ export function NotificationsPage() {
                   }}>
                   {enablePush.isPending || disablePush.isPending ? "Updating…" : pushStatus.data ? "Disable on this device" : "Enable on this device"}
                 </button>
+                {pushStatus.data && prefs.data?.notify_push !== false && <button className="btn min-h-10 rounded-xl px-4" disabled={testPending} onClick={() => void sendTestNotification()}>
+                  {testPending ? "Sending test…" : "Send test notification"}
+                </button>}
+                {testFeedback && <div role={testFeedback.kind === "error" ? "alert" : "status"} className="fixed bottom-24 right-3 z-50 max-w-sm rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-fg shadow-lg lg:bottom-4">{testFeedback.text}</div>}
                 {enablePush.isError && <p role="alert" className="err">Could not enable notifications: {(enablePush.error as Error).message}</p>}
                 {disablePush.isError && <p role="alert" className="err">Could not disable notifications: {(disablePush.error as Error).message}</p>}</>}
       </section>

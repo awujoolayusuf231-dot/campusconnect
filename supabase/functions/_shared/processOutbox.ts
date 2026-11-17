@@ -5,7 +5,9 @@ import {
   isLocalSupabaseUrl,
   preferenceForNotification,
   pushCopy,
+  pushData,
   shouldSendPush,
+  webpushHeaders,
   type DeviceResult,
 } from "../process-outbox/pushOutboxLogic.ts";
 
@@ -30,12 +32,14 @@ type PushJob = {
   tokens: string[];
 };
 type EnrichedPushJob = PushJob & {
+  notification_id: string;
   actor_name: string;
   actor_username: string | null;
   notification_data: Record<string, unknown>;
 };
 type OutboxNotificationDetails = {
   id: number;
+  notification_id: number | string;
   notification: {
     actor_id: string | null;
     data: Record<string, unknown>;
@@ -137,8 +141,8 @@ async function sendToDevice(
         body: JSON.stringify({
           message: {
             token,
-            data: { title: copy.title, body: copy.body, url: copy.url, tag: copy.tag },
-            webpush: { headers: { TTL: "86400", Urgency: "normal" } },
+            data: pushData(copy, job.notification_id),
+            webpush: { headers: webpushHeaders(job.notification_type) },
           },
         }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -194,12 +198,12 @@ async function enrichPushJobs(
 ): Promise<EnrichedPushJob[]> {
   const { data: outboxRows, error: outboxError } = await client
     .from("push_outbox")
-    .select("id,notification:notifications!inner(actor_id,data)")
+    .select("id,notification_id,notification:notifications!inner(actor_id,data)")
     .in("id", jobs.map((job) => job.outbox_id));
   if (outboxError) throw new Error("Could not load push notification details.");
 
   const details = (outboxRows ?? []) as unknown as OutboxNotificationDetails[];
-  const detailByOutboxId = new Map(details.map((row) => [row.id, row.notification]));
+  const detailByOutboxId = new Map(details.map((row) => [row.id, row]));
   const actorIds = [...new Set(details.flatMap((row) => row.notification?.actor_id ?? []))];
   const profileById = new Map<string, ActorProfile>();
   if (actorIds.length > 0) {
@@ -212,11 +216,16 @@ async function enrichPushJobs(
   }
 
   return jobs.map((job) => {
-    const notification = detailByOutboxId.get(job.outbox_id);
+    const outboxDetail = detailByOutboxId.get(job.outbox_id);
+    if (!outboxDetail?.notification) {
+      throw new Error(`Could not find notification details for outbox job ${job.outbox_id}.`);
+    }
+    const notification = outboxDetail.notification;
     const profile = notification?.actor_id ? profileById.get(notification.actor_id) : undefined;
     const actorName = profile?.display_name?.trim() || profile?.username?.trim() || "Someone";
     return {
       ...job,
+      notification_id: String(outboxDetail.notification_id),
       actor_name: actorName.slice(0, 40),
       actor_username: profile?.username ?? null,
       notification_data: notification?.data ?? {},

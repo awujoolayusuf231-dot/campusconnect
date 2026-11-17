@@ -9,6 +9,7 @@ import { AnnouncementBanner } from "@/features/announcements/AnnouncementBanner"
 import { Link } from "react-router-dom";
 import { isBrowserPushConfigured } from "@/features/push/pushConfig";
 import { VoiceCallDock, VoiceCallProvider } from "@/features/voice/VoiceCallProvider";
+import { NotificationAlerts } from "@/features/notifications/NotificationAlerts";
 
 export function StudentLayout() {
   const { session, role } = useAuth();
@@ -70,7 +71,6 @@ export function StudentLayout() {
     if (!session?.user.id || !isBrowserPushConfigured()) return;
     let disposed = false;
     let syncing = false;
-    let unsubscribe = () => {};
     const syncPushIfVisible = () => {
       if (disposed || syncing || document.visibilityState !== "visible"
         || typeof Notification === "undefined" || Notification.permission !== "granted") return;
@@ -80,18 +80,11 @@ export function StudentLayout() {
       }).catch((error: unknown) => console.error("CampusConnect push subscription could not be refreshed.", error))
         .finally(() => { syncing = false; });
     };
-    void import("@/features/push/pushNotifications").then(({ listenForForegroundPushNotifications }) =>
-      listenForForegroundPushNotifications()
-    ).then((stop) => {
-      if (disposed) stop();
-      else unsubscribe = stop;
-    }).catch((error: unknown) => console.error("CampusConnect foreground push notifications could not be started.", error));
     syncPushIfVisible();
     document.addEventListener("visibilitychange", syncPushIfVisible);
     return () => {
       disposed = true;
       document.removeEventListener("visibilitychange", syncPushIfVisible);
-      unsubscribe();
     };
   }, [session?.user.id]);
   const signOut = async () => {
@@ -106,6 +99,7 @@ export function StudentLayout() {
   };
   return (
     <VoiceCallProvider>
+    {session?.user.id && <NotificationAlerts userId={session.user.id} />}
     <div className="min-h-full bg-bg">
       <a href="#main" className="sr-only z-50 rounded bg-surface px-3 py-2 focus:not-sr-only focus:fixed focus:left-2 focus:top-2">Skip to main content</a>
       <header className="sticky top-0 z-20 border-b border-line/80 bg-white/95 shadow-[0_3px_16px_rgba(35,24,20,0.035)] backdrop-blur-xl">

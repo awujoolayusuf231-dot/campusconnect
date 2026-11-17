@@ -1,13 +1,18 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { describeNotification, NotificationsPage, type Notif } from "./NotificationsPage";
 
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   getPushNotificationStatus: vi.fn(),
+  requestPushPermission: vi.fn(),
+  enablePushNotifications: vi.fn(),
+  disablePushNotifications: vi.fn(),
+  showPushTestNotification: vi.fn(),
+  configStatus: "invalid" as "invalid" | "configured" | "missing",
 }));
 
 vi.mock("@/lib/supabase", () => ({
@@ -26,15 +31,46 @@ vi.mock("@/features/auth/AuthProvider", () => ({
   useAuth: () => ({ session: { user: { id: "user-1" } } }),
 }));
 vi.mock("@/features/push/pushNotifications", () => ({
-  disablePushNotifications: vi.fn(),
-  enablePushNotifications: vi.fn(),
+  disablePushNotifications: mocks.disablePushNotifications,
+  enablePushNotifications: mocks.enablePushNotifications,
   getPushNotificationStatus: mocks.getPushNotificationStatus,
-  requestPushPermission: vi.fn(),
+  requestPushPermission: mocks.requestPushPermission,
+  showPushTestNotification: mocks.showPushTestNotification,
 }));
 vi.mock("@/features/push/pushConfig", () => ({
-  getFirebaseBrowserConfigStatus: () => "invalid",
+  getFirebaseBrowserConfigStatus: () => mocks.configStatus,
   PUSH_CONFIG_MISCONFIGURED_MESSAGE: "Push notifications are misconfigured.",
 }));
+
+const descriptors = {
+  notification: Object.getOwnPropertyDescriptor(window, "Notification"),
+  serviceWorker: Object.getOwnPropertyDescriptor(navigator, "serviceWorker"),
+  pushManager: Object.getOwnPropertyDescriptor(window, "PushManager"),
+  secureContext: Object.getOwnPropertyDescriptor(window, "isSecureContext"),
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.configStatus = "invalid";
+  mocks.rpc.mockResolvedValue({ data: [], error: null });
+  mocks.getPushNotificationStatus.mockResolvedValue(false);
+  mocks.requestPushPermission.mockResolvedValue("granted");
+  mocks.enablePushNotifications.mockResolvedValue(undefined);
+  mocks.disablePushNotifications.mockResolvedValue(undefined);
+  mocks.showPushTestNotification.mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  for (const [key, descriptor] of Object.entries(descriptors)) {
+    const target = key === "serviceWorker" ? navigator : window;
+    const property = key === "notification" ? "Notification"
+      : key === "serviceWorker" ? "serviceWorker"
+      : key === "pushManager" ? "PushManager"
+      : "isSecureContext";
+    if (descriptor) Object.defineProperty(target, property, descriptor);
+    else Reflect.deleteProperty(target, property);
+  }
+});
 
 function notification(
   type: string,
@@ -110,6 +146,48 @@ describe("describeNotification", () => {
 
       expect(await screen.findByText("Push notifications are misconfigured.")).toBeInTheDocument();
       expect(mocks.getPushNotificationStatus).not.toHaveBeenCalled();
+    });
+
+    it("shows a test button only for a registered device and sends the local test notification", async () => {
+      mocks.configStatus = "configured";
+      mocks.getPushNotificationStatus.mockResolvedValue(true);
+      Object.defineProperty(window, "Notification", { configurable: true, value: { permission: "granted" } });
+      Object.defineProperty(navigator, "serviceWorker", { configurable: true, value: {} });
+      Object.defineProperty(window, "PushManager", { configurable: true, value: class PushManager {} });
+      Object.defineProperty(window, "isSecureContext", { configurable: true, value: true });
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+      render(createElement(MemoryRouter, null,
+        createElement(QueryClientProvider, { client }, createElement(NotificationsPage)),
+      ));
+
+      const testButton = await screen.findByRole("button", { name: "Send test notification" });
+      fireEvent.click(testButton);
+
+      expect(await screen.findByText("Notifications enabled. A test notification was sent.")).toBeInTheDocument();
+      expect(mocks.showPushTestNotification).toHaveBeenCalledOnce();
+    });
+
+    it("sends a test notification after enabling succeeds", async () => {
+      mocks.configStatus = "configured";
+      Object.defineProperty(window, "Notification", {
+        configurable: true,
+        value: { permission: "default" },
+      });
+      Object.defineProperty(navigator, "serviceWorker", { configurable: true, value: {} });
+      Object.defineProperty(window, "PushManager", { configurable: true, value: class PushManager {} });
+      Object.defineProperty(window, "isSecureContext", { configurable: true, value: true });
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+      render(createElement(MemoryRouter, null,
+        createElement(QueryClientProvider, { client }, createElement(NotificationsPage)),
+      ));
+
+      fireEvent.click(await screen.findByRole("button", { name: "Enable on this device" }));
+
+      expect(mocks.requestPushPermission).toHaveBeenCalledOnce();
+      expect(await screen.findByText("Notifications enabled. A test notification was sent.")).toBeInTheDocument();
+      expect(mocks.enablePushNotifications).toHaveBeenCalledWith(expect.any(Promise), "user-1");
     });
   });
 });

@@ -5,10 +5,28 @@ import {
   isLocalSupabaseUrl,
   preferenceForNotification,
   pushCopy,
+  pushData,
   shouldSendPush,
+  webpushHeaders,
 } from "./pushOutboxLogic";
 
 describe("push outbox decisions", () => {
+  it("includes the notification ID as a string and applies message-specific FCM lifetime headers", () => {
+    const copy = pushCopy("message", "Amina", "conversation", "conversation-1");
+    const data = pushData(copy, "123456");
+
+    expect(data).toEqual({
+      title: "New message",
+      body: "Amina sent you a message",
+      url: "/app/messages/conversation-1",
+      tag: "message:conversation-1",
+      notification_id: "123456",
+    });
+    expect(Object.values(data).every((value) => typeof value === "string")).toBe(true);
+    expect(webpushHeaders("message")).toEqual({ TTL: "259200", Urgency: "high" });
+    expect(webpushHeaders("like")).toEqual({ TTL: "259200", Urgency: "normal" });
+  });
+
   it("builds specific private-safe push copy, routes, and message tags", () => {
     expect(pushCopy("message", "Amina", "conversation", "conv/1")).toEqual({
       title: "New message",
