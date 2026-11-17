@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   getToken: vi.fn(),
   isSupported: vi.fn(),
   onMessage: vi.fn(),
+  showNotification: vi.fn(),
   deleteToken: vi.fn(),
   rpc: vi.fn(),
 }));
@@ -45,6 +46,7 @@ import {
   disablePushNotifications,
   enablePushNotifications,
   requestPushPermission,
+  listenForForegroundPushNotifications,
   syncPushSubscription,
 } from "./pushNotifications";
 
@@ -70,11 +72,15 @@ beforeEach(() => {
   mocks.getMessaging.mockReturnValue(messaging);
   mocks.isSupported.mockResolvedValue(true);
   mocks.getToken.mockResolvedValue("fcm-token");
+  mocks.showNotification.mockResolvedValue(undefined);
   mocks.deleteToken.mockResolvedValue(true);
   mocks.rpc.mockResolvedValue({ data: null, error: null });
   Object.defineProperty(navigator, "serviceWorker", {
     configurable: true,
-    value: { register: vi.fn().mockResolvedValue(registration) },
+    value: {
+      register: vi.fn().mockResolvedValue(registration),
+      ready: Promise.resolve({ showNotification: mocks.showNotification }),
+    },
   });
   Object.defineProperty(window, "isSecureContext", { configurable: true, value: true });
   vi.stubGlobal("Notification", {
@@ -113,6 +119,35 @@ describe("requestPushPermission", () => {
 });
 
 describe("push subscription registration", () => {
+  it("shows foreground data-only messages with their tag and safe route", async () => {
+    vi.stubGlobal("Notification", {
+      permission: "granted",
+      requestPermission: mocks.requestPermission,
+    });
+    mocks.onMessage.mockImplementation((_messaging, handler) => {
+      handler({
+        data: {
+          title: "New message",
+          body: "Amina sent you a message",
+          url: "/app/messages/conversation-1",
+          tag: "message:conversation-1",
+        },
+      });
+      return () => {};
+    });
+
+    await listenForForegroundPushNotifications();
+    await vi.waitFor(() => expect(mocks.showNotification).toHaveBeenCalledWith(
+      "New message",
+      expect.objectContaining({
+        body: "Amina sent you a message",
+        tag: "message:conversation-1",
+        renotify: true,
+        data: { url: "/app/messages/conversation-1" },
+      }),
+    ));
+  });
+
   it("rejects malformed configuration before initializing Firebase", async () => {
     mocks.getFirebaseBrowserConfigStatus.mockReturnValue("invalid");
     mocks.getFirebaseBrowserConfig.mockReturnValue(null);

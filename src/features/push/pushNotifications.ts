@@ -7,6 +7,7 @@ import {
   getPushServiceWorkerUrl,
   PUSH_CONFIG_MISCONFIGURED_MESSAGE,
 } from "./pushConfig";
+import { safeAppPath } from "../../../supabase/functions/_shared/notificationRoute";
 
 export { getPushServiceWorkerUrl, isBrowserPushConfigured } from "./pushConfig";
 
@@ -150,7 +151,8 @@ function notificationContent(payload: MessagePayload) {
   return {
     title: data.title || "CampusConnect",
     body: data.body || "You have a new update.",
-    url: data.url || "/app/notifications",
+    url: safeAppPath(data.url),
+    tag: data.tag || "",
   };
 }
 
@@ -162,6 +164,7 @@ export async function listenForForegroundPushNotifications(): Promise<() => void
     void navigator.serviceWorker.ready.then((registration) => registration.showNotification(content.title, {
       body: content.body,
       icon: "/icons/campusconnect-192.png",
+      ...(content.tag ? { tag: content.tag, renotify: true } : {}),
       data: { url: content.url },
     }));
   });

@@ -34,6 +34,8 @@ LiveKit credentials do not configure Firebase push. Migration `20261113000028_pu
 4. Configure the browser-safe values in the frontend hosting/build environment: `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_APP_ID`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_PROJECT_ID`, and `VITE_FIREBASE_VAPID_KEY`. These are public web-app values, not the service-account JSON. Rebuild and redeploy after changing them; `.env.local` only affects local development. Then sign in, open Notifications, choose **Enable on this device**, and allow browser notifications. This explicit click opens the browser permission prompt; push does not prompt automatically. Production push requires HTTPS. Installing the PWA is not required in desktop Chrome/Edge; iPhone/iPad requires iOS/iPadOS 16.4+ and adding the site to the Home Screen before enabling web push.
 5. To diagnose delivery, check **Edge Functions → `process-outbox` → Logs** and run `select status, last_error, count(*) from public.push_outbox group by status, last_error order by status;`. No queued rows usually means no notification was generated; pending rows indicate the worker is not draining the queue; failed rows show the latest delivery reason. Confirm the cron job is active with `select jobname, schedule, active from cron.job where jobname = 'campusconnect-push-outbox';`.
 
+For the immediate-dispatch and richer-copy update, apply `20261117000041_push_outbox_immediate_dispatch.sql`, then deploy `process-outbox` with `supabase functions deploy process-outbox`, then deploy the frontend. Keep the existing every-minute cron job enabled as the retry/fallback path. Do not rerun the cron setup SQL if the job is already active.
+
 ## 2. Frontend build
 ```bash
 npm ci

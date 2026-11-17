@@ -6,6 +6,7 @@ import { timeAgo } from "@/lib/time";
 import { LoadingState } from "@/app/LoadingState";
 import { disablePushNotifications, enablePushNotifications, getPushNotificationStatus, requestPushPermission } from "@/features/push/pushNotifications";
 import { getFirebaseBrowserConfigStatus, PUSH_CONFIG_MISCONFIGURED_MESSAGE } from "@/features/push/pushConfig";
+import { notificationRoute } from "../../../supabase/functions/_shared/notificationRoute";
 
 export interface Notif { id: number; type: string; actor_username: string | null; actor_display_name: string | null; entity_type: string | null; entity_id: string | null; data: Record<string, unknown>; created_at: string; read_at: string | null }
 const PAGE = 30;
@@ -23,31 +24,37 @@ const PREFS: [string, string, boolean?][] = [
 
 export function describeNotification(n: Notif): { text: string; to?: string } {
   const who = n.actor_display_name ?? "Someone";
+  const to = notificationRoute({
+    type: n.type,
+    entityType: n.entity_type,
+    entityId: n.entity_id,
+    actorUsername: n.actor_username,
+    data: n.data,
+  });
   switch (n.type) {
-    case "follow": return { text: `${who} started following you`, to: n.actor_username ? `/app/u/${n.actor_username}` : undefined };
-    case "followed_post": return { text: `${who} shared a new post`, to: n.entity_id ? `/app/p/${n.entity_id}` : undefined };
-    case "like": return { text: `${who} liked your post` };
-    case "repost": return { text: `${who} reposted your post` };
-    case "comment": return { text: `${who} commented on your post` };
+    case "follow": return { text: `${who} started following you`, to };
+    case "followed_post": return { text: `${who} shared a new post`, to };
+    case "like": return { text: `${who} liked your post`, to };
+    case "repost": return { text: `${who} reposted your post`, to };
+    case "comment": return { text: `${who} commented on your post`, to };
     case "discussion_reply": return {
       text: `${who} replied to your course discussion`,
-      to: typeof n.data.course_id === "string" && n.entity_id
-        ? `/app/assignment-discussions/courses/${n.data.course_id}?discussion=${n.entity_id}`
-        : "/app/assignment-discussions",
+      to,
     };
     case "celebration_reminder": return {
       text: `Reminder: ${String(n.data.title ?? "an upcoming celebration")}`,
-      to: n.entity_id ? `/app/celebrations/${n.entity_id}` : "/app/celebrations",
+      to,
     };
     case "celebration_published": return {
       text: `${who} shared a celebration: ${String(n.data.title ?? "new celebration")}`,
-      to: n.entity_id ? `/app/celebrations/${n.entity_id}` : "/app/celebrations",
+      to,
     };
-    case "community_join": return { text: `${who} joined your community`, to: "/app/communities" };
-    case "message": return { text: `${who} sent you a message`, to: n.entity_id ? `/app/messages/${n.entity_id}` : "/app/messages" };
-    case "announcement": return { text: `Announcement: ${String(n.data.title ?? "")}` };
-    case "moderation_warning": return { text: `A moderator sent you a warning: ${String(n.data.reason ?? "")}` };
-    default: return { text: "New notification" };
+    case "community_join": return { text: `${who} joined your community`, to };
+    case "message": return { text: `${who} sent you a message`, to };
+    case "project_application": return { text: `${who} applied to your project`, to };
+    case "announcement": return { text: `Announcement: ${String(n.data.title ?? "")}`, to };
+    case "moderation_warning": return { text: `A moderator sent you a warning: ${String(n.data.reason ?? "")}`, to };
+    default: return { text: "New notification", to };
   }
 }
 
