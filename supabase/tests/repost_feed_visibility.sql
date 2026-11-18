@@ -36,9 +36,12 @@ declare
   v_result text := '';
 begin
   insert into auth.users (id, email, raw_user_meta_data) values
-    (v_owner, 'repost-owner-' || v_owner || '@t.invalid', jsonb_build_object('username', 'repost_owner_' || left(v_owner::text, 8))),
-    (v_reposter, 'repost-user-' || v_reposter || '@t.invalid', jsonb_build_object('username', 'repost_user_' || left(v_reposter::text, 8))),
-    (v_other, 'repost-other-' || v_other || '@t.invalid', jsonb_build_object('username', 'repost_other_' || left(v_other::text, 8)));
+    (v_owner, 'repost-owner-' || v_owner || '@t.invalid', jsonb_build_object(
+      'username', 'repost_owner_' || left(v_owner::text, 8), 'display_name', 'Repost Owner')),
+    (v_reposter, 'repost-user-' || v_reposter || '@t.invalid', jsonb_build_object(
+      'username', 'repost_user_' || left(v_reposter::text, 8), 'display_name', 'Reposter')),
+    (v_other, 'repost-other-' || v_other || '@t.invalid', jsonb_build_object(
+      'username', 'repost_other_' || left(v_other::text, 8), 'display_name', 'Other User'));
 
   insert into public.posts (author_id, body, created_at)
   values (v_owner, 'A post that gets reshared', now() - interval '2 hours')
