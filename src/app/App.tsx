@@ -1,9 +1,9 @@
 import { lazy, Suspense } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import { RequireAuth, RequireStaff } from "@/features/auth/guards";
-import { StudentLayout } from "@/app/StudentLayout";
 import { LoadingState } from "@/app/LoadingState";
 
+const StudentLayout = lazy(() => import("@/app/StudentLayout").then((m) => ({ default: m.StudentLayout })));
 const HomePage = lazy(() => import("@/pages/HomePage").then((m) => ({ default: m.HomePage })));
 const LoginPage = lazy(() => import("@/features/auth/pages/LoginPage").then((m) => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import("@/features/auth/pages/RegisterPage").then((m) => ({ default: m.RegisterPage })));

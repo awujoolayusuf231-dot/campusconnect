@@ -78,15 +78,12 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          void caches.open(CACHE_NAME).then((cache) => cache.put("/index.html", copy));
-          return response;
-        })
-        .catch(async () => (await caches.match(request)) ?? (await caches.match("/index.html"))),
-    );
+    const updateShell = fetch(request).then((response) => {
+      if (!response.ok || !response.headers.get("content-type")?.includes("text/html")) return response;
+      return caches.open(CACHE_NAME).then((cache) => cache.put("/index.html", response.clone())).then(() => response);
+    });
+    event.waitUntil(updateShell.then(() => undefined).catch(() => undefined));
+    event.respondWith(caches.match("/index.html").then((cached) => cached ?? updateShell));
     return;
   }
 

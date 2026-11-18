@@ -4,7 +4,9 @@ import { runInNewContext } from "node:vm";
 import { describe, expect, it, vi } from "vitest";
 
 type WorkerEvent = {
-  notification: { data?: { url?: string }; close: () => void };
+  notification?: { data?: { url?: string }; close: () => void };
+  request?: { method: string; mode: string; url: string };
+  respondWith?: (promise: Promise<unknown>) => void;
   waitUntil: (promise: Promise<unknown>) => void;
 };
 
@@ -17,6 +19,9 @@ function initializeServiceWorker() {
   let backgroundHandler: ((payload: { data?: Record<string, string> }) => unknown) | undefined;
   const listeners = new Map<string, (event: WorkerEvent) => void>();
   const showNotification = vi.fn().mockResolvedValue(undefined);
+  const shellCache = { put: vi.fn().mockResolvedValue(undefined) };
+  const cacheMatch = vi.fn().mockResolvedValue(undefined);
+  const fetchRequest = vi.fn();
   const client = {
     url: "https://campusconnect.example/app",
     navigate: vi.fn().mockResolvedValue(undefined),
@@ -40,12 +45,17 @@ function initializeServiceWorker() {
   runInNewContext(serviceWorkerSource, {
     self,
     URL,
+    caches: {
+      match: cacheMatch,
+      open: vi.fn().mockResolvedValue(shellCache),
+    },
+    fetch: fetchRequest,
     importScripts: vi.fn(),
     firebase: { initializeApp: vi.fn(), messaging: () => messaging },
   });
 
   if (!backgroundHandler) throw new Error("The service worker did not register its background message handler.");
-  return { backgroundHandler, listeners, showNotification, client };
+  return { backgroundHandler, listeners, showNotification, client, shellCache, cacheMatch, fetchRequest };
 }
 
 describe("firebase messaging service worker", () => {
@@ -85,5 +95,31 @@ describe("firebase messaging service worker", () => {
     expect(options).toMatchObject({ data: { url: "/app/notifications" } });
     expect(options).not.toHaveProperty("tag");
     expect(options).not.toHaveProperty("renotify");
+  });
+
+  it("serves the cached app shell immediately while refreshing it in the background", async () => {
+    const { listeners, shellCache, cacheMatch, fetchRequest } = initializeServiceWorker();
+    const cachedShell = { source: "cached" };
+    const freshShell = {
+      ok: true,
+      headers: { get: () => "text/html; charset=utf-8" },
+      clone: vi.fn(),
+    };
+    freshShell.clone.mockReturnValue(freshShell);
+    cacheMatch.mockResolvedValue(cachedShell);
+    fetchRequest.mockResolvedValue(freshShell);
+
+    let response: Promise<unknown> | undefined;
+    let update: Promise<unknown> | undefined;
+    listeners.get("fetch")?.({
+      request: { method: "GET", mode: "navigate", url: "https://campusconnect.example/app/feed" },
+      respondWith: (promise) => { response = promise; },
+      waitUntil: (promise) => { update = promise; },
+    });
+
+    await expect(response).resolves.toBe(cachedShell);
+    await update;
+    expect(fetchRequest).toHaveBeenCalledOnce();
+    expect(shellCache.put).toHaveBeenCalledWith("/index.html", freshShell);
   });
 });
