@@ -12,12 +12,22 @@ import { formatCount } from "@/lib/format";
 import { MentionTextarea } from "./MentionTextarea";
 import { PostBody } from "./PostBody";
 
+type CommentMutation = {
+  id: string;
+  enabled: boolean;
+  previousEnabled: boolean;
+  previousCount: number;
+};
+
+type CommentInteractionOverrides = Partial<Pick<CommentRow, "liked_by_me" | "like_count" | "reposted_by_me" | "repost_count">>;
+
 export function CommentSection({ postId, me, canReshare = true }: { postId: string; me: string; canReshare?: boolean }) {
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const [replyText, setReplyText] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [reporting, setReporting] = useState<string | null>(null);
+  const [interactionOverrides, setInteractionOverrides] = useState<Record<string, CommentInteractionOverrides>>({});
   const observer = useRef<IntersectionObserver | null>(null);
   const commentElements = useRef(new Map<string, HTMLLIElement>());
   const commentRefs = useRef(new Map<string, (element: HTMLLIElement | null) => void>());
@@ -29,9 +39,7 @@ export function CommentSection({ postId, me, canReshare = true }: { postId: stri
     queryFn: ({ pageParam }) => fetchComments(postId, pageParam),
     getNextPageParam: (lastPage, pages) => lastPage.length === COMMENT_PAGE_SIZE ? pages.length : undefined,
   });
-  const refreshComments = () => {
-    void qc.invalidateQueries({ queryKey: ["comments", postId] });
-  };
+  const refreshComments = () => qc.invalidateQueries({ queryKey: ["comments", postId] });
   const refreshPostCounts = () => {
     refreshComments();
     void qc.invalidateQueries({ queryKey: ["feed"] });
@@ -39,9 +47,8 @@ export function CommentSection({ postId, me, canReshare = true }: { postId: stri
     void qc.invalidateQueries({ queryKey: ["community-posts"] });
     void qc.invalidateQueries({ queryKey: ["post", postId] });
   };
-  const refreshReshares = () => {
-    refreshComments();
-    void qc.invalidateQueries({ queryKey: ["feed"] });
+  const refreshReshares = async () => {
+    await Promise.all([refreshComments(), qc.invalidateQueries({ queryKey: ["feed"] })]);
   };
   const add = useMutation({ mutationFn: () => addComment(postId, text), onSuccess: () => { setText(""); refreshPostCounts(); } });
   const reply = useMutation({
@@ -50,13 +57,71 @@ export function CommentSection({ postId, me, canReshare = true }: { postId: stri
   });
   const del = useMutation({ mutationFn: (id: string) => deleteComment(id), onSuccess: refreshPostCounts });
   const like = useMutation({
-    mutationFn: ({ id, liked }: { id: string; liked: boolean }) => liked ? unlikeComment(id) : likeComment(id),
-    onSuccess: refreshComments,
+    mutationFn: ({ id, enabled }: CommentMutation) => enabled ? likeComment(id) : unlikeComment(id),
+    onError: (_error, variables) => setInteractionOverrides((current) => ({
+      ...current,
+      [variables.id]: { ...current[variables.id], liked_by_me: variables.previousEnabled, like_count: variables.previousCount },
+    })),
+    onSuccess: async (_data, variables) => {
+      await refreshComments();
+      clearInteractionOverride(variables.id, "liked_by_me", "like_count");
+    },
   });
   const repost = useMutation({
-    mutationFn: ({ id, reposted }: { id: string; reposted: boolean }) => reposted ? unrepostComment(id) : repostComment(id),
-    onSuccess: refreshReshares,
+    mutationFn: ({ id, enabled }: CommentMutation) => enabled ? repostComment(id) : unrepostComment(id),
+    onError: (_error, variables) => setInteractionOverrides((current) => ({
+      ...current,
+      [variables.id]: { ...current[variables.id], reposted_by_me: variables.previousEnabled, repost_count: variables.previousCount },
+    })),
+    onSuccess: async (_data, variables) => {
+      await refreshReshares();
+      clearInteractionOverride(variables.id, "reposted_by_me", "repost_count");
+    },
   });
+  function clearInteractionOverride(id: string, ...keys: (keyof CommentInteractionOverrides)[]) {
+    setInteractionOverrides((current) => {
+      const next = { ...current };
+      const override = { ...next[id] };
+      keys.forEach((key) => { delete override[key]; });
+      if (Object.keys(override).length === 0) delete next[id];
+      else next[id] = override;
+      return next;
+    });
+  }
+  function toggleCommentLike(comment: CommentRow, liked: boolean, likeCount: number) {
+    const enabled = !liked;
+    setInteractionOverrides((current) => ({
+      ...current,
+      [comment.id]: {
+        ...current[comment.id],
+        liked_by_me: enabled,
+        like_count: Math.max(0, likeCount + (enabled ? 1 : -1)),
+      },
+    }));
+    like.mutate({
+      id: comment.id,
+      enabled,
+      previousEnabled: liked,
+      previousCount: likeCount,
+    });
+  }
+  function toggleCommentReshare(comment: CommentRow, reposted: boolean, repostCount: number) {
+    const enabled = !reposted;
+    setInteractionOverrides((current) => ({
+      ...current,
+      [comment.id]: {
+        ...current[comment.id],
+        reposted_by_me: enabled,
+        repost_count: Math.max(0, repostCount + (enabled ? 1 : -1)),
+      },
+    }));
+    repost.mutate({
+      id: comment.id,
+      enabled,
+      previousEnabled: reposted,
+      previousCount: repostCount,
+    });
+  }
   const visibleComments = comments.data?.pages.flat().filter((comment) => comment.author !== null) ?? [];
   const shownCount = visibleComments.reduce((count, comment) => count + 1 + (comment.replies ?? []).filter((replyRow) => replyRow.author !== null).length, 0);
   const interactionError = (like.error ?? repost.error ?? reply.error) as Error | null;
@@ -123,6 +188,10 @@ export function CommentSection({ postId, me, canReshare = true }: { postId: stri
   function renderComment(comment: CommentRow, isReply = false): ReactNode {
     if (!comment.author) return null;
     const replies = comment.replies ?? [];
+    const likedByMe = interactionOverrides[comment.id]?.liked_by_me ?? comment.liked_by_me;
+    const likeCount = interactionOverrides[comment.id]?.like_count ?? comment.like_count;
+    const repostedByMe = interactionOverrides[comment.id]?.reposted_by_me ?? comment.reposted_by_me;
+    const repostCount = interactionOverrides[comment.id]?.repost_count ?? comment.repost_count;
     return (
       <li ref={commentRef(comment.id)} key={comment.id} id={`comment-${comment.id}`} className={`flex min-w-0 gap-3 rounded-xl border border-line/80 bg-white p-3 sm:p-4 ${isReply ? "ml-8 border-dashed sm:ml-12" : ""}`}>
         <Link to={`/app/u/${comment.author.username}`} aria-label={`View ${comment.author.display_name}'s profile`} className="shrink-0">
@@ -141,18 +210,18 @@ export function CommentSection({ postId, me, canReshare = true }: { postId: stri
             <span className="inline-flex items-center gap-1"><BarChart3 size={12} aria-hidden="true" />{formatCount(comment.metrics.impressions)} impressions</span>
           </p>}
           <div className="mt-2 flex min-h-7 flex-wrap items-center gap-x-4 gap-y-2">
-            <button type="button" className={`inline-flex items-center gap-1 text-xs font-semibold ${comment.liked_by_me ? "text-primary" : "text-muted hover:text-primary"}`}
-              aria-label={comment.liked_by_me ? "Unlike comment" : "Like comment"} aria-pressed={comment.liked_by_me} disabled={like.isPending} onClick={() => like.mutate({ id: comment.id, liked: comment.liked_by_me })}>
-              <Heart size={14} fill={comment.liked_by_me ? "currentColor" : "none"} aria-hidden="true" />{formatCount(comment.like_count)}<span className="sr-only"> likes</span>
+            <button type="button" className={`inline-flex items-center gap-1 text-xs font-semibold ${likedByMe ? "text-primary" : "text-muted hover:text-primary"}`}
+              aria-label={likedByMe ? "Unlike comment" : "Like comment"} aria-pressed={likedByMe} disabled={like.isPending} onClick={() => toggleCommentLike(comment, likedByMe, likeCount)}>
+              <Heart size={14} fill={likedByMe ? "currentColor" : "none"} aria-hidden="true" />{formatCount(likeCount)}<span className="sr-only"> likes</span>
             </button>
             {!isReply && <button type="button" className="text-xs font-semibold text-muted hover:text-primary hover:underline" onClick={() => {
               setReplyingTo((current) => current === comment.id ? null : comment.id);
               setReplyText("");
             }}>Reply{replies.length > 0 ? ` · ${formatCount(replies.length)}` : ""}</button>}
-            <button type="button" className={`inline-flex items-center gap-1 text-xs font-semibold ${comment.reposted_by_me ? "text-primary" : "text-muted hover:text-primary"}`}
-              aria-label={comment.reposted_by_me ? "Undo comment reshare" : "Reshare comment"} aria-pressed={comment.reposted_by_me} disabled={repost.isPending || !canReshare}
-              title={canReshare ? "Share this comment as a public post" : "Community comments cannot be reshared"} onClick={() => repost.mutate({ id: comment.id, reposted: comment.reposted_by_me })}>
-              <Repeat2 size={14} aria-hidden="true" />{comment.reposted_by_me ? "Reposted" : "Reshare"}{comment.repost_count > 0 ? ` · ${formatCount(comment.repost_count)}` : ""}
+            <button type="button" className={`inline-flex items-center gap-1 text-xs font-semibold ${repostedByMe ? "text-primary" : "text-muted hover:text-primary"}`}
+              aria-label={repostedByMe ? "Undo comment reshare" : "Reshare comment"} aria-pressed={repostedByMe} disabled={repost.isPending || !canReshare}
+              title={canReshare ? "Share this comment as a public post" : "Community comments cannot be reshared"} onClick={() => toggleCommentReshare(comment, repostedByMe, repostCount)}>
+              <Repeat2 size={14} aria-hidden="true" />{repostedByMe ? "Reposted" : "Reshare"}{repostCount > 0 ? ` · ${formatCount(repostCount)}` : ""}
             </button>
             {comment.author_id === me
               ? <button type="button" className="text-xs font-semibold text-muted underline-offset-2 hover:text-primary hover:underline disabled:opacity-50" disabled={del.isPending} onClick={() => del.mutate(comment.id)}>Delete</button>

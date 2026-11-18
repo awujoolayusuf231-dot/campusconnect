@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
@@ -24,6 +24,7 @@ vi.mock("./ProtectedPostImage", () => ({
 }));
 
 import { PostCard } from "./PostCard";
+import { likePost } from "../api";
 
 function CurrentPath() {
   const { pathname } = useLocation();
@@ -103,6 +104,29 @@ describe("PostCard content preview", () => {
     fireEvent.click(screen.getByRole("button", { name: /likes/i }));
 
     expect(screen.getByTestId("current-path")).toHaveTextContent("/app/feed");
+  });
+
+  it("shows like and reshare state immediately after a click", () => {
+    renderCard();
+
+    const like = screen.getByRole("button", { name: /likes/i });
+    const repost = screen.getByRole("button", { name: /reposts/i });
+    fireEvent.click(like);
+    fireEvent.click(repost);
+
+    expect(like).toHaveAttribute("aria-pressed", "true");
+    expect(repost).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("rolls back the optimistic like when the request fails", async () => {
+    vi.mocked(likePost).mockRejectedValueOnce(new Error("network error"));
+    renderCard();
+
+    const like = screen.getByRole("button", { name: /likes/i });
+    fireEvent.click(like);
+    expect(like).toHaveAttribute("aria-pressed", "true");
+
+    await waitFor(() => expect(like).toHaveAttribute("aria-pressed", "false"));
   });
 
   it("confirms before muting an author", () => {

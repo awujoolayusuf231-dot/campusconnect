@@ -17,7 +17,17 @@ export interface Notif extends NotificationCopyInput {
 }
 export { describeNotification } from "./notificationCopy";
 const PAGE = 30;
-const PREFS: [string, string, boolean?][] = [
+type PreferenceKey =
+  | "notify_follows"
+  | "notify_likes"
+  | "notify_comments"
+  | "notify_community"
+  | "notify_messages"
+  | "notify_discussions"
+  | "notify_followed_posts"
+  | "notify_celebrations"
+  | "notify_push";
+const PREFS: [PreferenceKey, string, boolean?][] = [
   ["notify_follows", "New followers"],
   ["notify_likes", "Likes"],
   ["notify_comments", "Comments"],
@@ -67,8 +77,26 @@ export function NotificationsPage() {
   const markAll = useMutation({ mutationFn: async () => { const { error } = await supabase.rpc("mark_notifications_read"); if (error) throw error; }, onSuccess: refresh });
   const markOne = useMutation({ mutationFn: async (id: number) => { const { error } = await supabase.rpc("mark_notifications_read", { p_ids: [id] }); if (error) throw error; }, onSuccess: refresh });
   const prefs = useQuery({ queryKey: ["prefs", uid], enabled: !!uid, queryFn: async () => { const { data, error } = await supabase.from("user_preferences").select("*").eq("user_id", uid).maybeSingle(); if (error) throw error; return (data ?? {}) as Record<string, boolean>; } });
-  const savePref = useMutation({ mutationFn: async (v: { key: string; on: boolean }) => {
-    const { error } = await supabase.from("user_preferences").upsert({ user_id: uid, [v.key]: v.on }, { onConflict: "user_id" });
+  const savePref = useMutation({ mutationFn: async (v: { key: PreferenceKey; on: boolean }) => {
+    const { data: existing, error: lookupError } = await supabase
+      .from("user_preferences")
+      .select("user_id")
+      .eq("user_id", uid)
+      .maybeSingle();
+    if (lookupError) throw lookupError;
+
+    if (!existing) {
+      const { error: insertError } = await supabase
+        .from("user_preferences")
+        .insert({ user_id: uid, [v.key]: v.on });
+      if (!insertError) return;
+      if (insertError.code !== "23505") throw insertError;
+    }
+
+    const { error } = await supabase
+      .from("user_preferences")
+      .update({ [v.key]: v.on })
+      .eq("user_id", uid);
     if (error) {
       console.error("Could not save notification preference.", error);
       throw error;

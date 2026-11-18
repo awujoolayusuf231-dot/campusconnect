@@ -1,4 +1,4 @@
-import { useState, type MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Bookmark, Eye, Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
@@ -31,12 +31,37 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
   const [showComments, setShowComments] = useState(defaultOpenComments);
   const [dialog, setDialog] = useState<"report" | "delete" | "block" | "mute" | null>(null);
   const [shareNote, setShareNote] = useState("");
+  const [likedByMe, setLikedByMe] = useState(post.liked_by_me);
+  const [likeCount, setLikeCount] = useState(post.like_count);
+  const [repostedByMe, setRepostedByMe] = useState(post.reposted_by_me);
+  const [repostCount, setRepostCount] = useState(post.repost_count);
   const impressionRef = usePostImpression(trackImpression, post.id);
   const mine = post.author_id === me;
   const refresh = () => { for (const k of ["feed", "author-posts", "community-posts", "profile-reposts", "profile-stats", "post"]) void qc.invalidateQueries({ queryKey: [k] }); };
 
-  const like = useMutation({ mutationFn: () => (post.liked_by_me ? unlikePost(post.id) : likePost(post.id)), onSuccess: refresh });
-  const repost = useMutation({ mutationFn: () => (post.reposted_by_me ? unrepostPost(post.id) : repostPost(post.id)), onSuccess: refresh });
+  useEffect(() => {
+    setLikedByMe(post.liked_by_me);
+    setLikeCount(post.like_count);
+    setRepostedByMe(post.reposted_by_me);
+    setRepostCount(post.repost_count);
+  }, [post.id, post.liked_by_me, post.like_count, post.reposted_by_me, post.repost_count]);
+
+  const like = useMutation({
+    mutationFn: ({ enabled }: { enabled: boolean; previousLiked: boolean; previousCount: number }) => enabled ? likePost(post.id) : unlikePost(post.id),
+    onError: (_error, variables) => {
+      setLikedByMe(variables.previousLiked);
+      setLikeCount(variables.previousCount);
+    },
+    onSuccess: refresh,
+  });
+  const repost = useMutation({
+    mutationFn: ({ enabled }: { enabled: boolean; previousReposted: boolean; previousCount: number }) => enabled ? repostPost(post.id) : unrepostPost(post.id),
+    onError: (_error, variables) => {
+      setRepostedByMe(variables.previousReposted);
+      setRepostCount(variables.previousCount);
+    },
+    onSuccess: refresh,
+  });
   const save = useMutation({
     mutationFn: () => (metrics?.saved_by_me ? unsavePost(post.id) : savePost(post.id)),
     onSuccess: () => {
@@ -71,6 +96,24 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
   function openPostFromCard(event: MouseEvent<HTMLElement>) {
     if (event.target instanceof Element && event.target.closest("a, button, input, textarea, select, [role='button']")) return;
     navigate(`/app/p/${post.id}`);
+  }
+
+  function toggleLike() {
+    const previousLiked = likedByMe;
+    const previousCount = likeCount;
+    const enabled = !likedByMe;
+    setLikedByMe(enabled);
+    setLikeCount((count) => Math.max(0, count + (enabled ? 1 : -1)));
+    like.mutate({ enabled, previousLiked, previousCount });
+  }
+
+  function toggleRepost() {
+    const previousReposted = repostedByMe;
+    const previousCount = repostCount;
+    const enabled = !repostedByMe;
+    setRepostedByMe(enabled);
+    setRepostCount((count) => Math.max(0, count + (enabled ? 1 : -1)));
+    repost.mutate({ enabled, previousReposted, previousCount });
   }
 
   return (
@@ -119,15 +162,15 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
         <span className="inline-flex items-center gap-1.5"><BarChart3 size={14} aria-hidden="true" />{formatCount(metrics.impressions)} impressions</span>
       </div>}
       <footer className="flex flex-wrap items-center justify-between gap-1 border-t border-line/80 px-2 py-2 sm:px-3">
-        <button className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-[#fff1f2] sm:px-3 sm:text-sm ${post.liked_by_me ? "text-primary" : "text-muted hover:text-primary"}`} aria-pressed={post.liked_by_me} disabled={like.isPending} onClick={() => like.mutate()}>
-          <Heart size={17} fill={post.liked_by_me ? "currentColor" : "none"} aria-hidden="true" /> {formatCount(post.like_count)}<span className="sr-only"> likes</span></button>
+        <button className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-[#fff1f2] sm:px-3 sm:text-sm ${likedByMe ? "text-primary" : "text-muted hover:text-primary"}`} aria-pressed={likedByMe} disabled={like.isPending} onClick={toggleLike}>
+          <Heart size={17} fill={likedByMe ? "currentColor" : "none"} aria-hidden="true" /> {formatCount(likeCount)}<span className="sr-only"> likes</span></button>
         <button className="inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold text-muted transition-colors hover:bg-[#fff1f2] hover:text-primary sm:px-3 sm:text-sm" aria-expanded={showComments} onClick={() => setShowComments((v) => !v)}>
           <MessageCircle size={17} aria-hidden="true" /> {formatCount(post.comment_count)}<span className="sr-only"> comments</span></button>
-        <button className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-[#fff1f2] disabled:opacity-40 sm:px-3 sm:text-sm ${post.reposted_by_me ? "text-primary" : "text-muted hover:text-primary"}`}
-          aria-pressed={post.reposted_by_me} disabled={!canRepost || repost.isPending}
-          title={mine ? "You cannot repost your own post" : inCommunity ? "Community posts cannot be reposted" : post.reposted_by_me ? "Undo repost" : "Repost to your profile and followers"}
-          onClick={() => repost.mutate()}>
-          <Repeat2 size={17} aria-hidden="true" /> <span className="hidden sm:inline">{formatCount(post.repost_count)}</span><span className="sr-only">{formatCount(post.repost_count)} reposts. {post.reposted_by_me ? "Undo repost" : "Repost"}</span></button>
+        <button className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-[#fff1f2] disabled:opacity-40 sm:px-3 sm:text-sm ${repostedByMe ? "text-primary" : "text-muted hover:text-primary"}`}
+          aria-pressed={repostedByMe} disabled={!canRepost || repost.isPending}
+          title={mine ? "You cannot repost your own post" : inCommunity ? "Community posts cannot be reposted" : repostedByMe ? "Undo repost" : "Repost to your profile and followers"}
+          onClick={toggleRepost}>
+          <Repeat2 size={17} aria-hidden="true" /> <span className="hidden sm:inline">{formatCount(repostCount)}</span><span className="sr-only">{formatCount(repostCount)} reposts. {repostedByMe ? "Undo repost" : "Repost"}</span></button>
         <button type="button" className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-[#fff1f2] sm:px-3 sm:text-sm ${metrics?.saved_by_me ? "text-primary" : "text-muted hover:text-primary"}`}
           aria-pressed={metrics?.saved_by_me ?? false} disabled={save.isPending} onClick={() => save.mutate()}>
           <Bookmark size={17} fill={metrics?.saved_by_me ? "currentColor" : "none"} aria-hidden="true" />

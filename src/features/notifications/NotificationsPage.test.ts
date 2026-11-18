@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,6 +7,9 @@ import { describeNotification, NotificationsPage, type Notif } from "./Notificat
 
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
+  update: vi.fn(),
+  updateEq: vi.fn(),
+  insert: vi.fn(),
   getPushNotificationStatus: vi.fn(),
   requestPushPermission: vi.fn(),
   enablePushNotifications: vi.fn(),
@@ -21,9 +24,11 @@ vi.mock("@/lib/supabase", () => ({
     from: () => ({
       select: () => ({
         eq: () => ({
-          maybeSingle: () => Promise.resolve({ data: {}, error: null }),
+          maybeSingle: () => Promise.resolve({ data: { user_id: "user-1" }, error: null }),
         }),
       }),
+      update: mocks.update,
+      insert: mocks.insert,
     }),
   },
 }));
@@ -53,6 +58,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.configStatus = "invalid";
   mocks.rpc.mockResolvedValue({ data: [], error: null });
+  mocks.update.mockImplementation((values: Record<string, boolean>) => ({
+    eq: (column: string, value: string) => {
+      mocks.updateEq(column, value);
+      return Promise.resolve({ error: null, values });
+    },
+  }));
+  mocks.insert.mockResolvedValue({ error: null });
   mocks.getPushNotificationStatus.mockResolvedValue(false);
   mocks.requestPushPermission.mockResolvedValue("granted");
   mocks.enablePushNotifications.mockResolvedValue(undefined);
@@ -188,6 +200,20 @@ describe("describeNotification", () => {
       expect(mocks.requestPushPermission).toHaveBeenCalledOnce();
       expect(await screen.findByText("Notifications enabled. A test notification was sent.")).toBeInTheDocument();
       expect(mocks.enablePushNotifications).toHaveBeenCalledWith(expect.any(Promise), "user-1");
+    });
+
+    it("updates only the selected preference column without updating the owner id", async () => {
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+      render(createElement(MemoryRouter, null,
+        createElement(QueryClientProvider, { client }, createElement(NotificationsPage)),
+      ));
+
+      fireEvent.click(await screen.findByRole("checkbox", { name: "New followers" }));
+
+      await waitFor(() => expect(mocks.update).toHaveBeenCalledWith({ notify_follows: false }));
+      expect(mocks.updateEq).toHaveBeenCalledWith("user_id", "user-1");
+      expect(mocks.insert).not.toHaveBeenCalled();
     });
   });
 });
