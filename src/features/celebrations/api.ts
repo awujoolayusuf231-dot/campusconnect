@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { FeedPost, FeedScope } from "@/features/social/api";
+import type { FeedPost, FeedScope, FeedVariant } from "@/features/social/api";
 import type { CelebrationField, CelebrationOccasion, StudioTemplate } from "./catalog";
 
 export const CELEBRATION_IMAGE_BUCKET = "celebration-images";
@@ -84,7 +84,7 @@ export type FeedCelebration = {
   creator_username: string | null;
 };
 export type FeedTimelineItem =
-  | { item_type: "post"; item_id: string; activity_at: string; item: FeedPost; rank_score?: number; ranked_at?: string }
+  | { item_type: "post"; item_id: string; activity_at: string; item: FeedPost; rank_score?: number; ranked_at?: string; feed_variant?: FeedVariant }
   | { item_type: "celebration"; item_id: string; activity_at: string; item: FeedCelebration };
 export type FeedTimelineCursor = {
   activity_at: string;
@@ -92,6 +92,7 @@ export type FeedTimelineCursor = {
   item_id: string;
   rank_score?: number;
   ranked_at?: string;
+  feed_variant?: FeedVariant;
 };
 export type CelebrationReminder = { id: string; card_id: string; user_id: string; remind_before_minutes: number; reminder_at: string };
 export type CelebrationCatalog = { occasions: CelebrationOccasion[]; templates: StudioTemplate[] };
@@ -334,17 +335,21 @@ export async function deleteCelebrationCard(card: CelebrationCard): Promise<void
 
 export async function fetchFeedTimeline(scope: FeedScope, cursor: FeedTimelineCursor | null, limit = 20): Promise<FeedTimelineItem[]> {
   if (scope === "for_you") {
-    const { data, error } = await supabase.rpc("feed_ranked_posts", {
+    const { data, error } = await supabase.rpc("get_ranked_feed", {
       p_before_score: cursor?.rank_score ?? null,
       p_before: cursor?.activity_at ?? null,
       p_before_id: cursor?.item_id ?? null,
       p_as_of: cursor?.ranked_at ?? null,
+      p_variant: cursor?.feed_variant ?? null,
       p_limit: limit,
     });
     if (error) throw error;
-    return ((data ?? []) as (FeedPost & { rank_score: number | string; ranked_at: string })[]).map((row) => {
+    return ((data ?? []) as (FeedPost & { rank_score: number | string; ranked_at: string; feed_variant: FeedVariant })[]).map((row) => {
       const score = Number(row.rank_score);
-      if (!Number.isFinite(score) || !row.ranked_at) throw new Error("The ranked feed returned an invalid cursor.");
+      if (!Number.isFinite(score) || !row.ranked_at
+        || !["chronological", "trending", "ranked"].includes(row.feed_variant)) {
+        throw new Error("The ranked feed returned an invalid cursor.");
+      }
       return {
         item_type: "post",
         item_id: row.id,
@@ -352,6 +357,7 @@ export async function fetchFeedTimeline(scope: FeedScope, cursor: FeedTimelineCu
         item: row,
         rank_score: score,
         ranked_at: row.ranked_at,
+        feed_variant: row.feed_variant,
       };
     });
   }

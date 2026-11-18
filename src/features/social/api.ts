@@ -2,6 +2,7 @@ import { supabase, supabasePublishableKey, supabaseUrl } from "@/lib/supabase";
 import { optimizeImage } from "@/lib/image";
 
 export type FeedScope = "for_you" | "all" | "following" | "institution";
+export type FeedVariant = "chronological" | "trending" | "ranked";
 export type MainPostVisibility = "public" | "followers" | "institution" | "private";
 export type PostVisibility = MainPostVisibility | "community";
 export interface FeedPost {
@@ -9,6 +10,11 @@ export interface FeedPost {
   like_count: number; comment_count: number; repost_count: number; liked_by_me: boolean; reposted_by_me: boolean;
   username: string; display_name: string; avatar_path: string | null;
   activity_at: string; reposter_username: string | null; reposter_name: string | null;
+}
+export interface MutedUser {
+  id: string;
+  username: string | null;
+  display_name: string;
 }
 export interface Cursor { created_at: string; id: string }
 export interface CommentRow {
@@ -52,6 +58,24 @@ export async function fetchFeed(scope: FeedScope, cursor: Cursor | null, limit =
   const { data, error } = await supabase.rpc("feed_posts", { p_scope: scope, p_before: cursor?.created_at ?? null, p_before_id: cursor?.id ?? null, p_limit: limit });
   if (error) throw error;
   return (data ?? []) as FeedPost[];
+}
+
+export async function recordPostViews(views: { postId: string; dwellMs: number }[]): Promise<void> {
+  const dwellByPost = new Map<string, number>();
+  for (const view of views) {
+    if (!view.postId || !Number.isFinite(view.dwellMs) || view.dwellMs <= 0) continue;
+    dwellByPost.set(view.postId, (dwellByPost.get(view.postId) ?? 0) + Math.floor(view.dwellMs));
+  }
+
+  const entries = [...dwellByPost.entries()];
+  for (let start = 0; start < entries.length; start += 50) {
+    const batch = entries.slice(start, start + 50);
+    const { error } = await supabase.rpc("record_post_views", {
+      p_post_ids: batch.map(([postId]) => postId),
+      p_dwell_ms: batch.map(([, dwellMs]) => Math.min(dwellMs, 600000)),
+    });
+    if (error) throw error;
+  }
 }
 
 export interface HashtagSuggestion { tag: string; post_count: number }
@@ -322,6 +346,42 @@ export const submitReport = (type: ReportTarget, target: string, category: strin
 export async function blockUser(id: string) {
   const { error } = await supabase.from("blocks").insert({ blocked_id: id });
   if (error) throw error;
+}
+export async function muteUser(id: string) {
+  const { error } = await supabase.rpc("mute_user", { p_user_id: id });
+  if (error) throw error;
+}
+export async function unmuteUser(id: string) {
+  const { error } = await supabase.rpc("unmute_user", { p_user_id: id });
+  if (error) throw error;
+}
+export async function listMutedUsers(): Promise<MutedUser[]> {
+  const { data: mutedRows, error: mutedError } = await supabase
+    .from("muted_users")
+    .select("muted_user_id")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (mutedError) throw mutedError;
+  const ids = (mutedRows ?? []).map((row) => (row as { muted_user_id: string }).muted_user_id);
+  if (ids.length === 0) return [];
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id,username,display_name")
+    .in("id", ids);
+  if (profilesError) throw profilesError;
+  const byId = new Map((profiles ?? []).map((profile) => {
+    const row = profile as { id: string; username: string; display_name: string };
+    return [row.id, row] as const;
+  }));
+  return ids.map((id) => {
+    const profile = byId.get(id);
+    return {
+      id,
+      username: profile?.username ?? null,
+      display_name: profile?.display_name ?? "Student",
+    };
+  });
 }
 
 export async function fetchComments(postId: string, page = 0, pageSize = COMMENT_PAGE_SIZE): Promise<CommentRow[]> {

@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../api", () => ({
   blockUser: vi.fn(),
+  muteUser: vi.fn(),
   deletePost: vi.fn(),
   likePost: vi.fn(),
   unlikePost: vi.fn(),
@@ -102,6 +103,13 @@ describe("PostCard content preview", () => {
     fireEvent.click(screen.getByRole("button", { name: /likes/i }));
 
     expect(screen.getByTestId("current-path")).toHaveTextContent("/app/feed");
+  });
+
+  it("confirms before muting an author", () => {
+    renderCard();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mute" }));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("Their posts will no longer appear in your feeds.");
   });
 
   it("renders full content and attached media without a preview link on the details page", () => {

@@ -34,6 +34,7 @@ export function FeedPage() {
             item_id: tail.item_id,
             rank_score: tail.rank_score,
             ranked_at: tail.ranked_at,
+            feed_variant: tail.feed_variant,
           }
           : undefined;
       }

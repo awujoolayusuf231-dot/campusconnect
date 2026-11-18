@@ -2,7 +2,7 @@ import { useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Bookmark, Eye, Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
-import { blockUser, deletePost, likePost, postShareUrl, repostPost, savePost, unlikePost, unsavePost, unrepostPost, type FeedPost, type PublicPostMetrics } from "../api";
+import { blockUser, deletePost, likePost, muteUser, postShareUrl, repostPost, savePost, unlikePost, unsavePost, unrepostPost, type FeedPost, type PublicPostMetrics } from "../api";
 import { socialErrorMessage } from "@/lib/errors";
 import { formatCount } from "@/lib/format";
 import { timeAgo } from "@/lib/time";
@@ -29,7 +29,7 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [showComments, setShowComments] = useState(defaultOpenComments);
-  const [dialog, setDialog] = useState<"report" | "delete" | "block" | null>(null);
+  const [dialog, setDialog] = useState<"report" | "delete" | "block" | "mute" | null>(null);
   const [shareNote, setShareNote] = useState("");
   const impressionRef = usePostImpression(trackImpression, post.id);
   const mine = post.author_id === me;
@@ -51,6 +51,7 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
     void qc.invalidateQueries({ queryKey: ["saved-posts"] });
   } });
   const block = useMutation({ mutationFn: () => blockUser(post.author_id), onSuccess: () => { setDialog(null); refresh(); void qc.invalidateQueries({ queryKey: ["discover"] }); } });
+  const mute = useMutation({ mutationFn: () => muteUser(post.author_id), onSuccess: () => { setDialog(null); refresh(); } });
 
   // Share = send the link elsewhere (phone share sheet, or copy). Repost = put the post on your own profile and your followers' feed.
   async function share() {
@@ -65,7 +66,7 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
     }
   }
   const canRepost = !mine && !inCommunity;
-  const actionError = (like.error ?? repost.error ?? save.error ?? del.error ?? block.error) as Error | null;
+  const actionError = (like.error ?? repost.error ?? save.error ?? del.error ?? block.error ?? mute.error) as Error | null;
 
   function openPostFromCard(event: MouseEvent<HTMLElement>) {
     if (event.target instanceof Element && event.target.closest("a, button, input, textarea, select, [role='button']")) return;
@@ -89,6 +90,7 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
           {mine ? <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => setDialog("delete")}>Delete</button> : (
             <>
               <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => setDialog("report")}>Report</button>
+              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => setDialog("mute")}>Mute</button>
               <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => setDialog("block")}>Block</button>
             </>)}
         </div>
@@ -144,6 +146,7 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
       {dialog === "report" && <ReportDialog type="post" targetId={post.id} onClose={() => setDialog(null)} />}
       {dialog === "delete" && <ConfirmDialog title="Delete this post?" confirmLabel="Delete" busy={del.isPending} onConfirm={() => del.mutate()} onCancel={() => setDialog(null)}>This cannot be undone.</ConfirmDialog>}
       {dialog === "block" && <ConfirmDialog title={`Block @${post.username}?`} confirmLabel="Block" busy={block.isPending} onConfirm={() => block.mutate()} onCancel={() => setDialog(null)}>You will no longer see their posts, and they will not be able to interact with you.</ConfirmDialog>}
+      {dialog === "mute" && <ConfirmDialog title={`Mute @${post.username}?`} confirmLabel="Mute" busy={mute.isPending} onConfirm={() => mute.mutate()} onCancel={() => setDialog(null)}>Their posts will no longer appear in your feeds.</ConfirmDialog>}
     </article>
   );
 }
