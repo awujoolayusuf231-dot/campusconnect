@@ -5,7 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:infisical": "infisical run --env=dev -- vite",
+    "dev:in": "infisical run --env=dev -- vite",
+    "dev:staging": "infisical run --env=staging -- vite",
     "build": "tsc -b && vite build",
+    "build:infisical": "infisical run --env=dev -- npm run build",
+    "build:staging": "infisical run --env=staging -- npm run build",
+    "build:prod": "infisical run --env=prod -- npm run build",
+    "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test"
