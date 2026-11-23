@@ -13,18 +13,6 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>CampusConnect</title>
-    <script>
-      (() => {
-        const query = "(max-width: 767px)";
-        const media = window.matchMedia(query);
-        const apply = () => {
-          document.documentElement.dataset.mobile = media.matches ? "true" : "false";
-        };
-        apply();
-        media.addEventListener?.("change", apply);
-        media.addListener?.(apply);
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>
