@@ -15,30 +15,6 @@ npm run build
 - `VITE_SUPABASE_URL` = `https://yfyssczefqicdpbtqmlh.supabase.co`  (CampusConnect01)
 - `VITE_SUPABASE_PUBLISHABLE_KEY` = the **publishable** key. NEVER the service-role/secret key.
 
-### Infisical (secrets management)
-This repo includes Infisical wiring (`.infisical.yaml`) for environment-managed secrets.
-
-1. Install the [Infisical CLI](https://infisical.com/docs/cli/overview) and authenticate:
-   ```bash
-   infisical login
-   ```
-2. Run the app with secrets injected from Infisical:
-   ```bash
-   npm run dev:infisical    # uses Infisical env=dev
-   npm run dev:staging      # uses Infisical env=staging
-   ```
-3. Build with Infisical-injected env vars when needed:
-   ```bash
-   npm run build:infisical  # env=dev
-   npm run build:staging    # env=staging
-   npm run build:prod       # env=prod
-   ```
-
-Notes:
-- `.infisical.yaml` contains the Infisical project ID (not a secret) and can be committed.
-- Never commit Infisical service tokens, machine identity credentials, or `.env` files with real secrets.
-- Frontend `VITE_*` values are public build-time values; keep server-only secrets (service-role keys, Firebase service accounts, worker secrets) out of frontend envs.
-
 ## Supabase dashboard settings you must do (cannot be done from code)
 Authentication > URL Configuration: Site URL `http://localhost:5173` (and your production URL later) and add
 `http://localhost:5173/**` to Redirect URLs. Authentication > Providers > Email: keep "Confirm email" ON.

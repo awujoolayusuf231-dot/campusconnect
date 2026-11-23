@@ -3,7 +3,6 @@ dist
 .env
 .env.*
 !.env.example
-.infisical.json
 supabase/.temp
 *.log
 *.tsbuildinfo
