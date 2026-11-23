@@ -35,7 +35,7 @@ export function PublicNav() {
   }, [menuOpen]);
 
   const link = ({ isActive }: { isActive: boolean }) =>
-    `rounded-md px-3 py-2 text-sm ${isActive ? "font-semibold text-fg underline" : "text-muted hover:text-fg"}`;
+    `rounded-md px-3 py-2 text-sm ${isActive ? "font-semibold text-fg" : "text-muted hover:text-fg"}`;
 
   const authActions = session ? (
     <Link to="/app" className="btn-primary w-full justify-center sm:w-auto">
