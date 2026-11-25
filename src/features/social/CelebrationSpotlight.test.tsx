@@ -52,7 +52,7 @@ describe("CelebrationSpotlight", () => {
 
     const carousel = await screen.findByRole("region", { name: "Celebration highlights" });
     await within(carousel).findByRole("link", { name: /Student 1's Celebration 1/ });
-    expect(carousel).toHaveClass("sticky", "top-16");
+    expect(carousel).not.toHaveClass("sticky");
     const celebrationLinks = within(carousel).getAllByRole("link").filter((link) => link.getAttribute("href")?.startsWith("/app/celebrations/card-"));
     expect(celebrationLinks).toHaveLength(5);
     expect(celebrationLinks[0]).toHaveAttribute("href", "/app/celebrations/card-1");

@@ -49,27 +49,25 @@ export function FeedPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <CelebrationSpotlight />
-      <OnboardingCard />
-      <Composer />
-      <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_8px_24px_rgba(35,24,20,0.035)]">
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 sm:px-5">
+      <section aria-label="Campus feed navigation" className="sticky top-16 z-10 -mx-3 rounded-b-2xl border-x border-b border-line bg-white/95 px-3 pb-2 pt-2 shadow-[0_8px_24px_rgba(35,24,20,0.08)] backdrop-blur-xl sm:mx-0 sm:rounded-2xl sm:border sm:p-3">
+        <div className="flex items-center justify-between gap-2">
           <div>
-            <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-primary"><Sparkles size={13} aria-hidden="true" /> Your campus, in the loop</p>
-            <h1 className="mt-1 text-xl font-black tracking-tight text-fg sm:text-2xl">Campus feed</h1>
+            <p className="flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-[0.14em] text-primary sm:text-[10px]"><Sparkles size={12} aria-hidden="true" /> Your campus, in the loop</p>
+            <h1 className="mt-0.5 text-lg font-black leading-tight tracking-tight text-fg sm:text-xl">Campus feed</h1>
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden text-xs font-medium text-muted sm:block">See what’s happening around you</span>
             <Link
               to="/app/discover"
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-white px-3 text-xs font-bold text-fg transition hover:border-primary/30 hover:bg-[#fff7f6] hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-line bg-white px-2.5 text-xs font-bold text-fg transition hover:border-primary/30 hover:bg-[#fff7f6] hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-3"
             >
               <Search size={15} aria-hidden="true" />
               <span>Find students</span>
             </Link>
           </div>
         </div>
-        <div role="tablist" aria-label="Feed" className="mt-3 flex gap-1 overflow-x-auto border-b border-line px-2 sm:px-3">
+        <CelebrationSpotlight />
+        <div role="tablist" aria-label="Feed" className="mt-1 flex gap-1 overflow-x-auto border-t border-line px-0.5">
           {TABS.map(([v, l]) => {
             const Icon = TAB_ICONS[v];
             return (
@@ -80,15 +78,17 @@ export function FeedPage() {
                 role="tab"
                 aria-selected={scope === v}
                 aria-controls="feed-panel"
-                className={`relative flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:px-4 ${scope === v ? "border-primary font-bold text-primary" : "border-transparent font-semibold text-muted hover:bg-[#fff8f7] hover:text-fg"}`}
+                className={`relative flex min-h-10 shrink-0 items-center gap-1.5 border-b-2 px-2.5 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:min-h-11 sm:gap-2 sm:px-3 sm:text-sm ${scope === v ? "border-primary font-bold text-primary" : "border-transparent font-semibold text-muted hover:bg-[#fff8f7] hover:text-fg"}`}
                 onClick={() => setScope(v)}
               >
-                <Icon size={16} aria-hidden="true" />{l}
+                <Icon size={14} aria-hidden="true" />{l}
               </button>
             );
           })}
         </div>
       </section>
+      <OnboardingCard />
+      <Composer />
       <div id="feed-panel" role="tabpanel" aria-labelledby={`feed-tab-${scope}`} className="space-y-4" aria-label={`${TABS.find(([value]) => value === scope)?.[1] ?? "Campus"} posts`}>
       {feed.isLoading && <div role="status" className="space-y-3" aria-label="Loading feed">{[0, 1, 2].map((i) => <div key={i} className="card h-36 animate-pulse border-transparent bg-white shadow-[0_8px_24px_rgba(35,24,20,0.035)]" />)}</div>}
       {feed.isError && <p role="alert" className="card border-danger/20 bg-white text-sm text-danger">

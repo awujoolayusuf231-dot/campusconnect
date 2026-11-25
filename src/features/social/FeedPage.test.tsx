@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -18,7 +18,7 @@ vi.mock("@/features/celebrations/api", () => ({
 }));
 vi.mock("@/features/auth/AuthProvider", () => ({ useAuth: () => ({ session: mocks.session }) }));
 vi.mock("./components/Composer", () => ({ Composer: () => null }));
-vi.mock("./CelebrationSpotlight", () => ({ CelebrationSpotlight: () => null }));
+vi.mock("./CelebrationSpotlight", () => ({ CelebrationSpotlight: () => <div data-testid="celebration-spotlight" /> }));
 vi.mock("@/features/onboarding/OnboardingCard", () => ({ OnboardingCard: () => null }));
 vi.mock("./components/PostCard", () => ({
   PostCard: ({ post, trackImpression }: { post: { id: string }; trackImpression?: boolean }) =>
@@ -59,6 +59,15 @@ describe("FeedPage", () => {
 
     expect(screen.getByRole("tab", { name: "For you" })).toHaveAttribute("aria-selected", "false");
     expect(screen.getByRole("tab", { name: "My institution" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("keeps the feed title, celebrations, and scope tabs together in a compact sticky panel", () => {
+    renderFeed();
+
+    const stickyPanel = screen.getByRole("heading", { name: "Campus feed" }).closest("section")!;
+    expect(stickyPanel).toHaveClass("sticky", "top-16");
+    expect(stickyPanel).toContainElement(screen.getByTestId("celebration-spotlight"));
+    expect(within(stickyPanel).getByRole("tablist", { name: "Feed" })).toBeInTheDocument();
   });
 
   it("keeps the existing empty guidance for the institution-only feed", async () => {
