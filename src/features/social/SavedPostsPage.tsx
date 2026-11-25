@@ -30,7 +30,7 @@ export function SavedPostsPage() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-4">
-      <header className="rounded-2xl border border-[#f0dadd] bg-gradient-to-br from-[#fff7f6] via-white to-[#fff0ef] p-5 sm:p-7">
+      <header className="rounded-2xl border border-primary-border bg-gradient-to-br from-primary-soft via-white to-primary-soft p-5 sm:p-7">
         <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.15em] text-primary"><Bookmark size={15} aria-hidden="true" /> Your library</p>
         <h1 className="mt-2 text-2xl font-black tracking-tight text-fg sm:text-3xl">Saved posts</h1>
         <p className="mt-2 text-sm leading-6 text-muted">Posts you bookmarked are kept here for easy access.</p>

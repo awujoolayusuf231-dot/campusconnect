@@ -68,7 +68,7 @@ export function SubscriptionPage() {
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-5 pb-10">
-      <header className="rounded-2xl border border-[#f0dadd] bg-gradient-to-r from-[#fff7f6] via-white to-[#fff3f1] px-5 py-5 sm:px-7">
+      <header className="rounded-2xl border border-primary-border bg-gradient-to-r from-primary-soft via-white to-[#fff3f1] px-5 py-5 sm:px-7">
         <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-primary">CampusConnect membership</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-fg sm:text-3xl">Choose your plan</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
@@ -89,13 +89,13 @@ export function SubscriptionPage() {
             {subscription.data.status === "canceled" && <p className="mt-1 text-sm text-muted">This plan will not renew automatically.</p>}
           </div>
           {subscription.data.plan_code !== "free" && subscription.data.status !== "expired" &&
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff1f2] px-3 py-1.5 text-xs font-bold text-primary">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1.5 text-xs font-bold text-primary">
               <CheckCircle2 size={15} aria-hidden="true" /> {subscription.data.status === "canceled" ? "Canceled" : "Active"}
             </span>}
         </div>
       </section>}
 
-      {reference && <section role={verify.isError ? "alert" : "status"} className={`rounded-2xl border p-4 text-sm ${verify.isError ? "border-red-200 bg-red-50 text-red-800" : "border-[#efd9db] bg-white text-fg"}`}>
+      {reference && <section role={verify.isError ? "alert" : "status"} className={`rounded-2xl border p-4 text-sm ${verify.isError ? "border-danger-border bg-danger-soft text-danger" : "border-primary-border bg-white text-fg"}`}>
         {verify.isPending
           ? "Confirming your payment with Paystack…"
           : verify.isError
@@ -103,7 +103,7 @@ export function SubscriptionPage() {
               <button type="button" className="mt-2 font-semibold underline" onClick={() => verify.mutate(reference)} disabled={verify.isPending}>Try again</button></>
             : "Your payment is confirmed. Your membership status will refresh shortly."}
       </section>}
-      {!reference && verify.isSuccess && <p role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+      {!reference && verify.isSuccess && <p role="status" className="rounded-2xl border border-success-border bg-success-soft p-4 text-sm text-success">
         Payment confirmed. Your membership is active.
       </p>}
 
@@ -138,14 +138,14 @@ export function SubscriptionPage() {
             const label = checkout.isPending && checkout.variables?.planCode === plan.code
               ? "Connecting to Paystack…"
               : currentPaidPlan === plan.code ? "Extend membership" : "Continue to Paystack";
-            return <article key={`${plan.code}-${plan.billing_interval}`} className="flex flex-col rounded-2xl border border-[#efd9db] bg-gradient-to-b from-[#fffafa] to-white p-5">
+            return <article key={`${plan.code}-${plan.billing_interval}`} className="flex flex-col rounded-2xl border border-primary-border bg-gradient-to-b from-bg to-white p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-extrabold uppercase tracking-wide text-primary">{plan.display_name}</p>
                   <p className="mt-2 text-2xl font-black text-fg">{formatSubscriptionPrice(plan.amount_minor, plan.currency)}</p>
                   <p className="mt-1 text-xs text-muted">per {periodName(plan.billing_interval, plan.interval_count)}</p>
                 </div>
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff1f2] text-primary">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
                   {plan.code === "pro" ? <Sparkles size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}
                 </span>
               </div>

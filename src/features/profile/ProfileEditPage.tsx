@@ -213,7 +213,7 @@ export function ProfileEditPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <Link to="/app" className="inline-flex min-h-10 items-center rounded-xl px-3 text-sm font-semibold text-muted transition hover:bg-white hover:text-primary">← Back to campus</Link>
-      <header className="rounded-2xl border border-[#f0dadd] bg-gradient-to-br from-[#fff7f6] via-white to-white p-5 sm:p-7">
+      <header className="rounded-2xl border border-primary-border bg-gradient-to-br from-primary-soft via-white to-white p-5 sm:p-7">
         <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-primary">Make it yours</p>
         <h1 className="mt-1 text-2xl font-black tracking-[-0.035em] text-fg sm:text-3xl">Edit your profile</h1>
         <p className="mt-2 max-w-xl text-sm leading-6 text-muted">Share a little about who you are and what makes your campus experience yours.</p>
@@ -221,7 +221,7 @@ export function ProfileEditPage() {
       <section aria-labelledby="profile-photo-heading" className="rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
-            <div className="rounded-full bg-[#fff4f2] p-1.5 ring-1 ring-[#f0dadd]">
+            <div className="rounded-full bg-primary-soft p-1.5 ring-1 ring-[#f0dadd]">
               <Avatar name={String(own.data?.display_name ?? "")} path={String(own.data?.avatar_path ?? "") || null} size={88} />
             </div>
           </div>
@@ -252,7 +252,7 @@ export function ProfileEditPage() {
       <section aria-labelledby="cover-photo-heading" className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_8px_24px_rgba(35,24,20,0.035)]">
         <div className="border-b border-line px-4 py-4 sm:px-6">
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff0ef] text-primary"><ImagePlus aria-hidden="true" size={19} /></span>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary"><ImagePlus aria-hidden="true" size={19} /></span>
             <div>
               <h2 id="cover-photo-heading" className="font-extrabold text-fg">Cover photo</h2>
               <p className="mt-1 text-xs leading-5 text-muted sm:text-sm">Add a wide photo to personalize the top of your profile.</p>

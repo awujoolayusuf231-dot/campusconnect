@@ -6,11 +6,25 @@
   --cc-bg: #f8f7f5;
   --cc-surface: #ffffff;
   --cc-fg: #252321;
-  --cc-muted: #77736f;
+  --cc-muted: #6b6661;
   --cc-line: #e9e5e2;
   --cc-primary: #c52b3a;
+  --cc-primary-hover: #a92030;
+  --cc-primary-deep: #771820;
+  --cc-primary-deep-rgb: 119 24 32;
+  --cc-primary-soft: #fff4f2;
+  --cc-primary-tint: #f8e9ea;
+  --cc-primary-border: #efd9db;
   --cc-primary-fg: #ffffff;
   --cc-danger: #b42318;
+  --cc-danger-soft: #fef1f0;
+  --cc-danger-border: #fecdca;
+  --cc-success: #28633a;
+  --cc-success-soft: #eef8f0;
+  --cc-success-border: #cce8d3;
+  --cc-warning: #73551e;
+  --cc-warning-soft: #fff7e6;
+  --cc-warning-border: #f4d28c;
 }
 html, body, #root { height: 100%; }
 body { @apply bg-bg text-fg font-sans antialiased; }
@@ -122,9 +136,11 @@ a, button, [role="button"], .card, article {
 @layer components {
   .card { @apply rounded-2xl border border-line bg-surface p-5 shadow-[0_8px_24px_rgba(35,24,20,0.04)]; }
   .label { @apply mb-1 block text-sm font-medium; }
-  .input { @apply w-full rounded-xl border border-line bg-surface px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-primary; }
+  .input { @apply w-full rounded-xl border border-line bg-surface px-3 py-2 text-base outline-none; }
+  .input:focus-visible { border-color: var(--cc-primary); box-shadow: 0 0 0 3px rgb(197 43 58 / 18%); }
   .btn { @apply inline-flex items-center justify-center rounded-xl border border-line bg-surface px-4 py-2 text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50; }
   .btn-primary { @apply btn border-transparent bg-primary text-primary-fg; }
+  .btn-primary:not(:disabled):hover { background-color: var(--cc-primary-hover); }
   .btn-danger { @apply btn border-transparent bg-danger text-white; }
   .err { @apply mt-1 text-sm text-danger; }
 }

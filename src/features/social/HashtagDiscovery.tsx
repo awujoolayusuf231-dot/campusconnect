@@ -35,7 +35,7 @@ export function HashtagDiscovery() {
   return (
     <section aria-labelledby="hashtag-discovery-title" className="space-y-4 rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff1f2] text-primary">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
           {submitted ? <Search size={18} aria-hidden="true" /> : <TrendingUp size={18} aria-hidden="true" />}
         </span>
         <div className="min-w-0 flex-1">
@@ -81,7 +81,7 @@ export function HashtagDiscovery() {
               <li key={item.tag}>
                 <Link
                   to={hashtagPath(item.tag)}
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#eedbde] bg-[#fff9f8] px-3 text-sm font-bold text-primary transition hover:border-primary/40 hover:bg-[#fff1f2]"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#eedbde] bg-primary-soft px-3 text-sm font-bold text-primary transition hover:border-primary/40 hover:bg-primary-soft"
                 >
                   <Hash size={14} aria-hidden="true" />{item.tag}
                   <span className="text-[11px] font-medium text-muted">{count}</span>

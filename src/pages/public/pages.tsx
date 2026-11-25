@@ -30,7 +30,7 @@ function PageHero({ eyebrow, title, description, icon: Icon }: {
   icon: LucideIcon;
 }) {
   return (
-    <header className="relative isolate overflow-hidden rounded-[26px] bg-[#771820] px-6 py-8 text-white shadow-[0_20px_60px_rgba(80,30,30,0.14)] sm:rounded-[30px] sm:px-10 sm:py-11">
+    <header className="relative isolate overflow-hidden rounded-[26px] bg-primary-deep px-6 py-8 text-white shadow-[0_20px_60px_rgba(80,30,30,0.14)] sm:rounded-[30px] sm:px-10 sm:py-11">
       <div aria-hidden="true" className="absolute -right-20 -top-32 -z-10 h-80 w-80 rounded-full border-[48px] border-white/[0.07]" />
       <div aria-hidden="true" className="absolute -bottom-28 right-1/4 -z-10 h-64 w-64 rounded-full bg-[#a53a42]/40 blur-2xl" />
       <div className="relative max-w-3xl">
@@ -73,14 +73,14 @@ function LegalPage({ eyebrow, title, description, icon, sections, navLabel }: {
               <ul className="space-y-1">
                 {sections.map((section) => (
                   <li key={section.id}>
-                    <a href={`#${section.id}`} className="block rounded-lg px-2.5 py-2 text-sm font-medium text-fg transition hover:bg-[#f8e9ea] hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+                    <a href={`#${section.id}`} className="block rounded-lg px-2.5 py-2 text-sm font-medium text-fg transition hover:bg-primary-tint hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
                       {section.title}
                     </a>
                   </li>
                 ))}
               </ul>
             </nav>
-            <div className="rounded-2xl border border-line bg-[#fffafa] p-4">
+            <div className="rounded-2xl border border-line bg-bg p-4">
               <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.14em] text-muted">Related</p>
               <div className="flex flex-wrap gap-x-3 gap-y-2 text-sm font-semibold text-primary">
                 <Link to="/community-guidelines" className="hover:underline">Guidelines</Link>
@@ -132,8 +132,8 @@ export function FeaturesPage() {
             {featureItems.map(({ icon: Icon, title, text }, index) => (
               <article key={title} className="rounded-2xl border border-line bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)]">
                 <div className="flex items-center justify-between">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f8e9ea] text-primary"><Icon size={20} aria-hidden="true" /></span>
-                  <span className="text-xs font-extrabold tracking-[0.12em] text-[#c8b7b7]">{String(index + 1).padStart(2, "0")}</span>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-tint text-primary"><Icon size={20} aria-hidden="true" /></span>
+                  <span className="text-xs font-extrabold tracking-[0.12em] text-muted">{String(index + 1).padStart(2, "0")}</span>
                 </div>
                 <h2 className="mt-5 font-extrabold text-fg">{title}</h2>
                 <p className="mt-2 text-sm leading-6 text-muted">{text}</p>
@@ -141,7 +141,7 @@ export function FeaturesPage() {
             ))}
           </div>
         </section>
-        <section className="flex flex-col gap-5 rounded-[26px] border border-[#f0d7d9] bg-[#fff7f7] p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+        <section className="flex flex-col gap-5 rounded-[26px] border border-primary-border bg-primary-soft p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
           <div className="max-w-2xl">
             <p className="text-xs font-extrabold uppercase tracking-[0.17em] text-primary">Your people are out there</p>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-fg">Come find your corner of campus.</h2>
@@ -189,8 +189,8 @@ export function AboutPage() {
             {pillars.map(({ icon: Icon, title, text }, index) => (
               <article key={title} className="rounded-2xl border border-line bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.04)]">
                 <div className="flex items-center justify-between">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f8e9ea] text-primary"><Icon size={19} aria-hidden="true" /></span>
-                  <span className="text-xs font-extrabold tracking-[0.12em] text-[#c8b7b7]">{String(index + 1).padStart(2, "0")}</span>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-tint text-primary"><Icon size={19} aria-hidden="true" /></span>
+                  <span className="text-xs font-extrabold tracking-[0.12em] text-muted">{String(index + 1).padStart(2, "0")}</span>
                 </div>
                 <h3 className="mt-4 font-extrabold text-fg">{title}</h3>
                 <p className="mt-2 text-sm leading-6 text-muted">{text}</p>
@@ -198,12 +198,12 @@ export function AboutPage() {
             ))}
           </div>
         </section>
-        <section className="rounded-[26px] bg-[#fff7f7] p-6 sm:p-9">
+        <section className="rounded-[26px] bg-primary-soft p-6 sm:p-9">
           <SectionHeading eyebrow="What guides us" title="A student space, shaped with care." description="A good campus community should feel useful, welcoming, and honest about what it is." />
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {values.map(({ icon: Icon, title, text }) => (
-              <article key={title} className="rounded-2xl border border-[#f0dfe0] bg-white p-5">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f8e9ea] text-primary"><Icon size={19} aria-hidden="true" /></span>
+              <article key={title} className="rounded-2xl border border-primary-border bg-white p-5">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-tint text-primary"><Icon size={19} aria-hidden="true" /></span>
                 <h3 className="mt-4 font-extrabold text-fg">{title}</h3>
                 <p className="mt-2 text-sm leading-6 text-muted">{text}</p>
               </article>
@@ -217,10 +217,10 @@ export function AboutPage() {
             <p>Use the available privacy controls and safety tools. Read our <Link to="/community-guidelines" className="font-bold text-primary underline underline-offset-2">community guidelines</Link> before joining in. CampusConnect is independent from whiteshirt.fun; they do not share accounts or databases. You can add a link to your public whiteshirt.fun board if you choose.</p>
           </div>
         </section>
-        <section className="flex flex-col gap-5 rounded-[26px] bg-[#771820] p-6 text-white sm:flex-row sm:items-center sm:justify-between sm:p-9">
+        <section className="flex flex-col gap-5 rounded-[26px] bg-primary-deep p-6 text-white sm:flex-row sm:items-center sm:justify-between sm:p-9">
           <div><p className="text-xs font-extrabold uppercase tracking-[0.17em] text-white/70">Your campus story starts here</p><h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Find your people. Find your place.</h2><p className="mt-2 text-sm leading-6 text-white/75">Come see what a more connected campus experience can look like.</p></div>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Link to="/register" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-extrabold text-[#771820]">Create account <ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link to="/register" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-extrabold text-primary-deep">Create account <ArrowRight size={16} aria-hidden="true" /></Link>
             <Link to="/features" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/30 px-4 py-2 text-sm font-bold text-white hover:bg-white/10">See the features</Link>
           </div>
         </section>
@@ -331,20 +331,20 @@ export function ContactPage() {
         <section className="rounded-[26px] border border-line bg-white p-6 shadow-[0_8px_24px_rgba(35,24,20,0.04)] sm:p-8">
           <SectionHeading eyebrow="Get the right help" title="A good place to start." description="For privacy, please don’t share your password or other sensitive sign-in details when asking for help." />
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <article className="rounded-2xl border border-line bg-[#fffafa] p-5">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f8e9ea] text-primary"><Flag size={20} aria-hidden="true" /></span>
+            <article className="rounded-2xl border border-line bg-bg p-5">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-tint text-primary"><Flag size={20} aria-hidden="true" /></span>
               <h2 className="mt-4 font-extrabold text-fg">Report something on CampusConnect</h2>
               <p className="mt-2 text-sm leading-6 text-muted">Use the Report option where you see the post, comment, profile, community, opportunity, or message. This gives the team context to review it.</p>
               <Link to="/community-guidelines" className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline">Read the guidelines <ArrowRight size={15} aria-hidden="true" /></Link>
             </article>
-            <article className="rounded-2xl border border-line bg-[#fffafa] p-5">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f8e9ea] text-primary"><ShieldAlert size={20} aria-hidden="true" /></span>
+            <article className="rounded-2xl border border-line bg-bg p-5">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-tint text-primary"><ShieldAlert size={20} aria-hidden="true" /></span>
               <h2 className="mt-4 font-extrabold text-fg">Manage your account</h2>
               <p className="mt-2 text-sm leading-6 text-muted">For account deletion, sign in and use Settings → Request account deletion. You can also review our <Link to="/privacy" className="font-bold text-primary underline underline-offset-2">privacy information</Link>.</p>
             </article>
           </div>
         </section>
-        <section className="rounded-[26px] border border-[#f0d7d9] bg-[#fff7f7] p-6 sm:p-8">
+        <section className="rounded-[26px] border border-primary-border bg-primary-soft p-6 sm:p-8">
           <div className="mb-5 flex items-center gap-3">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-sm"><Mail size={21} aria-hidden="true" /></span>
             <div><p className="text-xs font-extrabold uppercase tracking-[0.17em] text-primary">Contact support</p><h2 className="mt-1 text-xl font-black text-fg">Send us a message</h2></div>

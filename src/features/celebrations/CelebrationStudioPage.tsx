@@ -311,7 +311,7 @@ export function CelebrationStudioPage() {
         <h1 className="mt-2 text-2xl font-black tracking-tight text-fg sm:text-3xl">{editing ? "Make this moment yours" : "Design a moment worth remembering"}</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Start with a design made for your occasion, add your own photo and details, then download or share your finished poster.</p>
       </header>
-      {catalog.isError && <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">The Celebration Studio catalog is unavailable. Review and apply the legacy-schema repair in <code>supabase/manual-sql/celebration_studio_catalog_privacy.sql</code> in Supabase. Do not use an older copy of the Studio setup. <span className="mt-1 block">{catalog.error instanceof Error ? catalog.error.message : "The catalog tables could not be loaded."}</span></p>}
+      {catalog.isError && <p role="alert" className="rounded-xl border border-warning-border bg-warning-soft p-3 text-sm text-warning">The Celebration Studio catalog is unavailable. Review and apply the legacy-schema repair in <code>supabase/manual-sql/celebration_studio_catalog_privacy.sql</code> in Supabase. Do not use an older copy of the Studio setup. <span className="mt-1 block">{catalog.error instanceof Error ? catalog.error.message : "The catalog tables could not be loaded."}</span></p>}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)]">
         <form className="min-w-0 space-y-4" onSubmit={(event) => { event.preventDefault(); save.mutate(true); }}>
@@ -362,7 +362,7 @@ export function CelebrationStudioPage() {
             <label className="block"><span className="label">Audience</span><select className="input" value={visibility} onChange={(event) => setVisibility(event.target.value as CelebrationVisibility)}>{VISIBILITY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
             <p className="text-xs leading-5 text-muted">{VISIBILITY_OPTIONS.find((option) => option.value === visibility)?.description} Private and limited-audience celebrations are excluded from public discovery.</p>
           </section>
-          {save.isError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-danger">{(save.error as Error).message}</p>}
+          {save.isError && <p role="alert" className="rounded-xl bg-danger-soft p-3 text-sm text-danger">{(save.error as Error).message}</p>}
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end"><button type="button" className="btn min-h-11 rounded-xl px-5 font-bold" disabled={save.isPending || catalog.isError} onClick={() => save.mutate(false)}>{save.isPending ? "Saving…" : "Save as draft"}</button><button type="submit" className="btn-primary min-h-11 rounded-xl px-5 font-bold" disabled={save.isPending || catalog.isError}>{save.isPending ? "Publishing…" : "Publish celebration"}</button></div>
         </form>
 
@@ -374,8 +374,8 @@ export function CelebrationStudioPage() {
           {image.isError && <p role="alert" className="text-xs text-danger">The saved photograph could not be loaded.</p>}
           <div className="grid grid-cols-2 gap-2"><button type="button" className="btn min-h-10 gap-2" disabled={exporting || preparingPoster} onClick={() => void downloadPoster()}><Download size={15} />{preparingPoster || exporting ? "Preparing…" : "Download PNG"}</button><button type="button" className="btn min-h-10 gap-2" onClick={() => window.print()}><Printer size={15} />Print / PDF</button><button type="button" className="btn min-h-10 gap-2" disabled={exporting || preparingPoster} onClick={() => void sharePoster()}><Share2 size={15} />{preparingPoster || exporting ? "Preparing…" : "Share poster"}</button><button type="button" className="btn min-h-10 gap-2" onClick={() => void copyShareLink()}><ExternalLink size={15} />{linkCopied ? "Link copied" : "Copy link"}</button></div>
           {exportError && <button type="button" className="text-sm font-bold text-primary underline" onClick={() => setExportRetry((current) => current + 1)}>Retry poster preparation</button>}
-          {exportError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-danger">{exportError}</p>}
-          {exportStatus && <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{exportStatus}</p>}
+          {exportError && <p role="alert" className="rounded-xl bg-danger-soft p-3 text-sm text-danger">{exportError}</p>}
+          {exportStatus && <p role="status" className="rounded-xl bg-success-soft p-3 text-sm text-success">{exportStatus}</p>}
           <p className="text-xs leading-5 text-muted">Download PNG exports at high resolution. Print / PDF opens your browser's print dialog; choose “Save as PDF”. Your uploaded photo replaces the sample background while keeping the layout protected.</p>
           {editing && <Link to={`/app/celebrations/${celebrationId}`} className="inline-flex items-center gap-1 text-sm font-bold text-primary hover:underline">View saved celebration <ArrowRight size={14} /></Link>}
         </aside>

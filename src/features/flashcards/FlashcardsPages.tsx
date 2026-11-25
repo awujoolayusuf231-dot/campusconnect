@@ -68,11 +68,11 @@ function PageHeading({ eyebrow, title, description, action }: { eyebrow: string;
 }
 
 function ComingSoonBadge() {
-  return <span className="inline-flex items-center gap-1 rounded-full border border-[#f0dadd] bg-[#fff4f2] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary"><Clock3 size={12} aria-hidden="true" />Coming soon</span>;
+  return <span className="inline-flex items-center gap-1 rounded-full border border-primary-border bg-primary-soft px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary"><Clock3 size={12} aria-hidden="true" />Coming soon</span>;
 }
 
 function BackendNotice({ children }: { children: ReactNode }) {
-  return <div role="note" className="flex items-start gap-3 rounded-2xl border border-[#f0dadd] bg-[#fff9f8] p-4 text-sm leading-6 text-[#6b5555]">
+  return <div role="note" className="flex items-start gap-3 rounded-2xl border border-primary-border bg-primary-soft p-4 text-sm leading-6 text-[#6b5555]">
     <LockKeyhole size={17} className="mt-0.5 shrink-0 text-primary" aria-hidden="true" />
     <p>{children}</p>
   </div>;
@@ -81,19 +81,19 @@ function BackendNotice({ children }: { children: ReactNode }) {
 export function FlashcardsLayout() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <header className="relative overflow-hidden rounded-[26px] border border-[#f0dadd] bg-gradient-to-br from-[#fff4f2] via-white to-[#fff0ef] p-5 shadow-[0_12px_36px_rgba(35,24,20,0.045)] sm:p-7">
+      <header className="relative overflow-hidden rounded-[26px] border border-primary-border bg-gradient-to-br from-primary-soft via-white to-primary-soft p-5 shadow-[0_12px_36px_rgba(35,24,20,0.045)] sm:p-7">
         <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 h-56 w-56 rounded-full border border-primary/10 sm:h-72 sm:w-72" />
         <div className="relative flex items-start gap-4">
           <span className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-sm sm:flex"><Brain size={23} aria-hidden="true" /></span>
           <div className="min-w-0">
-            <p className="inline-flex items-center gap-2 rounded-full border border-[#f0dadd] bg-white/80 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary shadow-sm">Study smarter</p>
+            <p className="inline-flex items-center gap-2 rounded-full border border-primary-border bg-white/80 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary shadow-sm">Study smarter</p>
             <h1 className="mt-3 text-2xl font-black tracking-[-0.04em] text-fg sm:text-3xl">Flashcards &amp; Quizzes</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted sm:text-base">Build a steady study rhythm with focused revision cards and practice questions.</p>
           </div>
         </div>
       </header>
       <nav aria-label="Flashcards and quizzes" className="flex gap-1 overflow-x-auto rounded-2xl border border-line bg-white p-2 shadow-[0_8px_24px_rgba(35,24,20,0.035)]">
-        {sections.map((section) => <NavLink key={section.to} to={section.to} end={section.end} className={({ isActive }) => `min-h-10 shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition sm:px-4 sm:text-sm ${isActive ? "bg-primary text-white shadow-sm" : "text-muted hover:bg-[#fff4f2] hover:text-primary"}`}>{section.label}</NavLink>)}
+        {sections.map((section) => <NavLink key={section.to} to={section.to} end={section.end} className={({ isActive }) => `min-h-10 shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition sm:px-4 sm:text-sm ${isActive ? "bg-primary text-white shadow-sm" : "text-muted hover:bg-primary-soft hover:text-primary"}`}>{section.label}</NavLink>)}
       </nav>
       <Outlet />
     </div>
@@ -101,8 +101,8 @@ export function FlashcardsLayout() {
 }
 
 function FeatureCard({ to, title, description, icon: Icon }: { to: string; title: string; description: string; icon: LucideIcon }) {
-  return <Link to={to} className="group flex min-h-40 flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] transition hover:-translate-y-0.5 hover:border-[#edc9cd] hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
-    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff1ef] text-primary"><Icon size={19} aria-hidden="true" /></span>
+  return <Link to={to} className="group flex min-h-40 flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] transition hover:-translate-y-0.5 hover:border-primary-border hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
+    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary"><Icon size={19} aria-hidden="true" /></span>
     <h2 className="mt-4 font-extrabold text-fg group-hover:text-primary">{title}</h2>
     <p className="mt-1 text-sm leading-5 text-muted">{description}</p>
     <span className="mt-auto inline-flex items-center gap-1 pt-3 text-xs font-bold text-primary">Explore <ArrowRight size={13} aria-hidden="true" /></span>
@@ -125,12 +125,12 @@ export function FlashcardsHomePage() {
         <div className="rounded-2xl border border-line bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Your next step</p><h2 className="mt-1 text-lg font-black text-fg">Start with a study draft</h2></div>
-            <span className="hidden h-11 w-11 items-center justify-center rounded-xl bg-[#fff1ef] text-primary sm:flex"><Lightbulb size={20} aria-hidden="true" /></span>
+            <span className="hidden h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary sm:flex"><Lightbulb size={20} aria-hidden="true" /></span>
           </div>
           <p className="mt-2 max-w-xl text-sm leading-6 text-muted">Add terms and explanations, save your collection, then review cards and record whether you know them.</p>
           <Link to="/app/flashcards/create" className="btn-primary mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl px-4 font-bold"><Plus size={16} aria-hidden="true" />Prepare flashcards</Link>
         </div>
-        <div className="rounded-2xl border border-[#f0dadd] bg-[#fff9f8] p-5 sm:p-6">
+        <div className="rounded-2xl border border-primary-border bg-primary-soft p-5 sm:p-6">
           <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Learning tools</p>
           <h2 className="mt-1 text-lg font-black text-fg">More ways to practise</h2>
           <p className="mt-2 text-sm leading-6 text-muted">AI assistance, timed exams, competitions and achievements are visual previews only.</p>
@@ -151,8 +151,8 @@ export function FlashcardsHomePage() {
 }
 
 function EmptyLibrary({ title, description }: { title: string; description: string }) {
-  return <section className="rounded-2xl border border-dashed border-[#e6cdcf] bg-white px-5 py-10 text-center">
-    <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1ef] text-primary"><BookOpen size={22} aria-hidden="true" /></span>
+  return <section className="rounded-2xl border border-dashed border-primary-border bg-white px-5 py-10 text-center">
+    <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary"><BookOpen size={22} aria-hidden="true" /></span>
     <h2 className="mt-3 font-extrabold text-fg">{title}</h2>
     <p className="mx-auto mt-1 max-w-lg text-sm leading-6 text-muted">{description}</p>
   </section>;
@@ -160,8 +160,8 @@ function EmptyLibrary({ title, description }: { title: string; description: stri
 
 function FlashcardCollectionCard({ collection }: { collection: FlashcardCollection }) {
   const cardCount = collection.cards.length;
-  return <Link to={`/app/flashcards/collections/${collection.id}`} className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] transition hover:border-[#edc9cd] hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
-    <div className="flex items-start justify-between gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff1ef] text-primary"><Layers3 size={18} aria-hidden="true" /></span><span className="rounded-full bg-[#fff4f2] px-2.5 py-1 text-[10px] font-bold text-primary">{collection.is_public ? "Shared" : "Private"}</span></div>
+  return <Link to={`/app/flashcards/collections/${collection.id}`} className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] transition hover:border-primary-border hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
+    <div className="flex items-start justify-between gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary"><Layers3 size={18} aria-hidden="true" /></span><span className="rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-bold text-primary">{collection.is_public ? "Shared" : "Private"}</span></div>
     <h2 className="mt-4 font-extrabold leading-6 text-fg group-hover:text-primary">{collection.title}</h2>
     <p className="mt-1 line-clamp-2 text-sm leading-5 text-muted">{collection.description || "No description added."}</p>
     <p className="mt-3 text-xs font-semibold text-muted">{collection.course ? `${collection.course.code} — ${collection.course.title}` : "No course selected"}</p>
@@ -237,13 +237,13 @@ function StudyPreview({ cards, courseName, onClose }: { cards: FlashcardDraft[];
     setIndex((current) => (current + delta + cards.length) % cards.length);
     setFlipped(false);
   };
-  return <section aria-label="Flashcard study preview" className="rounded-2xl border border-[#f0dadd] bg-[#fff9f8] p-4 sm:p-6">
+  return <section aria-label="Flashcard study preview" className="rounded-2xl border border-primary-border bg-primary-soft p-4 sm:p-6">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Private preview</p><h2 className="mt-1 font-black text-fg">{courseName || "Flashcard draft"}</h2></div>
       <button type="button" className="btn min-h-9 rounded-xl px-3 text-xs font-bold" onClick={onClose}>Close preview</button>
     </div>
     <p className="mt-4 text-center text-xs font-bold text-muted">Card {index + 1} of {cards.length}</p>
-    <button type="button" aria-label={flipped ? "Show prompt" : "Reveal answer"} onClick={() => setFlipped((value) => !value)} className="mt-2 flex min-h-52 w-full flex-col items-center justify-center rounded-2xl border border-[#f0dadd] bg-white p-6 text-center shadow-sm transition hover:border-primary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+    <button type="button" aria-label={flipped ? "Show prompt" : "Reveal answer"} onClick={() => setFlipped((value) => !value)} className="mt-2 flex min-h-52 w-full flex-col items-center justify-center rounded-2xl border border-primary-border bg-white p-6 text-center shadow-sm transition hover:border-primary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
       <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">{flipped ? "Answer" : "Prompt"} · tap to flip</span>
       <span className="mt-4 whitespace-pre-wrap text-lg font-bold leading-7 text-fg sm:text-xl">{flipped ? card.answer || "Add an answer to preview this card." : card.prompt || "Add a prompt to preview this card."}</span>
     </button>
@@ -339,7 +339,7 @@ export function CreateFlashcardsPage() {
         <section className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-extrabold text-fg">Cards <span className="text-muted">({cards.length})</span></h2><button type="button" className="btn inline-flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-bold" onClick={() => { setCards((current) => [...current, { id: nextId, prompt: "", answer: "" }]); setNextId((id) => id + 1); }}><Plus size={14} />Add card</button></div>
           {cards.map((card, index) => <article key={card.id} className="rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)]">
-            <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-extrabold text-fg">Card {index + 1}</h3><button type="button" aria-label={`Remove card ${index + 1}`} className="rounded-lg p-2 text-muted hover:bg-red-50 hover:text-danger disabled:opacity-40" disabled={cards.length === 1} onClick={() => setCards((current) => current.filter((item) => item.id !== card.id))}><Trash2 size={15} /></button></div>
+            <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-extrabold text-fg">Card {index + 1}</h3><button type="button" aria-label={`Remove card ${index + 1}`} className="rounded-lg p-2 text-muted hover:bg-danger-soft hover:text-danger disabled:opacity-40" disabled={cards.length === 1} onClick={() => setCards((current) => current.filter((item) => item.id !== card.id))}><Trash2 size={15} /></button></div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block"><span className="label">Question or term</span><textarea className="input" rows={3} maxLength={2000} value={card.prompt} onChange={(event) => changeCard(card.id, "prompt", event.target.value)} placeholder="Enter a term or question" /></label>
               <label className="block"><span className="label">Answer or explanation</span><textarea className="input" rows={3} maxLength={4000} value={card.answer} onChange={(event) => changeCard(card.id, "answer", event.target.value)} placeholder="Enter the answer or explanation" /></label>
@@ -399,16 +399,16 @@ export function FlashcardCollectionPage() {
     <section className="rounded-2xl border border-line bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-7">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2"><h1 className="text-2xl font-black tracking-tight text-fg sm:text-3xl">{collection.data.title}</h1><span className="rounded-full bg-[#fff4f2] px-2.5 py-1 text-[10px] font-bold text-primary">{collection.data.is_public ? "Shared" : "Private"}</span></div>
+          <div className="flex flex-wrap items-center gap-2"><h1 className="text-2xl font-black tracking-tight text-fg sm:text-3xl">{collection.data.title}</h1><span className="rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-bold text-primary">{collection.data.is_public ? "Shared" : "Private"}</span></div>
           <p className="mt-2 text-sm leading-6 text-muted">{collection.data.description || "No description added."}</p>
           {collection.data.course && <p className="mt-3 text-xs font-bold text-primary">{collection.data.course.code} — {collection.data.course.title}</p>}
         </div>
         <button type="button" className="btn-primary inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-4 font-bold" disabled={!cards.length} onClick={() => { setStudyMode((value) => !value); setIndex(0); setFlipped(false); }}>{studyMode ? "Exit study mode" : "Study collection"}</button>
       </div>
     </section>
-    {studyMode ? current ? <section aria-label="Flashcard study mode" className="rounded-2xl border border-[#f0dadd] bg-[#fff9f8] p-4 sm:p-6">
+    {studyMode ? current ? <section aria-label="Flashcard study mode" className="rounded-2xl border border-primary-border bg-primary-soft p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Study mode</p><p className="mt-1 text-sm font-bold text-fg">Known {knownCount} of {cards.length}</p></div><p className="text-xs font-bold text-muted">Card {index + 1} of {cards.length}</p></div>
-      <button type="button" aria-label={flipped ? "Show prompt" : "Reveal answer"} onClick={() => setFlipped((value) => !value)} className="mt-4 flex min-h-56 w-full flex-col items-center justify-center rounded-2xl border border-[#f0dadd] bg-white p-6 text-center shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+      <button type="button" aria-label={flipped ? "Show prompt" : "Reveal answer"} onClick={() => setFlipped((value) => !value)} className="mt-4 flex min-h-56 w-full flex-col items-center justify-center rounded-2xl border border-primary-border bg-white p-6 text-center shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
         <span className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">{flipped ? "Answer" : "Prompt"} · tap to flip</span>
         <span className="mt-4 whitespace-pre-wrap text-lg font-bold leading-7 text-fg sm:text-xl">{flipped ? current.answer : current.prompt}</span>
       </button>
@@ -458,13 +458,13 @@ function QuizDraftPreview({ questions, title, onClose }: { questions: QuizQuesti
   const [submitted, setSubmitted] = useState(false);
   const question = questions[index];
   if (!question) return null;
-  return <section aria-label="Quiz preview" className="rounded-2xl border border-[#f0dadd] bg-[#fff9f8] p-4 sm:p-6">
+  return <section aria-label="Quiz preview" className="rounded-2xl border border-primary-border bg-primary-soft p-4 sm:p-6">
     <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Preview only</p><h2 className="mt-1 font-black text-fg">{title || "Untitled quiz draft"}</h2></div><button type="button" className="btn min-h-9 rounded-xl px-3 text-xs font-bold" onClick={onClose}>Close preview</button></div>
     <div className="mt-4 flex items-center justify-between text-xs font-bold text-muted"><span>Question {index + 1} of {questions.length}</span><span>{Math.round(((index + 1) / questions.length) * 100)}% viewed</span></div>
     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#f3e7e8]"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${((index + 1) / questions.length) * 100}%` }} /></div>
     <article className="mt-4 rounded-2xl border border-line bg-white p-4 sm:p-5">
       <p className="font-bold leading-6 text-fg">{question.prompt || "Add a question prompt to preview it."}</p>
-      {question.type === "multiple_choice" ? <fieldset className="mt-4 space-y-2"><legend className="sr-only">Choose an answer</legend>{question.options.filter(Boolean).length ? question.options.filter(Boolean).map((option, optionIndex) => <label key={`${question.id}-${optionIndex}`} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-line px-3 text-sm text-fg hover:bg-[#fff9f8]"><input type="radio" name={`preview-${question.id}`} checked={answers[question.id] === option} onChange={() => setAnswers((current) => ({ ...current, [question.id]: option }))} />{option}</label>) : <p className="text-sm text-muted">Add answer options in the draft form.</p>}</fieldset>
+      {question.type === "multiple_choice" ? <fieldset className="mt-4 space-y-2"><legend className="sr-only">Choose an answer</legend>{question.options.filter(Boolean).length ? question.options.filter(Boolean).map((option, optionIndex) => <label key={`${question.id}-${optionIndex}`} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-line px-3 text-sm text-fg hover:bg-primary-soft"><input type="radio" name={`preview-${question.id}`} checked={answers[question.id] === option} onChange={() => setAnswers((current) => ({ ...current, [question.id]: option }))} />{option}</label>) : <p className="text-sm text-muted">Add answer options in the draft form.</p>}</fieldset>
         : <label className="mt-4 block"><span className="label">{question.type === "true_false" ? "Select an answer" : "Your answer"}</span>{question.type === "true_false" ? <select className="input" value={answers[question.id] ?? ""} onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: event.target.value }))}><option value="">Choose</option><option>True</option><option>False</option></select> : <textarea className="input" rows={2} value={answers[question.id] ?? ""} onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: event.target.value }))} placeholder="Type a preview answer" />}</label>}
     </article>
     <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
@@ -473,7 +473,7 @@ function QuizDraftPreview({ questions, title, onClose }: { questions: QuizQuesti
         ? <button type="button" className="btn-primary inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3 font-bold" onClick={() => setIndex((current) => current + 1)}>Next<ChevronRight size={15} /></button>
         : <button type="button" className="btn inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3 font-bold" onClick={() => setSubmitted(true)}><Check size={15} />Finish preview</button>}
     </div>
-    {submitted && <p role="status" className="mt-3 rounded-xl border border-[#f0dadd] bg-white p-3 text-sm leading-5 text-muted">Preview finished. Answers were not submitted, graded or saved.</p>}
+    {submitted && <p role="status" className="mt-3 rounded-xl border border-primary-border bg-white p-3 text-sm leading-5 text-muted">Preview finished. Answers were not submitted, graded or saved.</p>}
   </section>;
 }
 
@@ -504,7 +504,7 @@ export function CreateQuizPage() {
         </article>
         <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-extrabold text-fg">Questions <span className="text-muted">({questions.length})</span></h2><button type="button" className="btn inline-flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-bold" onClick={addQuestion}><Plus size={14} />Add question</button></div>
         {questions.map((question, index) => <article key={question.id} className="space-y-3 rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5">
-          <div className="flex items-center justify-between gap-2"><h3 className="font-extrabold text-fg">Question {index + 1}</h3><button type="button" aria-label={`Remove question ${index + 1}`} className="rounded-lg p-2 text-muted hover:bg-red-50 hover:text-danger disabled:opacity-40" disabled={questions.length === 1} onClick={() => setQuestions((current) => current.filter((item) => item.id !== question.id))}><Trash2 size={15} /></button></div>
+          <div className="flex items-center justify-between gap-2"><h3 className="font-extrabold text-fg">Question {index + 1}</h3><button type="button" aria-label={`Remove question ${index + 1}`} className="rounded-lg p-2 text-muted hover:bg-danger-soft hover:text-danger disabled:opacity-40" disabled={questions.length === 1} onClick={() => setQuestions((current) => current.filter((item) => item.id !== question.id))}><Trash2 size={15} /></button></div>
           <label className="block"><span className="label">Question type</span><select className="input" value={question.type} onChange={(event) => updateQuestion(question.id, { type: event.target.value as QuizQuestionDraft["type"], options: event.target.value === "true_false" ? ["True", "False"] : question.options })}><option value="multiple_choice">Multiple choice</option><option value="true_false">True or false</option><option value="short_answer">Short answer</option></select></label>
           <label className="block"><span className="label">Question text</span><textarea className="input" rows={2} maxLength={1500} value={question.prompt} onChange={(event) => updateQuestion(question.id, { prompt: event.target.value })} placeholder="Write the question" /></label>
           {question.type === "multiple_choice" && <div className="grid gap-2 sm:grid-cols-2">{question.options.map((option, optionIndex) => <label key={optionIndex} className="block"><span className="label">Option {String.fromCharCode(65 + optionIndex)}</span><input className="input" maxLength={300} value={option} onChange={(event) => updateOption(question, optionIndex, event.target.value)} placeholder={`Answer option ${optionIndex + 1}`} /></label>)}</div>}
@@ -546,8 +546,8 @@ export function AdvancedLearningPage() {
     <PageHeading eyebrow="Future learning tools" title="Advanced learning" description="Explore the academic tools planned for a future CampusConnect release." />
     <BackendNotice>These previews are not connected to AI, payments, timed assessments or competition services. All actions remain unavailable.</BackendNotice>
     <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{advancedFeatures.map((feature) => <li key={feature.slug}>
-      <Link to={feature.slug === "group-challenges" ? "/app/group-quiz" : `/app/flashcards/advanced/${feature.slug}`} className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] transition hover:border-[#edc9cd] hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
-        <div className="flex items-start justify-between gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff1ef] text-primary"><feature.icon size={19} aria-hidden="true" /></span>{feature.slug === "group-challenges" ? <span className="rounded-full bg-[#fff4f2] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary">Live</span> : <ComingSoonBadge />}</div>
+      <Link to={feature.slug === "group-challenges" ? "/app/group-quiz" : `/app/flashcards/advanced/${feature.slug}`} className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] transition hover:border-primary-border hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
+        <div className="flex items-start justify-between gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary"><feature.icon size={19} aria-hidden="true" /></span>{feature.slug === "group-challenges" ? <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary">Live</span> : <ComingSoonBadge />}</div>
         <h2 className="mt-4 font-extrabold text-fg group-hover:text-primary">{feature.title}</h2>
         <p className="mt-1 text-sm leading-5 text-muted">{feature.description}</p>
         <span className="mt-auto inline-flex items-center gap-1 pt-4 text-xs font-bold text-primary">{feature.slug === "group-challenges" ? "Open Group Quiz" : "View preview"} <ArrowRight size={13} /></span>
@@ -564,8 +564,8 @@ export function AdvancedLearningDetailPage() {
   const Icon = feature.icon;
   return <div className="space-y-5">
     <Link to="/app/flashcards/advanced" className="inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-muted hover:text-primary"><ArrowLeft size={15} />All advanced features</Link>
-    <section className="rounded-2xl border border-[#f0dadd] bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-7">
-      <div className="flex flex-wrap items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1ef] text-primary"><Icon size={22} aria-hidden="true" /></span><ComingSoonBadge /></div>
+    <section className="rounded-2xl border border-primary-border bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-7">
+      <div className="flex flex-wrap items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary"><Icon size={22} aria-hidden="true" /></span><ComingSoonBadge /></div>
       <p className="mt-5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Coming soon</p>
       <h1 className="mt-1 text-2xl font-black tracking-tight text-fg sm:text-3xl">{feature.title}</h1>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">{feature.detail}</p>

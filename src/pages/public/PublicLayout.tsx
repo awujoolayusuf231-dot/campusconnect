@@ -29,7 +29,7 @@ export function PublicLayout({ children, wide = false }: { children: ReactNode; 
           </Link>
           <div className="relative flex items-center gap-2">
             {session ? <Link to="/app" className="btn-primary hidden sm:inline-flex">Open app</Link> : <><Link to="/login" className="btn hidden sm:inline-flex">Log in</Link>{s?.registration_open !== false && <Link to="/register" className="btn-primary hidden sm:inline-flex">Join</Link>}</>}
-            <button type="button" aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-muted transition hover:border-primary/30 hover:bg-[#fff4f2] hover:text-primary">
+            <button type="button" aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-muted transition hover:border-primary/30 hover:bg-primary-soft hover:text-primary">
               {menuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
             </button>
           </div>
@@ -37,7 +37,7 @@ export function PublicLayout({ children, wide = false }: { children: ReactNode; 
         {menuOpen && (
           <nav aria-label="Site" className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-1 px-4 pb-3 sm:grid-cols-3 sm:px-6">
             {menuItems.map(({ to, label, icon: Icon }) => (
-              <Link key={label} to={to} onClick={() => setMenuOpen(false)} className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-fg hover:bg-[#fff4f2] hover:text-primary">
+              <Link key={label} to={to} onClick={() => setMenuOpen(false)} className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-fg hover:bg-primary-soft hover:text-primary">
                 <Icon size={17} aria-hidden="true" />{label}
               </Link>
             ))}

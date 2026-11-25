@@ -13,7 +13,7 @@ export function PostInsights({ postId }: { postId: string }) {
   return (
     <section aria-labelledby="post-insights-title" className="space-y-4 rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff1f2] text-primary"><BarChart3 size={18} aria-hidden="true" /></span>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary"><BarChart3 size={18} aria-hidden="true" /></span>
         <div>
           <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-primary">Private to you</p>
           <h2 id="post-insights-title" className="mt-1 text-lg font-black tracking-tight text-fg">Post insights</h2>

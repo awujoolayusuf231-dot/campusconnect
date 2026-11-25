@@ -15,7 +15,7 @@ export function AccountAnalyticsPage() {
   });
   const data = analytics.data;
   const cards = data ? [
-    { label: "Total engagement", value: data.total_engagement, detail: "Likes, comments, replies and reshares", icon: BarChart3, accent: "bg-[#f8e9ea] text-primary" },
+    { label: "Total engagement", value: data.total_engagement, detail: "Likes, comments, replies and reshares", icon: BarChart3, accent: "bg-primary-tint text-primary" },
     { label: "Impressions", value: data.total_impressions, detail: `${formatCount(data.post_impressions)} posts · ${formatCount(data.comment_impressions)} comments`, icon: Eye, accent: "bg-[#eaf4ff] text-[#2168a5]" },
     { label: "Views", value: data.total_views, detail: `${formatCount(data.post_views)} posts · ${formatCount(data.comment_views)} comments`, icon: Eye, accent: "bg-[#eaf7ef] text-[#267146]" },
     { label: "Likes", value: data.total_likes, detail: `${formatCount(data.post_likes)} posts · ${formatCount(data.comment_likes)} comments`, icon: Heart, accent: "bg-[#fff0f2] text-[#bd3444]" },
@@ -27,7 +27,7 @@ export function AccountAnalyticsPage() {
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-5 pb-10">
-      <header className="flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-[#f0dadd] bg-gradient-to-r from-[#fff7f6] via-white to-[#fff3f1] px-5 py-5 sm:px-7">
+      <header className="flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-primary-border bg-gradient-to-r from-primary-soft via-white to-[#fff3f1] px-5 py-5 sm:px-7">
         <div>
           <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-primary">Your account performance</p>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-fg sm:text-3xl">Analytics</h1>
@@ -40,7 +40,7 @@ export function AccountAnalyticsPage() {
       </header>
 
       {analytics.isLoading && <LoadingState label="Loading your private analytics" variant="panel" />}
-      {analytics.isError && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+      {analytics.isError && <div role="alert" className="rounded-2xl border border-danger-border bg-danger-soft p-4 text-sm text-danger">
         <p className="font-bold">Your analytics could not be loaded.</p>
         <button type="button" className="mt-2 font-semibold underline" onClick={() => void analytics.refetch()}>Try again</button>
       </div>}

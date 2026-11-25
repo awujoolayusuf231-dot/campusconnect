@@ -29,7 +29,7 @@ export function GoogleSignInButton({ redirectTo, disabled = false }: GoogleSignI
     <div>
       <button
         type="button"
-        className="btn w-full !border-[#e8e2e0] !py-3 !text-sm hover:!bg-[#fffafa]"
+        className="btn w-full !border-line !py-3 !text-sm hover:!bg-bg"
         onClick={() => void signIn()}
         disabled={disabled || busy}
       >

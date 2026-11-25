@@ -21,7 +21,7 @@ type Tab = "posts" | "reposts";
 
 function Stat({ label, value, onClick }: { label: string; value: number | undefined; onClick?: () => void }) {
   const inner = <><span className="block text-lg font-black tabular-nums text-fg sm:text-xl">{value === undefined ? "–" : formatCount(value)}</span><span className="mt-0.5 block text-[11px] font-medium text-muted sm:text-xs">{label}</span></>;
-  return onClick ? <button type="button" onClick={onClick} className="rounded-xl px-1 py-3 text-center transition-colors hover:bg-[#fff4f2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-2" aria-label={`${value ?? 0} ${label}. Show list`}>{inner}</button> : <div className="px-1 py-3 text-center sm:px-2">{inner}</div>;
+  return onClick ? <button type="button" onClick={onClick} className="rounded-xl px-1 py-3 text-center transition-colors hover:bg-primary-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-2" aria-label={`${value ?? 0} ${label}. Show list`}>{inner}</button> : <div className="px-1 py-3 text-center sm:px-2">{inner}</div>;
 }
 
 export function ProfilePage() {
@@ -129,21 +129,21 @@ export function ProfilePage() {
           </div>
           <div className="mt-4">
             <h1 className="break-words text-2xl font-black leading-tight tracking-[-0.035em] text-fg sm:text-3xl">{p.display_name}</h1>
-            <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">@{p.username}{!mine && stats.data?.follows_me && <span className="rounded-full bg-[#f8e9ea] px-2.5 py-1 text-[11px] font-bold text-primary">Follows you</span>}</p>
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">@{p.username}{!mine && stats.data?.follows_me && <span className="rounded-full bg-primary-tint px-2.5 py-1 text-[11px] font-bold text-primary">Follows you</span>}</p>
           </div>
           {p.bio && <p className="mt-4 max-w-2xl whitespace-pre-wrap break-words text-sm leading-7 text-[#514a48] sm:text-base">{p.bio}</p>}
           <ul className="mt-4 flex flex-wrap gap-2">
-            {institution.data && <li className="inline-flex max-w-full items-center gap-1.5 rounded-xl border border-line bg-[#fbfaf9] px-3 py-2 text-xs font-medium text-[#514a48] sm:text-sm"><GraduationCap size={15} className="shrink-0 text-primary" aria-hidden="true" /> <span className="truncate">{institution.data}</span> <span className="shrink-0 text-[10px] text-muted">(self-reported)</span></li>}
-            {details && <li className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-[#fbfaf9] px-3 py-2 text-xs font-medium text-[#514a48] sm:text-sm"><Briefcase size={15} className="shrink-0 text-primary" aria-hidden="true" /> {details}</li>}
-            {p.graduation_year && <li className="rounded-xl border border-line bg-[#fbfaf9] px-3 py-2 text-xs font-medium text-[#514a48] sm:text-sm">Class of {p.graduation_year}</li>}
-            {p.location && <li className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-[#fbfaf9] px-3 py-2 text-xs font-medium text-[#514a48] sm:text-sm"><MapPin size={15} className="shrink-0 text-primary" aria-hidden="true" /> {p.location}</li>}
-            {p.website_url && /^https:\/\//i.test(p.website_url) && <li className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-[#fbfaf9] px-3 py-2 text-xs font-medium text-[#514a48] sm:text-sm"><Globe size={15} className="shrink-0 text-primary" aria-hidden="true" /> <a className="hover:text-primary hover:underline" href={p.website_url} target="_blank" rel="noopener noreferrer nofollow">Website (external)</a></li>}
+            {institution.data && <li className="inline-flex max-w-full items-center gap-1.5 rounded-xl border border-line bg-bg px-3 py-2 text-xs font-medium text-[#514a48] sm:text-sm"><GraduationCap size={15} className="shrink-0 text-primary" aria-hidden="true" /> <span className="truncate">{institution.data}</span> <span className="shrink-0 text-[10px] text-muted">(self-reported)</span></li>}
+            {details && <li className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-bg px-3 py-2 text-xs font-medium text-[#514a48] sm:text-sm"><Briefcase size={15} className="shrink-0 text-primary" aria-hidden="true" /> {details}</li>}
+            {p.graduation_year && <li className="rounded-xl border border-line bg-bg px-3 py-2 text-xs font-medium text-[#514a48] sm:text-sm">Class of {p.graduation_year}</li>}
+            {p.location && <li className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-bg px-3 py-2 text-xs font-medium text-[#514a48] sm:text-sm"><MapPin size={15} className="shrink-0 text-primary" aria-hidden="true" /> {p.location}</li>}
+            {p.website_url && /^https:\/\//i.test(p.website_url) && <li className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-bg px-3 py-2 text-xs font-medium text-[#514a48] sm:text-sm"><Globe size={15} className="shrink-0 text-primary" aria-hidden="true" /> <a className="hover:text-primary hover:underline" href={p.website_url} target="_blank" rel="noopener noreferrer nofollow">Website (external)</a></li>}
           </ul>
-          {p.interests.length > 0 && <ul className="mt-4 flex flex-wrap gap-2" aria-label="Interests">{p.interests.map((i) => <li key={i} className="rounded-full border border-[#f0dadd] bg-[#fff7f6] px-3 py-1.5 text-xs font-semibold text-[#843d44]">{i}</li>)}</ul>}
+          {p.interests.length > 0 && <ul className="mt-4 flex flex-wrap gap-2" aria-label="Interests">{p.interests.map((i) => <li key={i} className="rounded-full border border-primary-border bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary-deep">{i}</li>)}</ul>}
           {celebrationOk && <a className="btn-primary mt-4 min-h-10 rounded-xl px-4 font-bold" href={p.celebration_url!} target="_blank" rel="noopener noreferrer">Celebrate on whiteshirt.fun</a>}
           {actionError && <p role="alert" className="err mt-2">{socialErrorMessage(String(actionError.message))}</p>}
         </div>
-        <div className="grid grid-cols-4 gap-1 border-t border-line bg-[#fbfaf9] px-2 py-1 sm:gap-2 sm:px-5" role="group" aria-label="Profile statistics">
+        <div className="grid grid-cols-4 gap-1 border-t border-line bg-bg px-2 py-1 sm:gap-2 sm:px-5" role="group" aria-label="Profile statistics">
           <Stat label="Posts" value={stats.data?.post_count} onClick={() => { setTab("posts"); setLimit(20); }} />
           <Stat label="Reposts" value={stats.data?.repost_total} onClick={() => { setTab("reposts"); setLimit(20); }} />
           <Stat label="Followers" value={stats.data?.follower_count} onClick={() => setList("followers")} />
@@ -161,7 +161,7 @@ export function ProfilePage() {
             { to: "/app/portfolio", label: "Portfolio" },
             { to: "/app/cv-builder", label: "CV" },
           ].map((item) => (
-            <Link key={item.to} to={item.to} className="min-h-11 rounded-xl border border-line px-3 py-3 text-center text-xs font-bold text-fg transition hover:border-primary/30 hover:bg-[#fff4f2] hover:text-primary">
+            <Link key={item.to} to={item.to} className="min-h-11 rounded-xl border border-line px-3 py-3 text-center text-xs font-bold text-fg transition hover:border-primary/30 hover:bg-primary-soft hover:text-primary">
               {item.label}
             </Link>
           ))}
@@ -172,11 +172,11 @@ export function ProfilePage() {
         <div role="tablist" aria-label="Profile content" className="flex border-b border-line px-2 sm:px-4">
           {(["posts", "reposts"] as Tab[]).map((t) => <button key={t} id={`profile-tab-${t}`} type="button" role="tab" aria-selected={tab === t} aria-controls="profile-posts" className={`min-h-12 border-b-2 px-4 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary ${tab === t ? "border-primary font-bold text-primary" : "border-transparent font-semibold text-muted hover:text-fg"}`} onClick={() => { setTab(t); setLimit(20); }}>{t === "posts" ? "Posts" : "Reposts"}</button>)}
         </div>
-        <div id="profile-posts" role="tabpanel" aria-labelledby={`profile-tab-${tab}`} className="space-y-4 bg-[#fbfaf9] p-3 sm:p-5">
+        <div id="profile-posts" role="tabpanel" aria-labelledby={`profile-tab-${tab}`} className="space-y-4 bg-bg p-3 sm:p-5">
           {active.isLoading && <LoadingState label={tab === "posts" ? "Gathering posts" : "Gathering reposts"} variant="panel" />}
           {active.isError && <p role="alert" className="rounded-xl border border-danger/20 bg-white p-4 text-sm text-danger">Could not load this tab.</p>}
-          {active.data?.posts.length === 0 && <div className="rounded-2xl border border-dashed border-[#e7d4d5] bg-white px-4 py-10 text-center">
-            <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1f2] text-primary"><Sparkles size={20} aria-hidden="true" /></span>
+          {active.data?.posts.length === 0 && <div className="rounded-2xl border border-dashed border-primary-border bg-white px-4 py-10 text-center">
+            <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-soft text-primary"><Sparkles size={20} aria-hidden="true" /></span>
             <h2 className="mt-3 font-extrabold text-fg">{tab === "posts" ? "The first post is waiting" : "No reposts just yet"}</h2>
             <p className="mt-1 text-sm text-muted">{tab === "posts" ? "When there are posts to share, they’ll show up here." : "Posts this student shares will appear here."}</p>
           </div>}

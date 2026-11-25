@@ -70,7 +70,7 @@ export function PostPage() {
         </button>
         <Link to="/app" className="text-sm font-semibold text-primary hover:underline">Campus feed</Link>
       </div>
-      <header className="rounded-2xl border border-[#f0dadd] bg-gradient-to-r from-[#fff7f6] via-white to-[#fff3f1] px-4 py-4 sm:px-6">
+      <header className="rounded-2xl border border-primary-border bg-gradient-to-r from-primary-soft via-white to-[#fff3f1] px-4 py-4 sm:px-6">
         <p className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-primary"><MessageCircle size={14} aria-hidden="true" /> Post and comments</p>
         <h1 className="mt-1 text-xl font-black tracking-tight text-fg sm:text-2xl">Post details</h1>
       </header>

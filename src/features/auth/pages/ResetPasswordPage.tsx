@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { LoadingState } from "@/app/LoadingState";
+import { PasswordInput } from "@/features/auth/PasswordInput";
 
 export function ResetPasswordPage() {
   const { session, loading } = useAuth();
@@ -23,7 +24,7 @@ export function ResetPasswordPage() {
     <main className="mx-auto max-w-md px-6 py-12">
       <h1 className="mb-6 text-2xl font-semibold">Choose a new password</h1>
       <form onSubmit={(e) => void submit(e)} className="card space-y-4">
-        <div><label className="label" htmlFor="pw">New password</label><input id="pw" type="password" autoComplete="new-password" className="input" value={pw} onChange={(e) => setPw(e.target.value)} /></div>
+        <div><label className="label" htmlFor="pw">New password</label><PasswordInput id="pw" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} /></div>
         {msg && <p role="alert" className="err">{msg}</p>}
         <button className="btn-primary w-full">Update password</button>
       </form>

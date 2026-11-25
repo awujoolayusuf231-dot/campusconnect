@@ -34,7 +34,7 @@ export function VoiceSpacesPage() {
   return <div className="space-y-5">
     <header className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-primary">Live audio conversations</p><h1 className="mt-1 text-3xl font-black">Voice Spaces</h1><p className="mt-1 text-sm text-muted">Listen, learn, and join the conversation on campus.</p></div>
       <button className="btn-primary inline-flex items-center gap-2" onClick={() => setCreating(true)}><Plus size={16} /> Schedule a space</button></header>
-    <section className="rounded-3xl border border-[#f0dadd] bg-gradient-to-br from-[#fff7f6] via-white to-[#fff0ef] p-6 text-fg shadow-sm sm:p-8">
+    <section className="rounded-3xl border border-primary-border bg-gradient-to-br from-primary-soft via-white to-primary-soft p-6 text-fg shadow-sm sm:p-8">
       <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.2em] text-primary"><Radio size={16} /> Hear what campus is thinking</div>
       <h2 className="mt-2 max-w-2xl text-2xl font-black sm:text-3xl">A better conversation starts when everyone can join in.</h2>
       <p className="mt-2 max-w-xl text-sm leading-6 text-muted">Study together, ask questions, exchange ideas or host a community discussion.</p>
@@ -51,8 +51,8 @@ export function VoiceSpacesPage() {
 function VoiceRoomCard({ room }: { room: VoiceRoom }) {
   const live = room.status === "live";
   return <article className={`${card} flex flex-col gap-3`}>
-    <div className="flex items-center justify-between gap-2"><span className="rounded-full bg-[#fff4f2] px-2.5 py-1 text-xs font-bold text-[#843d44]">{human(room.category)}</span>
-      <span className={`inline-flex items-center gap-1 text-xs font-bold ${live ? "text-red-600" : "text-muted"}`}>{live && <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />}{live ? "LIVE NOW" : new Date(room.scheduled_at).toLocaleString()}</span></div>
+    <div className="flex items-center justify-between gap-2"><span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary-deep">{human(room.category)}</span>
+      <span className={`inline-flex items-center gap-1 text-xs font-bold ${live ? "text-danger" : "text-muted"}`}>{live && <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />}{live ? "LIVE NOW" : new Date(room.scheduled_at).toLocaleString()}</span></div>
     <div><h2 className="text-lg font-extrabold"><Link className="hover:text-primary" to={`/app/voice-spaces/${room.id}`}>{room.title}</Link></h2><p className="mt-1 line-clamp-2 text-sm leading-6 text-muted">{room.description || "Join the campus conversation."}</p></div>
     <div className="mt-auto flex items-center justify-between border-t border-line pt-3 text-xs text-muted"><span>{human(room.room_type)} · {human(room.visibility)}</span><Link className="font-bold text-primary hover:underline" to={`/app/voice-spaces/${room.id}`}>{live ? "Join live room" : "View details"} →</Link></div>
   </article>;
@@ -287,10 +287,10 @@ export function VoiceRoomPage() {
     || value.mic_mode === "open";
   return <div className="space-y-4">
     <Link to="/app/voice-spaces" className="text-sm font-semibold text-muted hover:text-primary">← All Voice Spaces</Link>
-    <section className="overflow-hidden rounded-3xl border border-[#f0dadd] bg-white text-fg shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-line bg-gradient-to-r from-[#fff7f6] to-white p-4 sm:p-6">
+    <section className="overflow-hidden rounded-3xl border border-primary-border bg-white text-fg shadow-sm">
+      <div className="flex items-center justify-between gap-3 border-b border-line bg-gradient-to-r from-primary-soft to-white p-4 sm:p-6">
         <div><p className="text-xs font-bold uppercase tracking-[.18em] text-primary">{human(value.category)} · {human(value.room_type)}</p><h1 className="mt-1 text-2xl font-black">{value.title}</h1></div>
-        <span className={`rounded-full px-3 py-1 text-xs font-black ${value.status === "live" ? "bg-[#fff0ef] text-primary" : "bg-bg text-muted"}`}>{value.status === "live" ? "LIVE" : new Date(value.scheduled_at).toLocaleString()}</span>
+        <span className={`rounded-full px-3 py-1 text-xs font-black ${value.status === "live" ? "bg-primary-soft text-primary" : "bg-bg text-muted"}`}>{value.status === "live" ? "LIVE" : new Date(value.scheduled_at).toLocaleString()}</span>
       </div>
       <div className="p-4 sm:p-6">
         <p className="text-sm leading-6 text-muted">{value.description || "Welcome to the conversation. Please be respectful and follow the host's directions."}</p>
@@ -302,33 +302,33 @@ export function VoiceRoomPage() {
           {host && connectedToThisRoom && <button className="btn inline-flex min-h-11 items-center gap-2 px-4" disabled={micMode.isPending} onClick={() => micMode.mutate(value.mic_mode === "open" ? "host_controlled" : "open")}>
               {value.mic_mode === "open" ? <><VolumeX size={16} /> Mute everyone</> : <><Volume2 size={16} /> Allow everyone to speak</>}
           </button>}
-          {host && connectedToThisRoom && <button className="btn min-h-11 border-red-200 text-red-700 hover:bg-red-50" disabled={end.isPending} onClick={() => end.mutate()}>End for everyone</button>}
+          {host && connectedToThisRoom && <button className="btn min-h-11 border-danger-border text-danger hover:bg-danger-soft" disabled={end.isPending} onClick={() => end.mutate()}>End for everyone</button>}
         </div>
         {connectedToThisRoom && value.mic_mode === "host_controlled" && !canPublish && currentRole === "listener" && <p className="mt-3 text-sm text-muted">You are listening. Raise your hand and the host can enable your microphone.</p>}
-        {audioError && <p role="status" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{audioError}</p>}
+        {audioError && <p role="status" className="mt-3 rounded-xl border border-danger-border bg-danger-soft p-3 text-sm text-danger">{audioError}</p>}
         {permissionSyncFailed && host && connectedToThisRoom && <button className="btn mt-2 min-h-10 text-sm" disabled={retryPermissionSync.isPending} onClick={() => retryPermissionSync.mutate()}>{retryPermissionSync.isPending ? "Retrying…" : "Retry speaker permissions"}</button>}
-        {voiceCall.error && <p role="status" className="mt-3 text-sm text-red-700">{voiceCall.error}</p>}
-        {invitations.data?.map((invitation) => <div key={invitation.id} className="mt-3 rounded-xl border border-[#f0dadd] bg-[#fff7f6] p-3 text-sm">You are invited to join as a {invitation.requested_role}.
+        {voiceCall.error && <p role="status" className="mt-3 text-sm text-danger">{voiceCall.error}</p>}
+        {invitations.data?.map((invitation) => <div key={invitation.id} className="mt-3 rounded-xl border border-primary-border bg-primary-soft p-3 text-sm">You are invited to join as a {invitation.requested_role}.
           <div className="mt-2 flex gap-2"><button className="btn-primary min-h-9 px-3 text-xs" onClick={() => respondInvite.mutate({ invitationId: invitation.id, accept: true })}>Accept</button><button className="btn min-h-9 px-3 text-xs" onClick={() => respondInvite.mutate({ invitationId: invitation.id, accept: false })}>Decline</button></div>
         </div>)}
         {!connectedToThisRoom && value.status === "scheduled" && !host && <p className="mt-3 text-xs text-muted">This room is scheduled. Join when it is live; only the host can start it.</p>}
-        <section className="mt-6 rounded-2xl border border-line bg-[#fffdfd] p-4 sm:p-5">
+        <section className="mt-6 rounded-2xl border border-line bg-bg p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 font-bold"><Users size={16} className="text-primary" /> Participants</h2>
-            <span className="rounded-full bg-[#fff0ef] px-3 py-1 text-xs font-bold text-primary">{members.data?.length ?? 0} in room</span>
+            <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-bold text-primary">{members.data?.length ?? 0} in room</span>
           </div>
           {connectedToThisRoom && members.isLoading && <p className="mt-4 text-sm text-muted">Loading participants…</p>}
-          {connectedToThisRoom && members.isError && <p role="alert" className="mt-4 text-sm text-red-700">Could not load participant profiles.</p>}
+          {connectedToThisRoom && members.isError && <p role="alert" className="mt-4 text-sm text-danger">Could not load participant profiles.</p>}
           {connectedToThisRoom && !!members.data?.length && <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {members.data.map((member) => {
               const profile = member.profile;
               const name = profile?.display_name ?? (member.user_id === session?.user.id ? "You" : `Student ${member.user_id.slice(0, 6)}`);
               const isLocalMuted = member.user_id === session?.user.id && isMuted;
-              return <li key={member.user_id} className="relative flex min-h-44 flex-col items-center justify-center rounded-2xl border border-[#f0dadd] bg-white px-3 py-5 text-center shadow-[0_1px_4px_rgba(35,24,20,0.04)]">
+              return <li key={member.user_id} className="relative flex min-h-44 flex-col items-center justify-center rounded-2xl border border-primary-border bg-white px-3 py-5 text-center shadow-[0_1px_4px_rgba(35,24,20,0.04)]">
                 <Avatar name={name} path={profile?.avatar_path ?? null} size={72} />
                 <p className="mt-3 max-w-full truncate text-sm font-bold text-fg">{name}{member.user_id === session?.user.id ? " (You)" : ""}</p>
                 {profile?.username && <p className="max-w-full truncate text-xs text-muted">@{profile.username}</p>}
-                <span className="mt-2 rounded-full bg-[#fff4f2] px-2.5 py-1 text-[11px] font-semibold text-[#843d44]">{human(member.role)}</span>
+                <span className="mt-2 rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-semibold text-primary-deep">{human(member.role)}</span>
                 <span className="absolute right-3 top-3 rounded-full bg-bg p-1.5 text-muted" title={isLocalMuted || !canSpeak(member) ? "Microphone unavailable or muted" : "Microphone permission available"} aria-label={isLocalMuted || !canSpeak(member) ? "Microphone muted" : "Microphone permission available"}>
                   {isLocalMuted || !canSpeak(member) ? <MicOff size={14} /> : <Mic size={14} />}
                 </span>
@@ -340,7 +340,7 @@ export function VoiceRoomPage() {
         </section>
         <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr,1fr]">
           <div>
-            {manager && connectedToThisRoom && <div className="rounded-2xl border border-line bg-[#fffdfd] p-4">
+            {manager && connectedToThisRoom && <div className="rounded-2xl border border-line bg-bg p-4">
             <h2 className="font-bold">Speaker requests</h2>
             {hands.data?.map((hand) => <div key={hand.user_id} className="mt-2 flex flex-wrap items-center gap-2 text-sm"><span className="flex-1">{displayName(hand.user_id)} is requesting to speak</span>
               <button className="btn-primary min-h-9 px-3 text-xs" disabled={resolve.isPending} onClick={() => resolve.mutate({ userId: hand.user_id, approve: true })}>Allow to speak</button>
@@ -363,10 +363,10 @@ export function VoiceRoomPage() {
                   />
                   {!selectedInvitee && normalizedInviteSearch.length >= 2 && <ul role="listbox" aria-label="Matching students" className="absolute inset-x-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-line bg-white p-1 shadow-xl">
                     {inviteCandidates.isFetching && <li className="px-3 py-2 text-xs text-muted">Searching students…</li>}
-                    {inviteCandidates.isError && <li role="alert" className="px-3 py-2 text-xs text-red-700">Could not search students.</li>}
+                    {inviteCandidates.isError && <li role="alert" className="px-3 py-2 text-xs text-danger">Could not search students.</li>}
                     {!inviteCandidates.isFetching && !inviteCandidates.isError && !inviteResults.length && <li className="px-3 py-2 text-xs text-muted">No available student found.</li>}
                     {inviteResults.map((candidate) => <li key={candidate.id} role="option" aria-selected={false}>
-                      <button type="button" className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-[#fff7f6]" onClick={() => { setSelectedInvitee(candidate); setInviteSearch(candidate.username); }}>
+                      <button type="button" className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-primary-soft" onClick={() => { setSelectedInvitee(candidate); setInviteSearch(candidate.username); }}>
                         <Avatar name={candidate.display_name} path={candidate.avatar_path} size={36} />
                         <span className="min-w-0"><span className="block truncate text-sm font-semibold text-fg">{candidate.display_name}</span><span className="block truncate text-xs text-muted">@{candidate.username}</span></span>
                       </button>
@@ -375,7 +375,7 @@ export function VoiceRoomPage() {
                 </div>
                 <button className="btn-primary min-h-11 shrink-0 px-4" disabled={invite.isPending || !selectedInvitee}>{invite.isPending ? "Inviting…" : "Invite"}</button>
               </div>
-              {selectedInvitee && <div className="flex items-center gap-3 rounded-xl border border-[#f0dadd] bg-[#fff7f6] p-2.5">
+              {selectedInvitee && <div className="flex items-center gap-3 rounded-xl border border-primary-border bg-primary-soft p-2.5">
                 <Avatar name={selectedInvitee.display_name} path={selectedInvitee.avatar_path} size={36} />
                 <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{selectedInvitee.display_name}</span><span className="block truncate text-xs text-muted">@{selectedInvitee.username}</span></span>
                 <Link to={`/app/u/${selectedInvitee.username}`} className="text-xs font-bold text-primary hover:underline">View profile</Link>

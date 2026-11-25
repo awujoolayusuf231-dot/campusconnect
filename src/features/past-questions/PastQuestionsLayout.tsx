@@ -24,12 +24,12 @@ export function PastQuestionsLayout() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <header className="relative overflow-hidden rounded-[26px] border border-[#f0dadd] bg-gradient-to-br from-[#fff7f6] via-white to-[#fff0ef] p-5 shadow-[0_12px_36px_rgba(35,24,20,0.045)] sm:p-8">
+      <header className="relative overflow-hidden rounded-[26px] border border-primary-border bg-gradient-to-br from-primary-soft via-white to-primary-soft p-5 shadow-[0_12px_36px_rgba(35,24,20,0.045)] sm:p-8">
         <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 h-56 w-56 rounded-full border border-primary/10 sm:h-72 sm:w-72" />
         <div className="relative flex items-start gap-4">
           <span className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-sm sm:flex"><BookOpen size={23} aria-hidden="true" /></span>
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-[#efd9db] bg-white/80 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary shadow-sm">
+            <p className="inline-flex items-center gap-2 rounded-full border border-primary-border bg-white/80 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary shadow-sm">
               Academic resources
             </p>
             <h1 className="mt-3 text-2xl font-black tracking-[-0.04em] text-fg sm:text-3xl">Past Questions Library</h1>
@@ -44,7 +44,7 @@ export function PastQuestionsLayout() {
             key={section.to}
             to={section.to}
             end={section.end}
-            className={({ isActive }) => `min-h-10 shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition sm:px-4 sm:text-sm ${isActive ? "bg-primary text-primary-fg shadow-sm" : "text-muted hover:bg-[#fff4f2] hover:text-primary"}`}
+            className={({ isActive }) => `min-h-10 shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition sm:px-4 sm:text-sm ${isActive ? "bg-primary text-primary-fg shadow-sm" : "text-muted hover:bg-primary-soft hover:text-primary"}`}
           >
             {section.label}
           </NavLink>

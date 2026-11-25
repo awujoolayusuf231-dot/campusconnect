@@ -139,14 +139,14 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
         <div className="flex shrink-0 gap-1 text-xs">
           {mine ? (
             <>
-              {canEdit && <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => { setEditBody(post.body); setEditing(true); }}><Pencil size={14} className="mr-1 inline" aria-hidden="true" />Edit</button>}
-              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => setDialog("delete")}>Delete</button>
+              {canEdit && <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-primary-soft hover:text-primary" onClick={() => { setEditBody(post.body); setEditing(true); }}><Pencil size={14} className="mr-1 inline" aria-hidden="true" />Edit</button>}
+              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-primary-soft hover:text-primary" onClick={() => setDialog("delete")}>Delete</button>
             </>
           ) : (
             <>
-              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => setDialog("report")}>Report</button>
-              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => setDialog("mute")}>Mute</button>
-              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => setDialog("block")}>Block</button>
+              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-primary-soft hover:text-primary" onClick={() => setDialog("report")}>Report</button>
+              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-primary-soft hover:text-primary" onClick={() => setDialog("mute")}>Mute</button>
+              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-primary-soft hover:text-primary" onClick={() => setDialog("block")}>Block</button>
             </>)}
         </div>
       </header>
@@ -172,7 +172,7 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
               } : undefined}>
               <PostBody body={post.body} />
             </p>
-            {!fullPost && post.body.length > POST_PREVIEW_LIMIT && <Link to={`/app/p/${post.id}`} className="mt-1 inline-flex min-h-8 items-center rounded-lg px-2 text-sm font-bold text-primary hover:bg-[#fff1f2] hover:underline">
+            {!fullPost && post.body.length > POST_PREVIEW_LIMIT && <Link to={`/app/p/${post.id}`} className="mt-1 inline-flex min-h-8 items-center rounded-lg px-2 text-sm font-bold text-primary hover:bg-primary-soft hover:underline">
               Show more
             </Link>}
           </>
@@ -188,21 +188,21 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
         <span className="inline-flex items-center gap-1.5"><BarChart3 size={14} aria-hidden="true" />{formatCount(metrics.impressions)} impressions</span>
       </div>}
       <footer className="flex flex-wrap items-center justify-between gap-1 border-t border-line/80 px-2 py-2 sm:px-3">
-        <button className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-[#fff1f2] sm:px-3 sm:text-sm ${likedByMe ? "text-primary" : "text-muted hover:text-primary"}`} aria-pressed={likedByMe} disabled={like.isPending} onClick={toggleLike}>
+        <button className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-primary-soft sm:px-3 sm:text-sm ${likedByMe ? "text-primary" : "text-muted hover:text-primary"}`} aria-pressed={likedByMe} disabled={like.isPending} onClick={toggleLike}>
           <Heart size={17} fill={likedByMe ? "currentColor" : "none"} aria-hidden="true" /> {formatCount(likeCount)}<span className="sr-only"> likes</span></button>
-        <button className="inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold text-muted transition-colors hover:bg-[#fff1f2] hover:text-primary sm:px-3 sm:text-sm" aria-expanded={showComments} onClick={() => setShowComments((v) => !v)}>
+        <button className="inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold text-muted transition-colors hover:bg-primary-soft hover:text-primary sm:px-3 sm:text-sm" aria-expanded={showComments} onClick={() => setShowComments((v) => !v)}>
           <MessageCircle size={17} aria-hidden="true" /> {formatCount(post.comment_count)}<span className="sr-only"> comments</span></button>
-        <button className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-[#fff1f2] disabled:opacity-40 sm:px-3 sm:text-sm ${repostedByMe ? "text-primary" : "text-muted hover:text-primary"}`}
+        <button className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-primary-soft disabled:opacity-40 sm:px-3 sm:text-sm ${repostedByMe ? "text-primary" : "text-muted hover:text-primary"}`}
           aria-pressed={repostedByMe} disabled={!canRepost || repost.isPending}
           title={mine ? "You cannot repost your own post" : inCommunity ? "Community posts cannot be reposted" : repostedByMe ? "Undo repost" : "Repost to your profile and followers"}
           onClick={toggleRepost}>
           <Repeat2 size={17} aria-hidden="true" /> <span className="hidden sm:inline">{formatCount(repostCount)}</span><span className="sr-only">{formatCount(repostCount)} reposts. {repostedByMe ? "Undo repost" : "Repost"}</span></button>
-        <button type="button" className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-[#fff1f2] sm:px-3 sm:text-sm ${metrics?.saved_by_me ? "text-primary" : "text-muted hover:text-primary"}`}
+        <button type="button" className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors hover:bg-primary-soft sm:px-3 sm:text-sm ${metrics?.saved_by_me ? "text-primary" : "text-muted hover:text-primary"}`}
           aria-pressed={metrics?.saved_by_me ?? false} disabled={save.isPending} onClick={() => save.mutate()}>
           <Bookmark size={17} fill={metrics?.saved_by_me ? "currentColor" : "none"} aria-hidden="true" />
           <span>{metrics?.saved_by_me ? "Saved" : "Save"}</span>
         </button>
-        <button className="ml-auto inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold text-muted transition-colors hover:bg-[#fff1f2] hover:text-primary sm:px-3 sm:text-sm" onClick={() => void share()}>
+        <button className="ml-auto inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold text-muted transition-colors hover:bg-primary-soft hover:text-primary sm:px-3 sm:text-sm" onClick={() => void share()}>
           <Share2 size={17} aria-hidden="true" /> Share</button>
       </footer>
       {(shareNote || actionError || showComments) && (

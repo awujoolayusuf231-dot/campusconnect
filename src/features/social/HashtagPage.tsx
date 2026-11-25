@@ -37,7 +37,7 @@ export function HashtagPage() {
       <Link to="/app/discover" className="inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-muted transition hover:bg-white hover:text-primary">
         <ArrowDown size={15} className="rotate-90" aria-hidden="true" /> Discover
       </Link>
-      <header className="rounded-2xl border border-[#f0dadd] bg-gradient-to-br from-[#fff7f6] via-white to-[#fff0ef] p-5 sm:p-7">
+      <header className="rounded-2xl border border-primary-border bg-gradient-to-br from-primary-soft via-white to-primary-soft p-5 sm:p-7">
         <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.15em] text-primary"><Hash size={15} aria-hidden="true" /> Campus topic</p>
         <h1 className="mt-2 break-words text-3xl font-black tracking-tight text-fg">#{tag}</h1>
         <p className="mt-2 text-sm leading-6 text-muted">Public posts currently visible to you with this hashtag.</p>

@@ -86,9 +86,9 @@ export function PWAInstallButton() {
               <button type="button" className="rounded-lg p-2 text-muted hover:bg-bg" aria-label="Close install instructions" onClick={() => setShowIOSHelp(false)}><X size={18} /></button>
             </div>
             <ol className="mt-4 space-y-3 text-sm text-fg">
-              <li className="flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f8e9ea] text-primary"><Share size={16} aria-hidden="true" /></span>Tap the Share button in Safari.</li>
-              <li className="flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f8e9ea] font-bold text-primary">+</span>Choose <strong>Add to Home Screen</strong>.</li>
-              <li className="flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f8e9ea] text-primary"><Download size={16} aria-hidden="true" /></span>Tap <strong>Add</strong> to finish.</li>
+              <li className="flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-tint text-primary"><Share size={16} aria-hidden="true" /></span>Tap the Share button in Safari.</li>
+              <li className="flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-tint font-bold text-primary">+</span>Choose <strong>Add to Home Screen</strong>.</li>
+              <li className="flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-tint text-primary"><Download size={16} aria-hidden="true" /></span>Tap <strong>Add</strong> to finish.</li>
             </ol>
           </section>
         </div>

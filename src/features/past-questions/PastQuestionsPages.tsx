@@ -75,7 +75,7 @@ function Breadcrumbs({ items }: { items: { label: string; to?: string }[] }) {
 function ErrorState({ error, retry }: { error: unknown; retry?: () => void }) {
   const message = error instanceof Error ? error.message : "The request could not be completed.";
   return (
-    <section role="alert" className="rounded-2xl border border-red-200 bg-white p-5">
+    <section role="alert" className="rounded-2xl border border-danger-border bg-white p-5">
       <div className="flex items-start gap-3">
         <CircleAlert size={18} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />
         <div>
@@ -101,8 +101,8 @@ function catalogMutationError(error: unknown, item: string): string {
 
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
-    <section className="rounded-2xl border border-dashed border-[#e6cdcf] bg-white px-5 py-9 text-center">
-      <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1ef] text-primary"><BookOpen size={20} aria-hidden="true" /></span>
+    <section className="rounded-2xl border border-dashed border-primary-border bg-white px-5 py-9 text-center">
+      <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-soft text-primary"><BookOpen size={20} aria-hidden="true" /></span>
       <h3 className="mt-3 font-extrabold text-fg">{title}</h3>
       <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-muted">{description}</p>
     </section>
@@ -114,9 +114,9 @@ function ResourceCard({ resource, showStatus = false }: { resource: PastQuestion
   const institution = course?.department?.institution?.name;
   return (
     <li>
-      <Link to={`/app/past-questions/questions/${resource.id}`} className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] hover:border-[#edc9cd] hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
+      <Link to={`/app/past-questions/questions/${resource.id}`} className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] hover:border-primary-border hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
         <div className="flex items-start justify-between gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff1ef] text-primary"><FileText size={19} aria-hidden="true" /></span>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary"><FileText size={19} aria-hidden="true" /></span>
           {showStatus && <StatusBadge status={resource.status} />}
         </div>
         <h3 className="mt-4 font-extrabold leading-6 text-fg group-hover:text-primary">{resource.title}</h3>
@@ -136,7 +136,7 @@ function ResourceCard({ resource, showStatus = false }: { resource: PastQuestion
 }
 
 function StatusBadge({ status }: { status: PastQuestionResource["status"] }) {
-  const styles = status === "approved" ? "bg-[#eef8f0] text-[#28633a]" : status === "rejected" ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900";
+  const styles = status === "approved" ? "bg-[#eef8f0] text-success" : status === "rejected" ? "bg-danger-soft text-danger" : "bg-warning-soft text-warning";
   return <span className={`rounded-full px-3 py-1.5 text-xs font-bold capitalize ${styles}`}>{status === "pending" ? "Pending review" : status}</span>;
 }
 
@@ -170,7 +170,7 @@ export function PastQuestionsHome() {
     <div className="space-y-6">
       <section className="grid gap-5 rounded-2xl border border-line bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.035)] md:grid-cols-[minmax(0,1.3fr)_minmax(15rem,0.7fr)] md:items-center sm:p-7">
         <div>
-          <span className="inline-flex w-fit items-center rounded-full border border-[#efd9db] bg-[#fff4f2] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary">Academic resources</span>
+          <span className="inline-flex w-fit items-center rounded-full border border-primary-border bg-primary-soft px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary">Academic resources</span>
           <h2 className="mt-3 max-w-xl text-2xl font-black tracking-[-0.035em] text-fg sm:text-3xl">Find the right past paper for your next study session.</h2>
           <p className="mt-3 max-w-xl text-sm leading-6 text-muted">Browse approved examination resources by institution, department, or course.</p>
           <div className="mt-5 flex flex-wrap gap-2">
@@ -206,7 +206,7 @@ export function PastQuestionsHome() {
       <section className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div><p className="text-[10px] font-extrabold uppercase tracking-[0.13em] text-primary">Recently added</p><h2 className="mt-1 text-lg font-extrabold text-fg">Past questions</h2></div>
-          <Link to="/app/past-questions/courses" className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-xs font-bold text-primary hover:bg-[#fff4f2]">Browse courses <ArrowRight size={14} aria-hidden="true" /></Link>
+          <Link to="/app/past-questions/courses" className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-xs font-bold text-primary hover:bg-primary-soft">Browse courses <ArrowRight size={14} aria-hidden="true" /></Link>
         </div>
         {resources.isLoading ? <LoadingState label="Loading past questions" variant="panel" /> : resources.isError ? <ErrorState error={resources.error} retry={() => void resources.refetch()} /> : resources.data?.length ? <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{resources.data.map((resource) => <ResourceCard key={resource.id} resource={resource} />)}</ul> : <EmptyState title="No approved past questions found" description="Try another search or institution, or check back after resources have been reviewed." />}
       </section>
@@ -273,7 +273,7 @@ function InstitutionCard({ institution }: { institution: Institution }) {
   return (
     <li className="flex h-full flex-col rounded-2xl border border-line bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-6">
       <div className="flex items-start gap-4">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff1ef] text-primary"><Building2 size={23} aria-hidden="true" /></span>
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary"><Building2 size={23} aria-hidden="true" /></span>
         <div className="min-w-0 flex-1">
           <h3 className="font-extrabold text-fg">{institution.name}</h3>
           <p className="mt-1 text-xs text-muted">{[institution.short_name, institution.state].filter(Boolean).join(" · ") || "Institution"}</p>
@@ -307,7 +307,7 @@ export function InstitutionDetailsPage() {
     <div className="space-y-5">
       <Breadcrumbs items={[{ label: "Past Questions", to: "/app/past-questions" }, { label: "Institutions", to: "/app/past-questions/institutions" }, { label: institution.name }]} />
       <section className="rounded-2xl border border-line bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-7">
-        <div className="flex items-start gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#fff1ef] text-primary"><Building2 size={23} aria-hidden="true" /></span><div><h2 className="text-xl font-black text-fg">{institution.name}</h2><p className="mt-1 text-sm text-muted">{[institution.short_name, institution.state].filter(Boolean).join(" · ")}</p></div></div>
+        <div className="flex items-start gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary"><Building2 size={23} aria-hidden="true" /></span><div><h2 className="text-xl font-black text-fg">{institution.name}</h2><p className="mt-1 text-sm text-muted">{[institution.short_name, institution.state].filter(Boolean).join(" · ")}</p></div></div>
       </section>
       <section className="space-y-3">
         <PageTitle eyebrow="Institution directory" title="Departments" description="Select a department to browse its courses and approved past questions." />
@@ -521,7 +521,7 @@ export function CatalogManagementPage() {
         {csvRows.length > 0 && (
           <>
             <p className="text-sm font-semibold text-fg">{csvRows.length} course rows read · {resolvedCsvRows.length} ready to import</p>
-            {csvMappingErrors.length > 0 && <div role="alert" className="max-h-32 overflow-y-auto rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-danger">{csvMappingErrors.slice(0, 20).map((error) => <p key={error}>{error}</p>)}{csvMappingErrors.length > 20 && <p>And {csvMappingErrors.length - 20} more rows need correction.</p>}</div>}
+            {csvMappingErrors.length > 0 && <div role="alert" className="max-h-32 overflow-y-auto rounded-xl border border-danger-border bg-danger-soft p-3 text-xs text-danger">{csvMappingErrors.slice(0, 20).map((error) => <p key={error}>{error}</p>)}{csvMappingErrors.length > 20 && <p>And {csvMappingErrors.length - 20} more rows need correction.</p>}</div>}
             <div className="overflow-x-auto rounded-xl border border-line">
               <table className="w-full min-w-[640px] text-left text-xs">
                 <thead className="bg-bg text-muted"><tr><th className="px-3 py-2">Institution</th><th className="px-3 py-2">Department</th><th className="px-3 py-2">Course code</th><th className="px-3 py-2">Course title</th></tr></thead>
@@ -536,7 +536,7 @@ export function CatalogManagementPage() {
         )}
         {csvImport.isError && <p role="alert" className="break-words text-sm text-danger">{csvImport.error.message}</p>}
         {csvImport.data && (
-          <div role={csvImport.data.errors.length ? "alert" : "status"} className={`space-y-1 rounded-xl p-3 text-sm ${csvImport.data.errors.length ? "border border-amber-200 bg-amber-50 text-amber-950" : "bg-[#eef8f0] text-[#28633a]"}`}>
+          <div role={csvImport.data.errors.length ? "alert" : "status"} className={`space-y-1 rounded-xl p-3 text-sm ${csvImport.data.errors.length ? "border border-warning-border bg-warning-soft text-warning" : "bg-[#eef8f0] text-success"}`}>
             <p>Import complete: {csvImport.data.departmentsCreated} departments added, {csvImport.data.coursesCreated} courses added, {csvImport.data.duplicatesSkipped} existing or repeated course rows skipped.</p>
             {csvImport.data.errors.slice(0, 20).map((error) => <p key={error}>{error}</p>)}
             {csvImport.data.errors.length > 20 && <p>And {csvImport.data.errors.length - 20} more rows could not be imported.</p>}
@@ -568,7 +568,7 @@ export function CatalogManagementPage() {
               <button type="submit" className="btn-primary min-h-10 shrink-0 gap-2" disabled={addDepartment.isPending || departments.isLoading}><Plus size={15} aria-hidden="true" />{addDepartment.isPending ? "Adding…" : "Add department"}</button>
             </form>
             {addDepartment.isError && <p role="alert" className="break-words text-sm text-danger">{catalogMutationError(addDepartment.error, "department")}</p>}
-            {addDepartment.isSuccess && <p role="status" className="text-sm font-semibold text-[#28633a]">Department added.</p>}
+            {addDepartment.isSuccess && <p role="status" className="text-sm font-semibold text-success">Department added.</p>}
             {departments.isLoading ? <LoadingState label="Loading departments" variant="panel" /> : departments.data?.length ? (
               <ul className="divide-y divide-line border-t border-line">
                 {departments.data.map((department) => (
@@ -591,7 +591,7 @@ export function CatalogManagementPage() {
               <button type="submit" className="btn-primary min-h-10 gap-2" disabled={!departmentId || addCourse.isPending || courses.isLoading}><Plus size={15} aria-hidden="true" />{addCourse.isPending ? "Adding…" : "Add course"}</button>
             </form>
             {addCourse.isError && <p role="alert" className="break-words text-sm text-danger">{catalogMutationError(addCourse.error, "course")}</p>}
-            {addCourse.isSuccess && <p role="status" className="text-sm font-semibold text-[#28633a]">Course added.</p>}
+            {addCourse.isSuccess && <p role="status" className="text-sm font-semibold text-success">Course added.</p>}
             {!departmentId ? <p className="rounded-xl border border-dashed border-line p-4 text-center text-sm text-muted">Select a department to view or add courses.</p> : courses.isLoading ? <LoadingState label="Loading courses" variant="panel" /> : courses.data?.length ? (
               <ul className="divide-y divide-line border-t border-line">
                 {courses.data.map((course) => <li key={course.id} className="py-3"><p className="text-sm font-extrabold text-fg">{course.code}</p><p className="mt-0.5 text-sm text-muted">{course.title}</p></li>)}
@@ -607,8 +607,8 @@ export function CatalogManagementPage() {
 function CourseCard({ course }: { course: Course }) {
   return (
     <li>
-      <Link to={`/app/past-questions/courses/${course.id}`} className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] hover:border-[#edc9cd] hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
-        <span className="w-fit rounded-lg bg-[#fff1ef] px-2.5 py-1 text-xs font-black text-primary">{course.code}</span>
+      <Link to={`/app/past-questions/courses/${course.id}`} className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] hover:border-primary-border hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
+        <span className="w-fit rounded-lg bg-primary-soft px-2.5 py-1 text-xs font-black text-primary">{course.code}</span>
         <h3 className="mt-4 font-extrabold leading-6 text-fg group-hover:text-primary">{course.title}</h3>
         <p className="mt-1 text-sm text-muted">{course.department?.name} · {getCourseInstitution(course)}</p>
         <span className="mt-4 inline-flex min-h-9 items-center justify-between gap-2 border-t border-line pt-3 text-xs font-extrabold text-primary">View course <ArrowRight size={13} aria-hidden="true" /></span>
@@ -682,8 +682,8 @@ export function QuestionDetailsPage() {
             {downloadUrl && <a className="w-full text-sm font-bold text-primary underline" href={downloadUrl} target="_blank" rel="noreferrer">Open PDF</a>}
           </div>
         </div>
-        <section aria-label="Secure document access" className="flex min-h-[18rem] flex-col items-center justify-center rounded-2xl border border-dashed border-[#e6cdcf] bg-white p-6 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff1ef] text-primary"><FileText size={26} aria-hidden="true" /></span>
+        <section aria-label="Secure document access" className="flex min-h-[18rem] flex-col items-center justify-center rounded-2xl border border-dashed border-primary-border bg-white p-6 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary"><FileText size={26} aria-hidden="true" /></span>
           <h3 className="mt-4 font-extrabold text-fg">Private document</h3>
           <p className="mt-2 max-w-sm text-sm leading-6 text-muted">The PDF is served from a private bucket. Access is checked by Supabase Storage policies before a short-lived link is created.</p>
         </section>
@@ -788,7 +788,7 @@ export function UploadPage() {
             <label className="block"><span className="label">Department</span><select className="input" required value={departmentId} disabled={!institutionId || departments.isLoading || upload.isPending} onChange={(event) => { setDepartmentId(event.target.value); setCourseId(""); setShowNewCourse(false); }}><option value="">Select a department</option>{(departments.data ?? []).map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
             {institutionId && <button type="button" className="text-xs font-bold text-primary underline" onClick={() => { setShowNewDepartment((show) => !show); setShowNewCourse(false); }}>Department not listed? Add it</button>}
             {showNewDepartment && (
-              <div className="space-y-2 rounded-xl border border-[#efd9db] bg-[#fff9f8] p-3">
+              <div className="space-y-2 rounded-xl border border-primary-border bg-primary-soft p-3">
                 <p className="text-xs leading-5 text-muted">This department will be added to the shared catalog for the selected institution.</p>
                 <label className="block"><span className="label">Department name</span><input className="input" required minLength={2} maxLength={120} value={newDepartmentName} onChange={(event) => setNewDepartmentName(event.target.value)} /></label>
                 {addDepartment.isError && <p role="alert" className="break-words text-xs text-danger">{catalogMutationError(addDepartment.error, "department")}</p>}
@@ -800,7 +800,7 @@ export function UploadPage() {
             <label className="block"><span className="label">Course</span><select className="input" required value={courseId} disabled={!departmentId || courses.isLoading || upload.isPending} onChange={(event) => setCourseId(event.target.value)}><option value="">Select a course</option>{(courses.data ?? []).map((course) => <option key={course.id} value={course.id}>{course.code} · {course.title}</option>)}</select></label>
             {departmentId && <button type="button" className="text-xs font-bold text-primary underline" onClick={() => setShowNewCourse((show) => !show)}>Course not listed? Add it</button>}
             {showNewCourse && (
-              <div className="space-y-2 rounded-xl border border-[#efd9db] bg-[#fff9f8] p-3">
+              <div className="space-y-2 rounded-xl border border-primary-border bg-primary-soft p-3">
                 <p className="text-xs leading-5 text-muted">Use the official course code and title. The entry becomes available to other users.</p>
                 <label className="block"><span className="label">Course code</span><input className="input" required maxLength={30} value={newCourseCode} onChange={(event) => setNewCourseCode(event.target.value)} /></label>
                 <label className="block"><span className="label">Course title</span><input className="input" required minLength={2} maxLength={150} value={newCourseTitle} onChange={(event) => setNewCourseTitle(event.target.value)} /></label>
@@ -812,13 +812,13 @@ export function UploadPage() {
           <label><span className="label">Academic session</span><input name="academicSession" className="input" required minLength={4} maxLength={20} placeholder="e.g. 2024/2025" /></label>
           <label><span className="label">Exam year</span><input name="examYear" className="input" type="number" required min={1950} max={2100} step={1} placeholder="2025" /></label>
           <label><span className="label">Semester</span><select name="semester" className="input" defaultValue=""><option value="">Not specified</option><option value="first">First semester</option><option value="second">Second semester</option><option value="other">Other</option></select></label>
-          <label className="sm:col-span-2"><span className="label">Examination document (PDF)</span><input key={fileInputKey} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[#fff1ef] file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" type="file" accept="application/pdf,.pdf" required onChange={(event) => { setFile(event.target.files?.[0] ?? null); setSubmitted(false); }} /></label>
+          <label className="sm:col-span-2"><span className="label">Examination document (PDF)</span><input key={fileInputKey} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-primary-soft file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" type="file" accept="application/pdf,.pdf" required onChange={(event) => { setFile(event.target.files?.[0] ?? null); setSubmitted(false); }} /></label>
         </fieldset>
-        {catalogNotice && <p role="status" className="mt-4 text-sm font-semibold text-[#28633a]">{catalogNotice}</p>}
+        {catalogNotice && <p role="status" className="mt-4 text-sm font-semibold text-success">{catalogNotice}</p>}
         <p className="mt-4 text-xs leading-5 text-muted">Departments and courses you add become shared catalog entries. Add only accurate, official information; other students can use these entries too.</p>
         {formError && <p role="alert" className="mt-4 text-sm text-danger">{formError}</p>}
         {upload.isError && <p role="alert" className="mt-4 break-words text-sm text-danger">{upload.error.message}</p>}
-        {submitted && <p role="status" className="mt-4 rounded-xl bg-[#eef8f0] p-3 text-sm font-semibold text-[#28633a]">Your resource was submitted and is pending review. You can track it in My Resources.</p>}
+        {submitted && <p role="status" className="mt-4 rounded-xl bg-[#eef8f0] p-3 text-sm font-semibold text-success">Your resource was submitted and is pending review. You can track it in My Resources.</p>}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
           <p className="text-xs text-muted">Only approved resources are listed publicly to signed-in users.</p>
           <button type="submit" className="btn-primary min-h-10 gap-2" disabled={upload.isPending || formBusy}><Upload size={15} aria-hidden="true" />{upload.isPending ? "Submitting…" : "Submit for review"}</button>
@@ -841,10 +841,10 @@ export function MyResourcesPage() {
     <div className="space-y-5">
       <PageTitle eyebrow="Your library activity" title="My uploaded resources" description="Track the review status of resources submitted from your account." />
       <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5">
-        <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff1ef] text-primary"><ClipboardList size={19} aria-hidden="true" /></span><div><h3 className="font-extrabold">Submission history</h3><p className="text-xs text-muted">{query.data?.length ?? 0} {(query.data?.length ?? 0) === 1 ? "resource" : "resources"} submitted by you</p></div></div>
+        <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary"><ClipboardList size={19} aria-hidden="true" /></span><div><h3 className="font-extrabold">Submission history</h3><p className="text-xs text-muted">{query.data?.length ?? 0} {(query.data?.length ?? 0) === 1 ? "resource" : "resources"} submitted by you</p></div></div>
       </section>
       {query.data?.length ? <ul className="grid gap-3 sm:grid-cols-2">{query.data.map((resource) => <ResourceCard key={resource.id} resource={resource} showStatus />)}</ul> : <EmptyState title="No uploaded resources yet" description="Use Upload to submit a past question for review." />}
-      {query.data?.some((resource) => resource.status === "rejected" && resource.rejection_reason) && <section className="space-y-2">{query.data.filter((resource) => resource.status === "rejected" && resource.rejection_reason).map((resource) => <p key={resource.id} className="rounded-xl border border-red-200 bg-white p-3 text-sm"><strong>{resource.title}:</strong> {resource.rejection_reason}</p>)}</section>}
+      {query.data?.some((resource) => resource.status === "rejected" && resource.rejection_reason) && <section className="space-y-2">{query.data.filter((resource) => resource.status === "rejected" && resource.rejection_reason).map((resource) => <p key={resource.id} className="rounded-xl border border-danger-border bg-white p-3 text-sm"><strong>{resource.title}:</strong> {resource.rejection_reason}</p>)}</section>}
     </div>
   );
 }

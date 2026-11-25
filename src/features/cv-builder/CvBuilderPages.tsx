@@ -77,7 +77,7 @@ export function CvDashboardPage() {
         <Link className="btn-primary inline-flex items-center gap-2" to="/app/cv-builder/new"><Plus size={16} />Create a CV</Link>
       </div>
     </header>
-    {message && <p role="status" className={message.includes("could not") || message.includes("failed") ? "err" : "rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"}>{message}</p>}
+    {message && <p role="status" className={message.includes("could not") || message.includes("failed") ? "err" : "rounded-xl border border-success-border bg-success-soft px-3 py-2 text-sm text-success"}>{message}</p>}
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {CV_TEMPLATES.map((template, index) => <article key={template.id} className="rounded-2xl border border-line bg-white p-3 shadow-sm">
         <div className={`mb-3 flex h-24 items-center justify-center rounded-xl ${index % 2 ? "bg-[#f7f4f2]" : "bg-[#fbf0ee]"}`}>
@@ -92,7 +92,7 @@ export function CvDashboardPage() {
         {savedCvs.map((cv) => <li key={cv.id} className="card">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="truncate font-extrabold text-fg">{cv.title}</h3>
-              {cv.is_default && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">Default</span>}</div>
+              {cv.is_default && <span className="rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-bold text-success">Default</span>}</div>
               <p className="mt-1 text-xs text-muted">{templateName(cv.template_key)} · Updated {new Date(cv.updated_at).toLocaleDateString()}</p>
             </div>
             <Link className="btn min-h-9 rounded-lg px-3 text-xs" to={`/app/cv-builder/${cv.id}/edit`}>Edit</Link>
@@ -209,7 +209,7 @@ export function CvEditorPage() {
         <button type="button" className="btn-primary" disabled={save.isPending} onClick={() => save.mutate()}>{save.isPending ? "Saving…" : "Save CV"}</button>
       </div>
     </header>
-    {message && <p role={save.isError ? "alert" : "status"} className={save.isError ? "err" : "rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"}>{message}</p>}
+    {message && <p role={save.isError ? "alert" : "status"} className={save.isError ? "err" : "rounded-xl border border-success-border bg-success-soft px-3 py-2 text-sm text-success"}>{message}</p>}
     {importNotice && <p role={importing ? "status" : "alert"} className={importing ? "text-sm text-muted" : "rounded-xl border border-line bg-white px-3 py-2 text-sm text-muted"}>{importNotice}</p>}
     <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
       <div className="space-y-4">
@@ -277,7 +277,7 @@ function CvSectionEditor({ section, index, count, onChange, onRemove, onMove }: 
         value={section.title} onChange={(event) => onChange({ ...section, title: event.target.value })} />
       <button type="button" className="rounded p-1 text-muted hover:bg-bg disabled:opacity-30" disabled={index === 0} onClick={() => onMove(-1)} aria-label="Move section up"><ArrowUp size={15} /></button>
       <button type="button" className="rounded p-1 text-muted hover:bg-bg disabled:opacity-30" disabled={index === count - 1} onClick={() => onMove(1)} aria-label="Move section down"><ArrowDown size={15} /></button>
-      <button type="button" className="rounded p-1 text-muted hover:bg-red-50 hover:text-red-700" onClick={onRemove} aria-label="Remove section"><Trash2 size={15} /></button>
+      <button type="button" className="rounded p-1 text-muted hover:bg-danger-soft hover:text-danger" onClick={onRemove} aria-label="Remove section"><Trash2 size={15} /></button>
     </div>
     <div className="mt-3 space-y-3">
       {section.entries.map((entry) => <div key={entry.id} className="rounded-lg border border-line bg-white p-3">
@@ -289,7 +289,7 @@ function CvSectionEditor({ section, index, count, onChange, onRemove, onMove }: 
           <div className="sm:col-span-2"><TextArea label="Details" value={entry.description} onChange={(value) => updateEntry(entry.id, { description: value })} rows={3} maxLength={2000} /></div>
           <div className="sm:col-span-2"><TextInput label="Link (optional)" value={entry.url} onChange={(value) => updateEntry(entry.id, { url: value })} maxLength={300} placeholder="https://" /></div>
         </div>
-        <button type="button" className="mt-2 text-xs font-bold text-red-700 hover:underline" onClick={() => onChange({ ...section, entries: section.entries.filter((item) => item.id !== entry.id) })}>Remove entry</button>
+        <button type="button" className="mt-2 text-xs font-bold text-danger hover:underline" onClick={() => onChange({ ...section, entries: section.entries.filter((item) => item.id !== entry.id) })}>Remove entry</button>
       </div>)}
       <button type="button" className="btn min-h-9 rounded-lg px-3 text-xs" onClick={() => onChange({ ...section, entries: [...section.entries, newCvEntry()] })}><Plus size={13} className="mr-1 inline" />Add entry</button>
     </div>

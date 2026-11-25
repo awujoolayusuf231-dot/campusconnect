@@ -48,11 +48,11 @@ function StudentCard({
           <Link to={`/app/u/${student.username}`} className="break-words font-bold text-fg hover:text-primary hover:underline">{student.display_name}</Link>
           <p className="mt-0.5 truncate text-xs text-muted">@{student.username}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {institution && <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-[#fff4f2] px-2.5 py-1 text-[11px] font-semibold text-[#843d44]"><Building2 size={12} aria-hidden="true" /><span className="truncate">{institution}</span></span>}
+            {institution && <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-semibold text-primary-deep"><Building2 size={12} aria-hidden="true" /><span className="truncate">{institution}</span></span>}
             {student.department && <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-bg px-2.5 py-1 text-[11px] font-semibold text-muted"><BookOpen size={12} aria-hidden="true" /><span className="truncate">{student.department}</span></span>}
             {student.academic_level && <span className="rounded-full bg-bg px-2.5 py-1 text-[11px] font-semibold text-muted">{student.academic_level}</span>}
-            {student.shared_interests ? <span className="rounded-full bg-[#fff4f2] px-2.5 py-1 text-[11px] font-semibold text-primary">{student.shared_interests} shared interest{student.shared_interests === 1 ? "" : "s"}</span> : null}
-            {student.same_location && <span className="rounded-full bg-[#fff4f2] px-2.5 py-1 text-[11px] font-semibold text-primary">Same city/state</span>}
+            {student.shared_interests ? <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-semibold text-primary">{student.shared_interests} shared interest{student.shared_interests === 1 ? "" : "s"}</span> : null}
+            {student.same_location && <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-semibold text-primary">Same city/state</span>}
           </div>
         </div>
       </div>
@@ -144,7 +144,7 @@ export function DiscoverPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 sm:space-y-6">
-      <header className="overflow-hidden rounded-[26px] border border-[#f0dadd] bg-gradient-to-br from-[#fff7f6] via-white to-[#fff0ef] p-5 shadow-[0_12px_36px_rgba(35,24,20,0.045)] sm:p-8">
+      <header className="overflow-hidden rounded-[26px] border border-primary-border bg-gradient-to-br from-primary-soft via-white to-primary-soft p-5 shadow-[0_12px_36px_rgba(35,24,20,0.045)] sm:p-8">
         <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.15em] text-primary">
           <UsersRound size={15} aria-hidden="true" /> Campus directory
         </p>
@@ -156,7 +156,7 @@ export function DiscoverPage() {
 
       <HashtagDiscovery />
 
-      <section aria-labelledby="student-recommendations-title" className="space-y-3 rounded-2xl border border-[#efd9db] bg-gradient-to-br from-[#fff7f6] via-white to-[#fff4f2] p-4 sm:p-5">
+      <section aria-labelledby="student-recommendations-title" className="space-y-3 rounded-2xl border border-primary-border bg-gradient-to-br from-primary-soft via-white to-primary-soft p-4 sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-primary">On-platform suggestions</p>
@@ -217,7 +217,7 @@ export function DiscoverPage() {
         {recommendations.isLoading && <LoadingState label="Finding students you may know" variant="panel" />}
         {recommendations.isError && <p role="alert" className="err">Could not load student recommendations.</p>}
         {!recommendations.isLoading && !recommendations.isError && recommendations.data?.length === 0 && (
-          <p className="rounded-xl border border-dashed border-[#e6cdcf] bg-white px-4 py-6 text-center text-sm text-muted">
+          <p className="rounded-xl border border-dashed border-primary-border bg-white px-4 py-6 text-center text-sm text-muted">
             {discoveryMode === "nearby"
               ? locationPreference.data?.enabled
                 ? "No other students who opted in matched your city/state yet."
@@ -285,7 +285,7 @@ export function DiscoverPage() {
 
         {results.isLoading && <LoadingState label="Finding students" variant="panel" />}
         {results.isError && <p role="alert" className="err">Could not load results.</p>}
-        {results.data?.length === 0 && <p className="rounded-2xl border border-dashed border-[#e6cdcf] bg-white px-5 py-10 text-center text-sm text-muted">No students match your filters. Try changing or clearing a filter.</p>}
+        {results.data?.length === 0 && <p className="rounded-2xl border border-dashed border-primary-border bg-white px-5 py-10 text-center text-sm text-muted">No students match your filters. Try changing or clearing a filter.</p>}
         {toggle.isError && <p role="alert" className="err">{socialErrorMessage((toggle.error as Error).message)}</p>}
         <ul className="grid gap-3 sm:grid-cols-2">
           {results.data?.map((student) => (

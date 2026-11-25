@@ -32,11 +32,11 @@ export function CommunitiesPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <header className="relative overflow-hidden rounded-[26px] border border-[#f0dadd] bg-gradient-to-br from-[#fff7f6] via-white to-[#fff0ef] p-5 shadow-[0_12px_36px_rgba(35,24,20,0.045)] sm:p-8">
+      <header className="relative overflow-hidden rounded-[26px] border border-primary-border bg-gradient-to-br from-primary-soft via-white to-primary-soft p-5 shadow-[0_12px_36px_rgba(35,24,20,0.045)] sm:p-8">
         <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full border border-primary/10 sm:-right-8 sm:-top-32 sm:h-80 sm:w-80" />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
-            <p className="inline-flex items-center gap-2 rounded-full border border-[#efd9db] bg-white/80 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.15em] text-primary shadow-sm"><Compass size={14} aria-hidden="true" /> Find your people</p>
+            <p className="inline-flex items-center gap-2 rounded-full border border-primary-border bg-white/80 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.15em] text-primary shadow-sm"><Compass size={14} aria-hidden="true" /> Find your people</p>
             <h1 className="mt-3 text-3xl font-black tracking-[-0.04em] text-fg sm:text-4xl">Campus communities</h1>
             <p className="mt-2 text-sm leading-6 text-muted sm:text-base">Discover groups around your interests, studies, and campus life.</p>
           </div>
@@ -52,7 +52,7 @@ export function CommunitiesPage() {
           <p className="mt-1 text-sm text-muted">Groups you currently belong to.</p>
         </div>
         {mine.isLoading && <LoadingState label="Loading your communities" variant="panel" />}
-        {mine.isError && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-danger">
+        {mine.isError && <div role="alert" className="rounded-2xl border border-danger-border bg-danger-soft p-4 text-sm text-danger">
           Could not load your communities. Try again later.
           <button type="button" className="ml-2 font-bold underline" onClick={() => void mine.refetch()}>Retry</button>
         </div>}
@@ -80,14 +80,14 @@ export function CommunitiesPage() {
       </section>
 
       {list.isLoading && <LoadingState label="Finding communities" variant="panel" />}
-      {list.isError && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-danger">
+      {list.isError && <div role="alert" className="rounded-2xl border border-danger-border bg-danger-soft p-5 text-sm text-danger">
         <p className="font-bold">Could not load communities.</p>
         <p className="mt-1">Check your connection and try again.</p>
         <button type="button" className="btn mt-3" onClick={() => void list.refetch()}>Try again</button>
       </div>}
       {list.isSuccess && list.data.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-[#e6cdcf] bg-white px-5 py-12 text-center">
-          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff0ef] text-primary"><Users size={22} aria-hidden="true" /></span>
+        <div className="rounded-2xl border border-dashed border-primary-border bg-white px-5 py-12 text-center">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary"><Users size={22} aria-hidden="true" /></span>
           <h2 className="mt-4 text-lg font-extrabold text-fg">{term || cat ? "No communities match those filters" : "No communities yet"}</h2>
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">{term || cat ? "Try another search or category to explore more of campus." : "Create a community and bring students together around something you care about."}</p>
           {(term || cat) ? <button className="btn mt-4" onClick={() => { setQ(""); setTerm(""); setCat(""); setPage(0); }}>Clear filters</button>
@@ -144,13 +144,13 @@ function CommunityCard({ community, index, joined = false, myRole }: { community
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         <div className="flex items-start justify-between gap-2">
           <Link to={`/app/c/${community.slug}`} className="min-w-0 text-lg font-extrabold leading-snug text-fg decoration-primary underline-offset-4 group-hover:underline">{community.name}</Link>
-          {joined && <span className="shrink-0 rounded-full bg-[#eef8f0] px-2.5 py-1 text-[10px] font-extrabold text-[#28633a]">Joined</span>}
+          {joined && <span className="shrink-0 rounded-full bg-[#eef8f0] px-2.5 py-1 text-[10px] font-extrabold text-success">Joined</span>}
         </div>
-        {myRole && myRole !== "member" && <span className="mt-1 w-fit rounded-full bg-[#fff1ef] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary">{myRole}</span>}
+        {myRole && myRole !== "member" && <span className="mt-1 w-fit rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary">{myRole}</span>}
         <p className="mt-2 min-h-[3rem] line-clamp-2 text-sm leading-6 text-muted">{community.description || "This community hasn’t added a description yet."}</p>
         <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-3">
           <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold text-muted"><Users size={15} aria-hidden="true" />{community.member_count} member{community.member_count === 1 ? "" : "s"}</span>
-          <Link to={`/app/c/${community.slug}`} className="inline-flex min-h-9 items-center gap-1 rounded-lg px-3 text-xs font-extrabold text-primary transition hover:bg-[#fff4f2]">
+          <Link to={`/app/c/${community.slug}`} className="inline-flex min-h-9 items-center gap-1 rounded-lg px-3 text-xs font-extrabold text-primary transition hover:bg-primary-soft">
             View community <ArrowRight size={14} aria-hidden="true" />
           </Link>
         </div>

@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { friendlyAuthError } from "@/lib/errors";
 import { AuthPageLayout } from "@/features/auth/AuthPageLayout";
 import { GoogleSignInButton } from "@/features/auth/GoogleSignInButton";
+import { PasswordInput } from "@/features/auth/PasswordInput";
 
 const schema = z.object({ email: z.string().trim().email("Enter a valid email"), password: z.string().min(1, "Enter your password") });
 type Values = z.infer<typeof schema>;
@@ -35,7 +36,7 @@ export function LoginPage() {
             <input id="email" type="email" autoComplete="email" placeholder="you@example.com" className="input" {...register("email")} />
             {errors.email && <p className="err">{errors.email.message}</p>}</div>
           <div><div className="mb-1 flex items-center justify-between"><label className="label mb-0" htmlFor="password">Password</label><Link className="text-xs font-semibold text-primary hover:underline" to="/forgot-password">Forgot password?</Link></div>
-            <input id="password" type="password" autoComplete="current-password" placeholder="Enter your password" className="input" {...register("password")} />
+            <PasswordInput id="password" autoComplete="current-password" placeholder="Enter your password" {...register("password")} />
             {errors.password && <p className="err">{errors.password.message}</p>}</div>
           {serverError && <p role="alert" className="err">{serverError}</p>}
           <button className="btn-primary min-h-11 w-full" disabled={isSubmitting}>{isSubmitting ? "Signing in…" : "Log in to CampusConnect"}</button>

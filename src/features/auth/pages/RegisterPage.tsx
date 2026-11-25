@@ -12,6 +12,7 @@ import { listActiveInstitutions } from "@/features/institutions/api";
 import { InstitutionPicker } from "@/features/institutions/InstitutionPicker";
 import { AuthPageLayout } from "@/features/auth/AuthPageLayout";
 import { GoogleSignInButton } from "@/features/auth/GoogleSignInButton";
+import { PasswordInput } from "@/features/auth/PasswordInput";
 
 const schema = z.object({
   email: z.string().trim().email("Enter a valid email"),
@@ -74,7 +75,7 @@ export function RegisterPage() {
             <div><label className="label" htmlFor="username">Username</label><input id="username" className="input" autoComplete="username" autoCapitalize="none" placeholder="ada_okafor" {...register("username")} />{errors.username && <p className="err">{errors.username.message}</p>}</div>
           </div>
           <div><label className="label" htmlFor="email">Email address</label><input id="email" type="email" className="input" autoComplete="email" placeholder="you@example.com" {...register("email")} />{errors.email && <p className="err">{errors.email.message}</p>}</div>
-          <div><label className="label" htmlFor="password">Create a password</label><input id="password" type="password" className="input" autoComplete="new-password" placeholder="At least 8 characters" {...register("password")} />{errors.password && <p className="err">{errors.password.message}</p>}</div>
+          <div><label className="label" htmlFor="password">Create a password</label><PasswordInput id="password" autoComplete="new-password" placeholder="At least 8 characters" {...register("password")} />{errors.password && <p className="err">{errors.password.message}</p>}</div>
           <div><label className="label" htmlFor="institutionId">Institution (optional)</label>
             <Controller
               control={control}

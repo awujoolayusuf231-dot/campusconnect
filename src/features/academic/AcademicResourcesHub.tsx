@@ -14,7 +14,7 @@ export function LearnHub() {
   ];
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <header className="rounded-[26px] border border-[#f0dadd] bg-gradient-to-br from-[#fff7f6] via-white to-[#fff0ef] p-5 sm:p-8">
+      <header className="rounded-[26px] border border-primary-border bg-gradient-to-br from-primary-soft via-white to-primary-soft p-5 sm:p-8">
         <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Learn</p>
         <h1 className="mt-2 text-2xl font-black tracking-tight text-fg sm:text-3xl">Your academic toolkit</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Notes, past questions, assignments, timetable, flashcards, and quizzes—all in one place.</p>
@@ -22,7 +22,7 @@ export function LearnHub() {
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {resources.map(({ to, title, description, icon: Icon }) => (
           <Link key={to} to={to} className={hubCard}>
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff1f2] text-primary"><Icon size={20} aria-hidden="true" /></span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary"><Icon size={20} aria-hidden="true" /></span>
             <h2 className="mt-4 font-extrabold text-fg group-hover:text-primary">{title}</h2>
             <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
           </Link>
@@ -40,7 +40,7 @@ export function CollaborateHub() {
   ];
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <header className="rounded-[26px] border border-[#e8dfe6] bg-gradient-to-br from-[#f7f3fb] via-white to-[#fff7f7] p-5 sm:p-8">
+      <header className="rounded-[26px] border border-[#e8dfe6] bg-gradient-to-br from-[#f7f3fb] via-white to-primary-soft p-5 sm:p-8">
         <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Collaborate</p>
         <h1 className="mt-2 text-2xl font-black tracking-tight text-fg sm:text-3xl">Build and connect together</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Meet classmates in live spaces, manage projects, and learn through group quizzes.</p>
@@ -48,7 +48,7 @@ export function CollaborateHub() {
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {resources.map(({ to, title, description, icon: Icon }) => (
           <Link key={to} to={to} className={hubCard}>
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff1f2] text-primary"><Icon size={20} aria-hidden="true" /></span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary"><Icon size={20} aria-hidden="true" /></span>
             <h2 className="mt-4 font-extrabold text-fg group-hover:text-primary">{title}</h2>
             <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
           </Link>
@@ -65,7 +65,7 @@ export function DiscoverHub() {
   ];
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <header className="rounded-[26px] border border-[#f0dadd] bg-gradient-to-br from-[#fff7f6] via-white to-[#fff4ef] p-5 sm:p-8">
+      <header className="rounded-[26px] border border-primary-border bg-gradient-to-br from-primary-soft via-white to-[#fff4ef] p-5 sm:p-8">
         <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary">Discover</p>
         <h1 className="mt-2 text-2xl font-black tracking-tight text-fg sm:text-3xl">Find your next opportunity</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Explore useful opportunities and competitions that help you grow.</p>
@@ -73,7 +73,7 @@ export function DiscoverHub() {
       <section className="grid gap-3 sm:grid-cols-2">
         {resources.map(({ to, title, description, icon: Icon }) => (
           <Link key={to} to={to} className={hubCard}>
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#fff1f2] text-primary"><Icon size={20} aria-hidden="true" /></span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary"><Icon size={20} aria-hidden="true" /></span>
             <h2 className="mt-4 font-extrabold text-fg group-hover:text-primary">{title}</h2>
             <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
           </Link>

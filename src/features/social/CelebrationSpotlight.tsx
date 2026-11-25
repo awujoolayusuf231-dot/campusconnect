@@ -61,10 +61,10 @@ export function CelebrationSpotlight() {
         <div className="flex items-center gap-2">
           {pageCount > 1 && (
             <div className="flex items-center gap-1">
-              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full text-muted transition hover:bg-[#fff1f2] hover:text-primary disabled:opacity-40" aria-label="Previous celebrations" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>
+              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full text-muted transition hover:bg-primary-soft hover:text-primary disabled:opacity-40" aria-label="Previous celebrations" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>
                 <ChevronLeft size={16} aria-hidden="true" />
               </button>
-              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full text-muted transition hover:bg-[#fff1f2] hover:text-primary disabled:opacity-40" aria-label="More celebrations" disabled={page >= pageCount - 1} onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))}>
+              <button type="button" className="flex h-7 w-7 items-center justify-center rounded-full text-muted transition hover:bg-primary-soft hover:text-primary disabled:opacity-40" aria-label="More celebrations" disabled={page >= pageCount - 1} onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))}>
                 <ChevronRight size={16} aria-hidden="true" />
               </button>
             </div>
@@ -77,7 +77,7 @@ export function CelebrationSpotlight() {
 
       {cards.isLoading ? (
         <div className="grid grid-cols-5 gap-1 sm:gap-3" role="status" aria-label="Loading celebrations">
-          {Array.from({ length: CELEBRANTS_PER_PAGE }, (_, index) => <span key={index} className="mx-auto h-12 w-12 animate-pulse rounded-full bg-[#f8e9ea]" />)}
+          {Array.from({ length: CELEBRANTS_PER_PAGE }, (_, index) => <span key={index} className="mx-auto h-12 w-12 animate-pulse rounded-full bg-primary-tint" />)}
         </div>
       ) : visibleCards.length > 0 ? (
         <div className="grid grid-cols-5 gap-1 sm:gap-3" aria-live="polite">

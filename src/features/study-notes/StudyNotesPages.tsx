@@ -40,7 +40,7 @@ function PageTitle({ eyebrow, title, description }: { eyebrow: string; title: st
 function ErrorState({ error, retry }: { error: unknown; retry?: () => void }) {
   const message = error instanceof Error ? error.message : "The request could not be completed.";
   return (
-    <section role="alert" className="rounded-2xl border border-red-200 bg-white p-5">
+    <section role="alert" className="rounded-2xl border border-danger-border bg-white p-5">
       <div className="flex items-start gap-3">
         <CircleAlert size={18} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />
         <div><h2 className="font-extrabold text-fg">Could not load Study Notes</h2><p className="mt-1 break-words text-sm text-muted">{message}</p>{retry && <button type="button" className="btn mt-3 min-h-9" onClick={retry}>Try again</button>}</div>
@@ -51,8 +51,8 @@ function ErrorState({ error, retry }: { error: unknown; retry?: () => void }) {
 
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
-    <section className="rounded-2xl border border-dashed border-[#e6cdcf] bg-white px-5 py-9 text-center">
-      <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1ef] text-primary"><BookOpen size={20} aria-hidden="true" /></span>
+    <section className="rounded-2xl border border-dashed border-primary-border bg-white px-5 py-9 text-center">
+      <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-soft text-primary"><BookOpen size={20} aria-hidden="true" /></span>
       <h3 className="mt-3 font-extrabold text-fg">{title}</h3>
       <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-muted">{description}</p>
     </section>
@@ -60,7 +60,7 @@ function EmptyState({ title, description }: { title: string; description: string
 }
 
 function NoteStatus({ status }: { status: StudyNote["status"] }) {
-  const styles = status === "approved" ? "bg-emerald-100 text-emerald-800" : status === "rejected" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-900";
+  const styles = status === "approved" ? "bg-success-soft text-success" : status === "rejected" ? "bg-danger-soft text-danger" : "bg-warning-soft text-warning";
   return <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${styles}`}>{status}</span>;
 }
 
@@ -100,7 +100,7 @@ function StudyNoteCard({ note }: { note: StudyNote }) {
   return (
     <li className="flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5">
       <div className="flex items-start justify-between gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff1ef] text-primary"><FileText size={19} aria-hidden="true" /></span>
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary"><FileText size={19} aria-hidden="true" /></span>
         <span className="rounded-full bg-bg px-2.5 py-1 text-[10px] font-bold text-muted">{note.level} level · {note.semester} semester</span>
       </div>
       <Link to={`/app/study-notes/notes/${note.id}`} className="mt-4 font-extrabold leading-6 text-fg hover:text-primary">{note.title}</Link>
@@ -118,8 +118,8 @@ function StudyNoteCard({ note }: { note: StudyNote }) {
 function CourseCard({ course }: { course: Course }) {
   return (
     <li>
-      <Link to={`/app/study-notes/courses/${course.id}`} className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] hover:border-[#edc9cd] hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
-        <span className="w-fit rounded-lg bg-[#fff1ef] px-2.5 py-1 text-xs font-black text-primary">{course.code}</span>
+      <Link to={`/app/study-notes/courses/${course.id}`} className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] hover:border-primary-border hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
+        <span className="w-fit rounded-lg bg-primary-soft px-2.5 py-1 text-xs font-black text-primary">{course.code}</span>
         <h3 className="mt-4 font-extrabold leading-6 text-fg group-hover:text-primary">{course.title}</h3>
         <p className="mt-1 text-sm text-muted">{course.department?.name ?? "Department unavailable"} · {course.department?.institution?.name ?? "Institution unavailable"}</p>
         <span className="mt-4 inline-flex min-h-9 items-center justify-between gap-2 border-t border-line pt-3 text-xs font-extrabold text-primary">View course notes <ArrowRight size={13} aria-hidden="true" /></span>
@@ -139,19 +139,19 @@ export function StudyNotesLayout() {
   ];
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <header className="relative overflow-hidden rounded-[26px] border border-[#f0dadd] bg-gradient-to-br from-[#fff7f6] via-white to-[#fff0ef] p-5 shadow-[0_12px_36px_rgba(35,24,20,0.045)] sm:p-8">
+      <header className="relative overflow-hidden rounded-[26px] border border-primary-border bg-gradient-to-br from-primary-soft via-white to-primary-soft p-5 shadow-[0_12px_36px_rgba(35,24,20,0.045)] sm:p-8">
         <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 h-56 w-56 rounded-full border border-primary/10 sm:h-72 sm:w-72" />
         <div className="relative flex items-start gap-4">
           <span className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-sm sm:flex"><BookOpen size={23} aria-hidden="true" /></span>
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-[#efd9db] bg-white/80 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary shadow-sm">Academic resources</p>
+            <p className="inline-flex items-center gap-2 rounded-full border border-primary-border bg-white/80 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary shadow-sm">Academic resources</p>
             <h1 className="mt-3 text-2xl font-black tracking-[-0.04em] text-fg sm:text-3xl">Study Notes</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted sm:text-base">Browse, save and share approved course materials from your campus community.</p>
           </div>
         </div>
       </header>
       <nav aria-label="Study Notes" className="flex gap-1 overflow-x-auto rounded-2xl border border-line bg-white p-2 shadow-[0_8px_24px_rgba(35,24,20,0.035)]">
-        {sections.map((section) => <NavLink key={section.to} to={section.to} end={section.end} className={({ isActive }) => `min-h-10 shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition sm:px-4 sm:text-sm ${isActive ? "bg-primary text-primary-fg shadow-sm" : "text-muted hover:bg-[#fff4f2] hover:text-primary"}`}>{section.label}</NavLink>)}
+        {sections.map((section) => <NavLink key={section.to} to={section.to} end={section.end} className={({ isActive }) => `min-h-10 shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition sm:px-4 sm:text-sm ${isActive ? "bg-primary text-primary-fg shadow-sm" : "text-muted hover:bg-primary-soft hover:text-primary"}`}>{section.label}</NavLink>)}
       </nav>
       <Outlet />
     </div>
@@ -202,9 +202,9 @@ export function StudyNotesHome() {
         {courses.isLoading ? <LoadingState label="Loading the course catalog" variant="panel" /> : courses.isError ? <ErrorState error={courses.error} retry={() => void courses.refetch()} /> : courses.data?.length ? <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{courses.data.slice(0, 6).map((course) => <CourseCard key={course.id} course={course} />)}</ul> : <EmptyState title="No courses in the catalog yet" description="Courses will appear here after they have been added to the CampusConnect academic catalog." />}
       </section>
       <section className="grid gap-3 sm:grid-cols-3">
-        <Link to="/app/study-notes/institutions" className="rounded-2xl border border-line bg-white p-4 hover:border-[#edc9cd]"><Building2 size={19} className="text-primary" aria-hidden="true" /><h3 className="mt-3 font-extrabold">Browse institutions</h3><p className="mt-1 text-xs text-muted">Explore active institutions in the academic catalog.</p></Link>
-        <Link to="/app/study-notes/upload" className="rounded-2xl border border-line bg-white p-4 hover:border-[#edc9cd]"><Upload size={19} className="text-primary" aria-hidden="true" /><h3 className="mt-3 font-extrabold">Share your notes</h3><p className="mt-1 text-xs text-muted">Submit course notes for administrator review.</p></Link>
-        <Link to="/app/study-notes/saved" className="rounded-2xl border border-line bg-white p-4 hover:border-[#edc9cd]"><Bookmark size={19} className="text-primary" aria-hidden="true" /><h3 className="mt-3 font-extrabold">Saved notes</h3><p className="mt-1 text-xs text-muted">Return to study materials you bookmarked.</p></Link>
+        <Link to="/app/study-notes/institutions" className="rounded-2xl border border-line bg-white p-4 hover:border-primary-border"><Building2 size={19} className="text-primary" aria-hidden="true" /><h3 className="mt-3 font-extrabold">Browse institutions</h3><p className="mt-1 text-xs text-muted">Explore active institutions in the academic catalog.</p></Link>
+        <Link to="/app/study-notes/upload" className="rounded-2xl border border-line bg-white p-4 hover:border-primary-border"><Upload size={19} className="text-primary" aria-hidden="true" /><h3 className="mt-3 font-extrabold">Share your notes</h3><p className="mt-1 text-xs text-muted">Submit course notes for administrator review.</p></Link>
+        <Link to="/app/study-notes/saved" className="rounded-2xl border border-line bg-white p-4 hover:border-primary-border"><Bookmark size={19} className="text-primary" aria-hidden="true" /><h3 className="mt-3 font-extrabold">Saved notes</h3><p className="mt-1 text-xs text-muted">Return to study materials you bookmarked.</p></Link>
       </section>
     </div>
   );
@@ -236,7 +236,7 @@ export function StudyNotesInstitutions() {
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3"><p role="status" className="text-xs text-muted">{result.total} active institutions · page {page} of {totalPages}</p><button type="submit" className="btn-primary min-h-9 gap-2"><Search size={14} aria-hidden="true" />Search</button></div>
       </form>
       {result.items.length ? <>
-        <ul className="grid gap-3 sm:grid-cols-2">{result.items.map((institution) => <li key={institution.id} className="flex flex-col rounded-2xl border border-line bg-white p-4 sm:p-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fff1ef] text-primary"><Building2 size={19} aria-hidden="true" /></span><div><h3 className="font-extrabold text-fg">{institution.name}</h3><p className="mt-1 text-xs text-muted">{[institution.short_name, institution.state].filter(Boolean).join(" · ") || "Institution"}</p></div></div><Link to={`/app/study-notes/institutions/${institution.id}`} className="btn mt-4 min-h-9 self-start gap-2 text-primary">Explore departments <ArrowRight size={14} aria-hidden="true" /></Link></li>)}</ul>
+        <ul className="grid gap-3 sm:grid-cols-2">{result.items.map((institution) => <li key={institution.id} className="flex flex-col rounded-2xl border border-line bg-white p-4 sm:p-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary"><Building2 size={19} aria-hidden="true" /></span><div><h3 className="font-extrabold text-fg">{institution.name}</h3><p className="mt-1 text-xs text-muted">{[institution.short_name, institution.state].filter(Boolean).join(" · ") || "Institution"}</p></div></div><Link to={`/app/study-notes/institutions/${institution.id}`} className="btn mt-4 min-h-9 self-start gap-2 text-primary">Explore departments <ArrowRight size={14} aria-hidden="true" /></Link></li>)}</ul>
         <div className="flex items-center justify-between gap-3"><button type="button" className="btn min-h-10" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>Previous</button><span className="text-xs text-muted">Page {page} of {totalPages}</span><button type="button" className="btn min-h-10" disabled={page >= totalPages} onClick={() => setPage((current) => current + 1)}>Next</button></div>
       </> : <EmptyState title="No institutions found" description={submittedSearch ? "Try a different institution name." : "Active institutions will appear here when available."} />}
     </div>
@@ -352,7 +352,7 @@ export function StudyNoteDetails() {
           </div>
         </div>
         <section aria-label="Study-note document preview" className="min-h-[18rem] overflow-hidden rounded-2xl border border-line bg-white">
-          {documentUrl ? <iframe title={`${note.title} PDF preview`} src={documentUrl} className="h-[32rem] w-full" /> : <div className="flex min-h-[18rem] flex-col items-center justify-center p-6 text-center"><span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff1ef] text-primary"><FileText size={26} aria-hidden="true" /></span><h3 className="mt-4 font-extrabold text-fg">{note.status === "approved" ? "Document preview" : "Pending review"}</h3><p className="mt-2 max-w-sm text-sm leading-6 text-muted">{note.status === "approved" ? "Generate a short-lived secure link to preview this PDF." : "Only you and authorized reviewers can access this submission until it is approved."}</p></div>}
+          {documentUrl ? <iframe title={`${note.title} PDF preview`} src={documentUrl} className="h-[32rem] w-full" /> : <div className="flex min-h-[18rem] flex-col items-center justify-center p-6 text-center"><span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary"><FileText size={26} aria-hidden="true" /></span><h3 className="mt-4 font-extrabold text-fg">{note.status === "approved" ? "Document preview" : "Pending review"}</h3><p className="mt-2 max-w-sm text-sm leading-6 text-muted">{note.status === "approved" ? "Generate a short-lived secure link to preview this PDF." : "Only you and authorized reviewers can access this submission until it is approved."}</p></div>}
         </section>
       </section>
     </div>
@@ -450,7 +450,7 @@ export function StudyNotesUpload() {
             <label className="block"><span className="label">Department</span><select className="input" required value={departmentId} disabled={!institutionId || departments.isLoading} onChange={(event) => { setDepartmentId(event.target.value); setCourseId(""); setShowNewCourse(false); }}><option value="">Select a department</option>{(departments.data ?? []).map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
             {institutionId && <button type="button" className="text-xs font-bold text-primary underline" onClick={() => { setShowNewDepartment((show) => !show); setShowNewCourse(false); }}>Department not listed? Add it</button>}
             {showNewDepartment && (
-              <div className="space-y-2 rounded-xl border border-[#efd9db] bg-[#fff9f8] p-3">
+              <div className="space-y-2 rounded-xl border border-primary-border bg-primary-soft p-3">
                 <p className="text-xs leading-5 text-muted">This department will be added to the shared catalog for the selected institution.</p>
                 <label className="block"><span className="label">Department name</span><input className="input" required minLength={2} maxLength={120} value={newDepartmentName} onChange={(event) => setNewDepartmentName(event.target.value)} /></label>
                 {addDepartment.isError && <p role="alert" className="break-words text-xs text-danger">{addDepartment.error.message}</p>}
@@ -462,7 +462,7 @@ export function StudyNotesUpload() {
             <label className="block"><span className="label">Course</span><select className="input" required value={courseId} disabled={!departmentId || courses.isLoading} onChange={(event) => setCourseId(event.target.value)}><option value="">Select a course</option>{(courses.data ?? []).map((course) => <option key={course.id} value={course.id}>{course.code} · {course.title}</option>)}</select></label>
             {departmentId && <button type="button" className="text-xs font-bold text-primary underline" onClick={() => setShowNewCourse((show) => !show)}>Course not listed? Add it</button>}
             {showNewCourse && (
-              <div className="space-y-2 rounded-xl border border-[#efd9db] bg-[#fff9f8] p-3">
+              <div className="space-y-2 rounded-xl border border-primary-border bg-primary-soft p-3">
                 <p className="text-xs leading-5 text-muted">Use the official course code and title. The entry becomes available to other users.</p>
                 <label className="block"><span className="label">Course code</span><input className="input" required maxLength={30} value={newCourseCode} onChange={(event) => setNewCourseCode(event.target.value)} /></label>
                 <label className="block"><span className="label">Course title</span><input className="input" required minLength={2} maxLength={150} value={newCourseTitle} onChange={(event) => setNewCourseTitle(event.target.value)} /></label>
@@ -474,13 +474,13 @@ export function StudyNotesUpload() {
           <label><span className="label">Level</span><select className="input" required value={level} onChange={(event) => setLevel(event.target.value as StudyNoteLevel | "")}><option value="">Select a level</option>{LEVELS.map((value) => <option key={value} value={value}>{value} level</option>)}</select></label>
           <label><span className="label">Semester</span><select className="input" required value={semester} onChange={(event) => setSemester(event.target.value as StudyNoteSemester | "")}><option value="">Select a semester</option>{SEMESTERS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
           <label className="sm:col-span-2"><span className="label">Description</span><textarea className="input min-h-24" required minLength={10} maxLength={2000} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe what students will learn from these notes" /></label>
-          <label className="sm:col-span-2"><span className="label">Study notes PDF</span><input aria-label="Study notes PDF" key={fileInputKey} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-[#fff1ef] file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" type="file" accept="application/pdf,.pdf" required onChange={(event) => setFile(event.currentTarget.files?.[0] ?? null)} /><span className="mt-1 block text-xs text-muted">{file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : "PDF documents only, maximum 20 MB."}</span></label>
+          <label className="sm:col-span-2"><span className="label">Study notes PDF</span><input aria-label="Study notes PDF" key={fileInputKey} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-primary-soft file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" type="file" accept="application/pdf,.pdf" required onChange={(event) => setFile(event.currentTarget.files?.[0] ?? null)} /><span className="mt-1 block text-xs text-muted">{file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : "PDF documents only, maximum 20 MB."}</span></label>
         </fieldset>
-        {catalogNotice && <p role="status" className="mt-4 text-sm font-semibold text-[#28633a]">{catalogNotice}</p>}
+        {catalogNotice && <p role="status" className="mt-4 text-sm font-semibold text-success">{catalogNotice}</p>}
         <p className="mt-3 text-xs leading-5 text-muted">New departments and courses are added to the shared academic catalog. Add only accurate, official information.</p>
         {formError && <p role="alert" className="mt-4 text-sm text-danger">{formError}</p>}
         {upload.isError && <p role="alert" className="mt-4 break-words text-sm text-danger">{upload.error.message}</p>}
-        {submitted && <p role="status" className="mt-4 rounded-xl bg-[#eef8f0] p-3 text-sm font-semibold text-[#28633a]">Your notes were submitted and are pending review. Track the status in My uploads.</p>}
+        {submitted && <p role="status" className="mt-4 rounded-xl bg-[#eef8f0] p-3 text-sm font-semibold text-success">Your notes were submitted and are pending review. Track the status in My uploads.</p>}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4"><p className="text-xs text-muted">Only approved notes appear in discovery.</p><button type="submit" className="btn-primary min-h-10 gap-2" disabled={upload.isPending}><Upload size={15} aria-hidden="true" />{upload.isPending ? "Submitting…" : "Submit for review"}</button></div>
       </form>
     </div>
@@ -497,7 +497,7 @@ export function MyStudyNotes() {
   return (
     <div className="space-y-5">
       <PageTitle eyebrow="Your activity" title="My uploaded notes" description="See each submission's review status and any feedback from the review team." />
-      {query.isLoading ? <LoadingState label="Loading your study notes" variant="panel" /> : query.isError ? <ErrorState error={query.error} retry={() => void query.refetch()} /> : query.data?.length ? <ul className="grid gap-3 sm:grid-cols-2">{query.data.map((note) => <li key={note.id} className="rounded-2xl border border-line bg-white p-4 sm:p-5"><div className="flex items-start justify-between gap-2"><Link to={`/app/study-notes/notes/${note.id}`} className="font-extrabold text-fg hover:text-primary">{note.title}</Link><NoteStatus status={note.status} /></div><p className="mt-2 text-sm text-muted">{note.course?.code} · {note.course?.title}</p><p className="mt-1 text-xs text-muted">Submitted {new Date(note.created_at).toLocaleDateString()} · {note.level} level · {note.semester} semester</p>{note.rejection_reason && <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-900"><strong>Reviewer feedback:</strong> {note.rejection_reason}</p>}</li>)}</ul> : <EmptyState title="No uploads yet" description="Submit your first set of notes to see its review status here." />}
+      {query.isLoading ? <LoadingState label="Loading your study notes" variant="panel" /> : query.isError ? <ErrorState error={query.error} retry={() => void query.refetch()} /> : query.data?.length ? <ul className="grid gap-3 sm:grid-cols-2">{query.data.map((note) => <li key={note.id} className="rounded-2xl border border-line bg-white p-4 sm:p-5"><div className="flex items-start justify-between gap-2"><Link to={`/app/study-notes/notes/${note.id}`} className="font-extrabold text-fg hover:text-primary">{note.title}</Link><NoteStatus status={note.status} /></div><p className="mt-2 text-sm text-muted">{note.course?.code} · {note.course?.title}</p><p className="mt-1 text-xs text-muted">Submitted {new Date(note.created_at).toLocaleDateString()} · {note.level} level · {note.semester} semester</p>{note.rejection_reason && <p className="mt-3 rounded-xl bg-danger-soft p-3 text-sm text-danger"><strong>Reviewer feedback:</strong> {note.rejection_reason}</p>}</li>)}</ul> : <EmptyState title="No uploads yet" description="Submit your first set of notes to see its review status here." />}
     </div>
   );
 }

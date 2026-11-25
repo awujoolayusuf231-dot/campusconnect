@@ -119,10 +119,10 @@ export function InstitutionsPage() {
         </details>
         {list.isError && <p role="alert" className="err">Could not load the current institution list. Refresh and try again before importing.</p>}
         {importError && <p role="alert" className="err">{importError}</p>}
-        {importSuccess && <p role="status" className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm font-medium text-green-900">{importSuccess}</p>}
+        {importSuccess && <p role="status" className="rounded-lg border border-success-border bg-success-soft p-3 text-sm font-medium text-success">{importSuccess}</p>}
         {bulkImport.isError && <p role="alert" className="err">{friendlyImport((bulkImport.error as Error).message)}</p>}
         {importPreview && (
-          <div className="space-y-3 rounded-xl border border-line bg-[#fffafa] p-3 sm:p-4">
+          <div className="space-y-3 rounded-xl border border-line bg-bg p-3 sm:p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="min-w-0 break-all text-sm font-semibold">{importFileName}</p>
               <p className="text-xs text-muted">{importPreview.rows.length} ready · {importPreview.duplicates.length} duplicates skipped · {importPreview.issues.length} invalid rows</p>

@@ -10,6 +10,7 @@ import { AppErrorBoundary } from "@/app/AppErrorBoundary";
 import { installGlobalHandlers, reportError } from "@/lib/observability";
 import { PWAInstallButton } from "@/app/PWAInstallButton";
 import { getPushServiceWorkerUrl } from "@/features/push/pushConfig";
+import "@fontsource-variable/inter/wght.css";
 import "./index.css";
 
 installGlobalHandlers();

@@ -130,7 +130,7 @@ export function TimetablePage() {
         <Link className="btn-primary inline-flex items-center gap-2" to="/app/timetable/new"><Plus size={16} />Add event</Link>
       </div>
     </header>
-    {message && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{message}</p>}
+    {message && <p role="status" className="rounded-xl border border-success-border bg-success-soft px-3 py-2 text-sm text-success">{message}</p>}
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_minmax(260px,0.8fr)]">
       <section className="card min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -139,14 +139,14 @@ export function TimetablePage() {
             <button type="button" className="btn min-h-9 rounded-lg px-2" onClick={() => shift(1)} aria-label="Next period"><ArrowRight size={15} /></button>
             <h2 className="ml-1 text-sm font-extrabold text-fg">{view === "day" ? displayDate(localDateString(anchorDate), { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : `${displayDate(week[0] ?? today, { month: "short", day: "numeric" })} – ${displayDate(week[6] ?? today, { month: "short", day: "numeric", year: "numeric" })}`}</h2>
           </div>
-          <div className="flex items-center gap-2"><button type="button" className={`rounded-lg px-3 py-2 text-xs font-bold ${view === "week" ? "bg-[#f8e9ea] text-primary" : "text-muted hover:bg-bg"}`} onClick={() => setView("week")}>Week</button>
-            <button type="button" className={`rounded-lg px-3 py-2 text-xs font-bold ${view === "day" ? "bg-[#f8e9ea] text-primary" : "text-muted hover:bg-bg"}`} onClick={() => setView("day")}>Day</button>
+          <div className="flex items-center gap-2"><button type="button" className={`rounded-lg px-3 py-2 text-xs font-bold ${view === "week" ? "bg-primary-tint text-primary" : "text-muted hover:bg-bg"}`} onClick={() => setView("week")}>Week</button>
+            <button type="button" className={`rounded-lg px-3 py-2 text-xs font-bold ${view === "day" ? "bg-primary-tint text-primary" : "text-muted hover:bg-bg"}`} onClick={() => setView("day")}>Day</button>
           </div>
         </div>
         <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-7">
           {visibleDates.map((date) => {
             const dayEvents = eventsForDate(filtered, date);
-            return <section key={date} className={`min-w-0 rounded-xl border p-2.5 ${date === today ? "border-primary/40 bg-[#fff9f8]" : "border-line bg-white"}`}>
+            return <section key={date} className={`min-w-0 rounded-xl border p-2.5 ${date === today ? "border-primary/40 bg-primary-soft" : "border-line bg-white"}`}>
               <button type="button" className="mb-2 flex w-full items-center justify-between text-left" onClick={() => { const [year = 0, month = 1, day = 1] = date.split("-").map(Number); setAnchorDate(new Date(year, month - 1, day)); setView("day"); }}>
                 <span className="text-xs font-extrabold text-fg">{displayDate(date)}</span>{date === today && <span className="rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold text-white">Today</span>}
               </button>
@@ -165,7 +165,7 @@ export function TimetablePage() {
           </select>
           <Link className="btn min-h-10 rounded-lg px-3 text-xs" to="/app/timetable/new">Add event</Link>
         </div>
-        {!events.data?.length && <section className="mt-4 rounded-xl border border-dashed border-line bg-[#fffdfc] px-4 py-8 text-center">
+        {!events.data?.length && <section className="mt-4 rounded-xl border border-dashed border-line bg-bg px-4 py-8 text-center">
           <CalendarDays className="mx-auto text-primary" size={25} /><h3 className="mt-3 font-extrabold text-fg">Your timetable is ready</h3>
           <p className="mt-1 text-sm text-muted">Add your first class, study block, or important date. It will only be visible to you.</p>
           <Link className="btn-primary mt-4 inline-flex" to="/app/timetable/new">Add first event</Link>
@@ -180,7 +180,7 @@ export function TimetablePage() {
             {event.timezone !== Intl.DateTimeFormat().resolvedOptions().timeZone && <p className="mt-0.5 truncate text-[10px] text-muted">{event.timezone}</p>}
           </li>)}</ul> : <p className="mt-3 text-sm text-muted">Nothing scheduled in the next two weeks.</p>}
         </section>
-        <section className="rounded-2xl border border-[#eadbd8] bg-[#fffaf8] p-4">
+        <section className="rounded-2xl border border-[#eadbd8] bg-bg p-4">
           <h2 className="text-sm font-extrabold text-fg">Reminders</h2>
           <p className="mt-1 text-xs leading-5 text-muted">This planner currently saves and displays events; scheduled push reminders are not enabled because there is no trusted backend scheduler for them yet.</p>
         </section>
@@ -212,7 +212,7 @@ function TimetableEventCard({ event, onDelete, onDuplicate, busy }: {
     <div className="mt-1 flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
       <button type="button" className="rounded p-1 text-muted hover:bg-bg hover:text-primary" disabled={busy} onClick={onDuplicate} aria-label={`Duplicate ${event.title}`}><Copy size={11} /></button>
       <Link to={`/app/timetable/${event.id}/edit`} className="rounded px-1.5 py-1 text-[9px] font-bold text-muted hover:bg-bg hover:text-primary">Edit</Link>
-      <button type="button" className="rounded p-1 text-muted hover:bg-red-50 hover:text-red-700" disabled={busy} onClick={onDelete} aria-label={`Delete ${event.title}`}><Trash2 size={11} /></button>
+      <button type="button" className="rounded p-1 text-muted hover:bg-danger-soft hover:text-danger" disabled={busy} onClick={onDelete} aria-label={`Delete ${event.title}`}><Trash2 size={11} /></button>
     </div>
   </article>;
 }

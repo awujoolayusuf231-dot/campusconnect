@@ -59,7 +59,7 @@ export function FeedPage() {
             <span className="hidden text-xs font-medium text-muted sm:block">See what’s happening around you</span>
             <Link
               to="/app/discover"
-              className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-line bg-white px-2.5 text-xs font-bold text-fg transition hover:border-primary/30 hover:bg-[#fff7f6] hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-3"
+              className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-line bg-white px-2.5 text-xs font-bold text-fg transition hover:border-primary/30 hover:bg-primary-soft hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-3"
             >
               <Search size={15} aria-hidden="true" />
               <span>Find students</span>
@@ -78,7 +78,7 @@ export function FeedPage() {
                 role="tab"
                 aria-selected={scope === v}
                 aria-controls="feed-panel"
-                className={`relative flex min-h-10 shrink-0 items-center gap-1.5 border-b-2 px-2.5 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:min-h-11 sm:gap-2 sm:px-3 sm:text-sm ${scope === v ? "border-primary font-bold text-primary" : "border-transparent font-semibold text-muted hover:bg-[#fff8f7] hover:text-fg"}`}
+                className={`relative flex min-h-10 shrink-0 items-center gap-1.5 border-b-2 px-2.5 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:min-h-11 sm:gap-2 sm:px-3 sm:text-sm ${scope === v ? "border-primary font-bold text-primary" : "border-transparent font-semibold text-muted hover:bg-primary-soft hover:text-fg"}`}
                 onClick={() => setScope(v)}
               >
                 <Icon size={14} aria-hidden="true" />{l}
@@ -96,13 +96,13 @@ export function FeedPage() {
         <button className="font-bold underline underline-offset-2" onClick={() => void feed.refetch()}>Retry</button>
       </p>}
       {!feed.isLoading && posts.length === 0 && !feed.isError && (
-        <div className="rounded-2xl border border-dashed border-[#e7d4d5] bg-white px-5 py-10 text-center shadow-[0_8px_24px_rgba(35,24,20,0.025)]">
-          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1f2] text-primary"><UsersRound size={22} aria-hidden="true" /></span>
+        <div className="rounded-2xl border border-dashed border-primary-border bg-white px-5 py-10 text-center shadow-[0_8px_24px_rgba(35,24,20,0.025)]">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary"><UsersRound size={22} aria-hidden="true" /></span>
           <h2 className="mt-4 font-extrabold text-fg">{scope === "for_you" ? "Your For you feed is warming up" : scope === "following" ? "Your circle is getting started" : scope === "institution" ? "Your campus feed is quiet" : "Your campus story starts here"}</h2>
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">
             {scope === "for_you" ? "Follow students, explore trending topics, or share your first campus update." : scope === "following" ? "Follow students in Discover to see their posts here." : scope === "institution" ? "No posts from your institution yet. Set your institution in your profile." : "No posts yet. Be the first to share something with your community."}
           </p>
-          {scope === "for_you" && <Link to="/app/discover" className="mt-3 inline-flex min-h-9 items-center rounded-lg px-3 text-sm font-bold text-primary hover:bg-[#fff1f2]">Explore students and topics</Link>}
+          {scope === "for_you" && <Link to="/app/discover" className="mt-3 inline-flex min-h-9 items-center rounded-lg px-3 text-sm font-bold text-primary hover:bg-primary-soft">Explore students and topics</Link>}
         </div>)}
       {items.map((item) => item.item_type === "post"
         ? <PostCard key={`post-${item.item_id}`} post={item.item} images={media.data?.[item.item.id]} metrics={metrics.data?.[item.item.id]} me={me} trackImpression />

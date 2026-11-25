@@ -31,8 +31,8 @@ export function CompetitionsPage() {
   return <div className="space-y-5">
     <header className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-primary">Across campuses</p><h1 className="mt-1 text-3xl font-black">Competitions</h1><p className="mt-1 text-sm text-muted">Find your next challenge, build a team and showcase your work.</p></div>
       <button className="btn-primary inline-flex items-center gap-2" onClick={() => setCreate(true)}><Plus size={16} /> Propose competition</button></header>
-    <section className="rounded-3xl bg-gradient-to-br from-[#162f55] via-[#245d76] to-[#51a0a0] p-6 text-white sm:p-8">
-      <p className="text-xs font-bold uppercase tracking-[.2em] text-cyan-100">Compete. Create. Connect.</p>
+    <section className="rounded-3xl bg-gradient-to-br from-primary-deep via-primary to-primary-hover p-6 text-white sm:p-8">
+      <p className="text-xs font-bold uppercase tracking-[.2em] text-white/85">Compete. Create. Connect.</p>
       <h2 className="mt-2 max-w-2xl text-2xl font-black sm:text-3xl">Big ideas deserve a bigger arena.</h2>
       <p className="mt-2 max-w-xl text-sm leading-6 text-white/80">Discover verified competitions and opportunities across Nigerian institutions.</p>
     </section>
@@ -192,7 +192,7 @@ export function CompetitionDetailsPage() {
     {c.verification_status === "pending" && <div className="rounded-xl bg-[#fff7e6] p-3 text-sm text-[#73551e]">Pending verification. Only you can see this proposal until it is approved.</div>}
     <section className={`${card} space-y-3`}>
       <div className="flex flex-wrap items-start justify-between gap-3"><div><span className="text-xs font-bold uppercase tracking-wider text-primary">{human(c.category)} · {human(c.status)}</span><h1 className="mt-1 text-2xl font-black">{c.name}</h1></div>
-        {c.verification_status === "approved" && <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Verified listing</span>}
+        {c.verification_status === "approved" && <span className="rounded-full bg-success-soft px-3 py-1 text-xs font-bold text-success">Verified listing</span>}
       </div>
       <p className="whitespace-pre-wrap text-sm leading-6 text-muted">{c.description}</p>
       <div className="grid gap-2 text-sm sm:grid-cols-2"><Info label="Registration closes" value={new Date(c.registration_closes_at).toLocaleString()} /><Info label="Competition dates" value={`${new Date(c.starts_at).toLocaleDateString()} – ${new Date(c.ends_at).toLocaleDateString()}`} /><Info label="Format" value={c.participation_type === "individual" ? "Individual" : `Team (up to ${c.max_team_size})`} /><Info label="Prizes" value={c.prizes || "Details to be announced"} /></div>

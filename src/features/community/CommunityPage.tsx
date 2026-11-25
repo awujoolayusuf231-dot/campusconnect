@@ -94,11 +94,11 @@ export function CommunityPage() {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="break-words text-2xl font-black tracking-[-0.035em] text-fg sm:text-3xl">{c.name}</h1>
-                {isOwner && <span className="inline-flex items-center gap-1 rounded-full bg-[#fff1ef] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary"><ShieldCheck size={12} />Owner</span>}
+                {isOwner && <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary"><ShieldCheck size={12} />Owner</span>}
                 {role.data === "moderator" && <span className="inline-flex items-center gap-1 rounded-full bg-[#f7f1ee] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#72514c]"><ShieldCheck size={12} />Moderator</span>}
               </div>
               <p className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-muted">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff4f2] px-3 py-1.5 text-[#8b3c43]"><Users size={14} aria-hidden="true" />{c.member_count} member{c.member_count === 1 ? "" : "s"}</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1.5 text-primary-deep"><Users size={14} aria-hidden="true" />{c.member_count} member{c.member_count === 1 ? "" : "s"}</span>
                 <span className="rounded-full bg-bg px-3 py-1.5">{COMMUNITY_CATEGORIES.find(([v]) => v === c.category)?.[1] ?? "Community"}</span>
                 {c.status !== "active" && <><span aria-hidden="true">·</span><span className="font-semibold capitalize">{c.status}</span></>}
               </p>
@@ -113,9 +113,9 @@ export function CommunityPage() {
               </> : null}
             </div>
           </div>
-          {role.isError && <p role="alert" className="mt-4 flex items-center gap-2 rounded-xl bg-red-50 p-3 text-sm text-danger"><CircleAlert size={16} />Could not check your community access. Refresh before taking an action.</p>}
+          {role.isError && <p role="alert" className="mt-4 flex items-center gap-2 rounded-xl bg-danger-soft p-3 text-sm text-danger"><CircleAlert size={16} />Could not check your community access. Refresh before taking an action.</p>}
           {c.status === "archived" && <p className="mt-4 flex items-center gap-2 rounded-xl bg-[#fbf7f4] p-3 text-sm text-muted"><LockKeyhole size={16} />This community is archived and read-only.</p>}
-          {c.status === "disabled" && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-danger">This community has been disabled by platform moderators.</p>}
+          {c.status === "disabled" && <p role="alert" className="mt-4 rounded-xl bg-danger-soft p-3 text-sm text-danger">This community has been disabled by platform moderators.</p>}
           {err && <p role="alert" className="err mt-3">{socialErrorMessage(err.message)}</p>}
           {cover.isError && <p role="alert" className="mt-3 text-sm text-danger">{cover.error instanceof Error ? cover.error.message : "Could not load the community cover image."}</p>}
           {canEditSettings && c.status !== "disabled" && <ManageCommunity
@@ -128,7 +128,7 @@ export function CommunityPage() {
         </div>
       </section>
       <div role="tablist" aria-label="Community" className="flex gap-2 overflow-x-auto rounded-2xl border border-line bg-white p-2">
-        {(["posts", "about", "members", ...(isMod ? ["moderation"] : [])] as Tab[]).map((t) => <button key={t} id={`community-tab-${t}`} role="tab" aria-controls={`community-panel-${t}`} aria-selected={tab === t} tabIndex={tab === t ? 0 : -1} className={`min-h-10 shrink-0 rounded-xl px-4 text-sm font-bold transition ${tab === t ? "bg-primary text-primary-fg shadow-sm" : "text-muted hover:bg-[#fff4f2] hover:text-primary"}`} onClick={() => setTab(t)}>{t === "moderation" ? "Moderation" : t[0]!.toUpperCase() + t.slice(1)}</button>)}
+        {(["posts", "about", "members", ...(isMod ? ["moderation"] : [])] as Tab[]).map((t) => <button key={t} id={`community-tab-${t}`} role="tab" aria-controls={`community-panel-${t}`} aria-selected={tab === t} tabIndex={tab === t ? 0 : -1} className={`min-h-10 shrink-0 rounded-xl px-4 text-sm font-bold transition ${tab === t ? "bg-primary text-primary-fg shadow-sm" : "text-muted hover:bg-primary-soft hover:text-primary"}`} onClick={() => setTab(t)}>{t === "moderation" ? "Moderation" : t[0]!.toUpperCase() + t.slice(1)}</button>)}
       </div>
       {tab === "posts" && <div id="community-panel-posts" role="tabpanel" aria-labelledby="community-tab-posts" tabIndex={0}><CommunityPosts community={c} isMember={isMember} membershipKnown={membershipKnown} isMod={isMod} me={me} /></div>}
       {tab === "about" && <div id="community-panel-about" role="tabpanel" aria-labelledby="community-tab-about" tabIndex={0}><CommunityAbout community={c} /></div>}
@@ -262,11 +262,11 @@ function ManageCommunity({
   });
   const valid = name.trim().length >= 3 && name.trim().length <= 60 && description.length <= 500;
   if (!open) return <div className="mt-5">
-    <button type="button" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#f0dadd] px-3 text-sm font-bold text-primary transition hover:bg-[#fff7f6]" onClick={() => { setSuccess(""); setOpen(true); }}><Pencil size={15} />Manage Community<ChevronRight size={15} /></button>
+    <button type="button" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-primary-border px-3 text-sm font-bold text-primary transition hover:bg-primary-soft" onClick={() => { setSuccess(""); setOpen(true); }}><Pencil size={15} />Manage Community<ChevronRight size={15} /></button>
     {success && <p role="status" className="mt-2 text-sm text-muted">{success}</p>}
   </div>;
   return (
-    <section aria-label="Manage community" className="mt-5 rounded-2xl border border-[#f0dadd] bg-[#fff9f8] p-4 sm:p-5">
+    <section aria-label="Manage community" className="mt-5 rounded-2xl border border-primary-border bg-primary-soft p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div><h2 className="font-extrabold text-fg">Manage community</h2><p className="mt-1 text-xs leading-5 text-muted">Update your community details. Only the active community owner can make these changes.</p></div>
         <button type="button" className="rounded-lg px-2 py-1 text-sm font-semibold text-muted hover:bg-white" onClick={() => setOpen(false)}>Close</button>
@@ -345,12 +345,12 @@ function CommunityPosts({ community, isMember, membershipKnown, isMod, me }: { c
   return (
     <div className="space-y-3">
       {membershipKnown && isMember && community.status === "active" && <Composer communityId={community.id} />}
-      {membershipKnown && !isMember && community.status === "active" && <p className="rounded-2xl border border-[#f0dadd] bg-white p-5 text-sm leading-6 text-muted">Join this community to see its posts and take part in the conversation.</p>}
+      {membershipKnown && !isMember && community.status === "active" && <p className="rounded-2xl border border-primary-border bg-white p-5 text-sm leading-6 text-muted">Join this community to see its posts and take part in the conversation.</p>}
       {community.status !== "active" && <p className="rounded-2xl border border-line bg-white p-5 text-sm leading-6 text-muted">Community posts are unavailable while this community is {community.status}.</p>}
       {canAccessPosts && feed.isLoading && <LoadingState label="Gathering community posts" variant="panel" />}
-      {canAccessPosts && feed.isError && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-danger"><p>Could not load community posts.</p><button className="btn mt-3" onClick={() => void feed.refetch()}>Try again</button></div>}
+      {canAccessPosts && feed.isError && <div role="alert" className="rounded-2xl border border-danger-border bg-danger-soft p-4 text-sm text-danger"><p>Could not load community posts.</p><button className="btn mt-3" onClick={() => void feed.refetch()}>Try again</button></div>}
       {canAccessPosts && feed.isSuccess && posts.length === 0 && <p className="rounded-2xl border border-dashed border-line bg-white px-5 py-10 text-center text-sm text-muted">No posts yet. Start the conversation with your community.</p>}
-      {canAccessPosts && ids.length > 0 && media.isError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-danger">Some post media could not be loaded.</p>}
+      {canAccessPosts && ids.length > 0 && media.isError && <p role="alert" className="rounded-xl bg-danger-soft p-3 text-sm text-danger">Some post media could not be loaded.</p>}
       {posts.map((p) => (
         <div key={p.id} className="space-y-1">
           <PostCard post={p} images={media.data?.[p.id]} metrics={metrics.data?.[p.id]} me={me} inCommunity trackImpression />
@@ -398,7 +398,7 @@ function Members({ id, me, role, canView }: { id: string; me: string; role: stri
         <p className="mt-1 text-sm leading-6 text-muted">Active members and their current community roles.</p>
       </div>
       {members.isLoading && <LoadingState label="Finding community members" />}
-      {members.isError && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-danger">
+      {members.isError && <div role="alert" className="rounded-2xl border border-danger-border bg-danger-soft p-4 text-sm text-danger">
         <p>Could not load community members.</p>
         <button type="button" className="mt-2 font-bold underline" onClick={() => void members.refetch()}>Try again</button>
       </div>}
@@ -408,7 +408,7 @@ function Members({ id, me, role, canView }: { id: string; me: string; role: stri
         <li key={m.user_id} className="flex min-w-0 items-center gap-3 rounded-2xl border border-line bg-white p-3 shadow-[0_6px_18px_rgba(35,24,20,0.025)] sm:p-4">
           <Avatar name={m.profile?.display_name ?? "?"} path={m.profile?.avatar_path ?? null} />
           <div className="min-w-0 flex-1"><Link to={`/app/u/${m.profile?.username ?? ""}`} className="break-words text-sm font-bold text-fg hover:text-primary hover:underline">{m.profile?.display_name ?? "Student"}</Link><p className="mt-1 text-xs text-muted">@{m.profile?.username ?? "student"} · joined {timeAgo(m.joined_at)}</p></div>
-          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold capitalize ${m.role === "owner" ? "bg-[#fff1ef] text-primary" : m.role === "moderator" ? "bg-[#f7f1ee] text-[#72514c]" : "bg-bg text-muted"}`}>{m.role}</span>
+          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold capitalize ${m.role === "owner" ? "bg-primary-soft text-primary" : m.role === "moderator" ? "bg-[#f7f1ee] text-[#72514c]" : "bg-bg text-muted"}`}>{m.role}</span>
           {isMod && m.user_id !== me && m.role !== "owner" && (
             <div className="flex flex-wrap justify-end gap-1 text-xs sm:col-span-2">
               {(role === "owner" || m.role === "member") && <button className="btn" onClick={() => run(m.user_id, "ban")}>Ban</button>}
@@ -442,14 +442,14 @@ function ModerationTab({ id }: { id: string }) {
       <section className="rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5"><h2 className="font-extrabold text-fg">Hidden posts</h2>
         <label className="label" htmlFor="rr">Reason for restoring (min 5 characters)</label><input id="rr" className="input" value={reason} onChange={(e) => setReason(e.target.value)} />
         {hidden.isLoading && <p role="status" className="mt-3 text-sm text-muted">Loading hidden posts…</p>}
-        {hidden.isError && <div role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-danger">Could not load hidden posts. <button type="button" className="font-bold underline" onClick={() => void hidden.refetch()}>Try again</button></div>}
+        {hidden.isError && <div role="alert" className="mt-3 rounded-xl bg-danger-soft p-3 text-sm text-danger">Could not load hidden posts. <button type="button" className="font-bold underline" onClick={() => void hidden.refetch()}>Try again</button></div>}
         {hidden.isSuccess && hidden.data.length === 0 && <p className="mt-3 text-sm text-muted">No hidden posts.</p>}
         <ul className="mt-3 space-y-2">{hidden.data?.map((p) => (<li key={p.id} className="rounded-xl border border-line bg-white p-3 text-sm"><p className="line-clamp-3 whitespace-pre-wrap">{p.body}</p>
           {p.hidden_scope === "platform" ? <p className="text-xs text-muted">Removed by platform moderators; cannot be restored here.</p> : <button className="btn mt-1" disabled={reason.trim().length < 5 || restore.isPending} onClick={() => restore.mutate(p.id)}>Restore</button>}</li>))}</ul>
         {restore.isError && <p role="alert" className="err">{socialErrorMessage(String((restore.error as Error).message))}</p>}</section>
       <section className="rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5"><h2 className="font-extrabold text-fg">Moderation log</h2>
         {log.isLoading && <p role="status" className="mt-3 text-sm text-muted">Loading moderation history…</p>}
-        {log.isError && <div role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-danger">Could not load moderation history. <button type="button" className="font-bold underline" onClick={() => void log.refetch()}>Try again</button></div>}
+        {log.isError && <div role="alert" className="mt-3 rounded-xl bg-danger-soft p-3 text-sm text-danger">Could not load moderation history. <button type="button" className="font-bold underline" onClick={() => void log.refetch()}>Try again</button></div>}
         {log.isSuccess && log.data.length === 0 && <p className="mt-3 text-sm text-muted">Nothing yet.</p>}
         <ul className="mt-3 divide-y divide-line text-sm">{log.data?.map((a) => <li key={a.id} className="py-2 first:pt-0"><span className="font-semibold capitalize">{a.action.replace("_", " ")}</span>{a.reason ? ` — ${a.reason}` : ""} <span className="text-xs text-muted">{timeAgo(a.created_at)}</span></li>)}</ul></section>
     </div>
@@ -463,7 +463,7 @@ function BannedList({ id, onUnban }: { id: string; onUnban: (user: string) => vo
   return (
     <section className="rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5"><h2 className="font-extrabold text-fg">Banned members</h2>
       {banned.isLoading && <p role="status" className="mt-3 text-sm text-muted">Loading banned members…</p>}
-      {banned.isError && <div role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-danger">Could not load banned members. <button type="button" className="font-bold underline" onClick={() => void banned.refetch()}>Try again</button></div>}
+      {banned.isError && <div role="alert" className="mt-3 rounded-xl bg-danger-soft p-3 text-sm text-danger">Could not load banned members. <button type="button" className="font-bold underline" onClick={() => void banned.refetch()}>Try again</button></div>}
       {banned.isSuccess && banned.data.length === 0 && <p className="mt-3 text-sm text-muted">There are no banned members.</p>}
       <ul className="mt-3 space-y-2 text-sm">{banned.data?.map((b) => <li key={b.user_id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line p-3"><span className="min-w-0 break-words font-semibold">{b.display_name} <span className="font-normal text-muted">@{b.username}</span></span><button className="btn min-h-9" onClick={() => onUnban(b.user_id)}>Unban</button></li>)}</ul></section>
   );

@@ -38,7 +38,7 @@ export function StudentLayout() {
     { to: "/contact", label: "Contact", icon: LifeBuoy, end: false, badge: 0 },
   ];
   const inChat = /^\/app\/messages\/[^/]+/.test(pathname); // chat is a dedicated full screen on mobile
-  const desktopLink = ({ isActive }: { isActive: boolean }) => `group flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${isActive ? "bg-[#f8e9ea] font-bold text-primary shadow-sm" : "text-muted hover:bg-white hover:text-fg"}`;
+  const desktopLink = ({ isActive }: { isActive: boolean }) => `group flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${isActive ? "bg-primary-tint font-bold text-primary shadow-sm" : "text-muted hover:bg-white hover:text-fg"}`;
   const mobileLink = ({ isActive }: { isActive: boolean }) => `relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-0.5 py-2 text-[9px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:text-xs ${isActive ? "font-bold text-primary" : "text-muted hover:bg-bg"}`;
   const badge = (n: number) => n > 0 ? <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] leading-4 text-white" aria-label={`${n} unread`}>{n > 99 ? "99+" : n}</span> : null;
   useEffect(() => setMoreOpen(false), [pathname]);
@@ -84,12 +84,12 @@ export function StudentLayout() {
             <span className="text-base font-black tracking-tight text-fg sm:text-lg">Campus<span className="text-primary">Connect</span></span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
-            <span className="hidden rounded-full bg-[#fff4f2] px-3 py-1.5 text-xs font-semibold text-[#8b3c43] sm:block">Your campus. Your community.</span>
+            <span className="hidden rounded-full bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary-deep sm:block">Your campus. Your community.</span>
             <NavLink
               to="/app/notifications"
               aria-label={counts.notifications > 0 ? `Notifications, ${counts.notifications} unread` : "Notifications"}
               title="Notifications"
-              className={({ isActive }) => `relative flex h-10 w-10 items-center justify-center rounded-xl border bg-white transition hover:border-primary/30 hover:bg-[#fff4f2] hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${isActive ? "border-primary/30 bg-[#fff4f2] text-primary" : "border-line text-muted"}`}
+              className={({ isActive }) => `relative flex h-10 w-10 items-center justify-center rounded-xl border bg-white transition hover:border-primary/30 hover:bg-primary-soft hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${isActive ? "border-primary/30 bg-primary-soft text-primary" : "border-line text-muted"}`}
             >
               <Bell size={18} aria-hidden="true" />
               {counts.notifications > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-primary px-1 text-center text-[9px] font-bold leading-4 text-white">{counts.notifications > 99 ? "99+" : counts.notifications}</span>}
@@ -106,17 +106,17 @@ export function StudentLayout() {
       {moreOpen && (
         <div className="fixed right-3 top-20 z-30 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl border border-line bg-white p-2 shadow-[0_12px_36px_rgba(35,24,20,0.18)] lg:hidden">
           {menuItems.map((item) => (
-            <Link key={item.label} to={item.to} onClick={() => setMoreOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-fg hover:bg-[#fff4f2] hover:text-primary">
+            <Link key={item.label} to={item.to} onClick={() => setMoreOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-fg hover:bg-primary-soft hover:text-primary">
               <item.icon size={17} aria-hidden="true" />{item.label}
             </Link>
           ))}
-          <button type="button" onClick={() => void signOut()} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-danger hover:bg-red-50">
+          <button type="button" onClick={() => void signOut()} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-danger hover:bg-danger-soft">
             <LogOut size={17} aria-hidden="true" />Log out
           </button>
         </div>
       )}
       <div className="mx-auto flex w-full max-w-[1600px]">
-        <aside className={inChat ? "hidden" : "fixed bottom-0 top-16 z-10 hidden w-[250px] flex-col border-r border-line/70 bg-[#fbfaf9] px-4 py-6 lg:flex xl:w-[270px] xl:px-5"}>
+        <aside className={inChat ? "hidden" : "fixed bottom-0 top-16 z-10 hidden w-[250px] flex-col border-r border-line/70 bg-bg px-4 py-6 lg:flex xl:w-[270px] xl:px-5"}>
           <nav aria-label="Main" className="space-y-1.5 overflow-y-auto">
             {visibleItems.map((i) => <NavLink key={i.label} to={i.to} end={i.end} className={desktopLink}><i.icon size={18} aria-hidden="true" /><span>{i.label}</span>{badge(i.badge)}</NavLink>)}
             <div className="my-3 border-t border-line/80" />
@@ -132,7 +132,7 @@ export function StudentLayout() {
               {menuItems.filter((item) => ["About", "Features", "Contact"].includes(item.label)).map((item) => <Link key={item.label} to={item.to} className="hover:text-primary">{item.label}</Link>)}
             </div>
           </div>
-          <div className="mt-4 rounded-2xl border border-[#efd9db] bg-gradient-to-br from-[#faeeee] via-white to-white p-4 shadow-[0_8px_24px_rgba(80,30,30,0.04)]">
+          <div className="mt-4 rounded-2xl border border-primary-border bg-gradient-to-br from-[#faeeee] via-white to-white p-4 shadow-[0_8px_24px_rgba(80,30,30,0.04)]">
             <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-white text-primary shadow-sm"><Sparkles size={17} aria-hidden="true" /></span>
             <h2 className="text-sm font-extrabold leading-5 text-fg">Good things grow together.</h2>
             <p className="mt-1.5 text-xs leading-5 text-muted">Find your people, share what you know, and make campus feel a little smaller.</p>

@@ -41,7 +41,7 @@ function PageTitle({ eyebrow, title, description }: { eyebrow: string; title: st
 function ErrorState({ error, retry, title = "Could not load the course catalog" }: { error: unknown; retry: () => void; title?: string }) {
   const message = error instanceof Error ? error.message : "The request could not be completed.";
   return (
-    <section role="alert" className="rounded-2xl border border-red-200 bg-white p-5">
+    <section role="alert" className="rounded-2xl border border-danger-border bg-white p-5">
       <h2 className="font-extrabold text-fg">{title}</h2>
       <p className="mt-1 break-words text-sm text-muted">{message}</p>
       <button type="button" className="btn mt-3 min-h-9" onClick={retry}>Try again</button>
@@ -52,8 +52,8 @@ function ErrorState({ error, retry, title = "Could not load the course catalog" 
 function CourseCard({ course }: { course: Course }) {
   return (
     <li>
-      <Link to={`/app/assignment-discussions/courses/${course.id}`} className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] transition hover:border-[#edc9cd] hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
-        <span className="w-fit rounded-lg bg-[#fff1ef] px-2.5 py-1 text-xs font-black text-primary">{course.code}</span>
+      <Link to={`/app/assignment-discussions/courses/${course.id}`} className="group flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] transition hover:border-primary-border hover:shadow-[0_14px_32px_rgba(35,24,20,0.08)] sm:p-5">
+        <span className="w-fit rounded-lg bg-primary-soft px-2.5 py-1 text-xs font-black text-primary">{course.code}</span>
         <h3 className="mt-4 font-extrabold leading-6 text-fg group-hover:text-primary">{course.title}</h3>
         <p className="mt-1 text-sm text-muted">{course.department?.name ?? "Department unavailable"} · {course.department?.institution?.name ?? "Institution unavailable"}</p>
         <span className="mt-4 inline-flex min-h-9 items-center justify-between gap-2 border-t border-line pt-3 text-xs font-extrabold text-primary">
@@ -99,12 +99,12 @@ export function AssignmentDiscussionsPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <header className="relative overflow-hidden rounded-[26px] border border-[#f0dadd] bg-gradient-to-br from-[#fff7f6] via-white to-[#fff0ef] p-5 shadow-[0_12px_36px_rgba(35,24,20,0.045)] sm:p-8">
+      <header className="relative overflow-hidden rounded-[26px] border border-primary-border bg-gradient-to-br from-primary-soft via-white to-primary-soft p-5 shadow-[0_12px_36px_rgba(35,24,20,0.045)] sm:p-8">
         <div aria-hidden="true" className="pointer-events-none absolute -right-12 -top-20 h-56 w-56 rounded-full border border-primary/10 sm:h-72 sm:w-72" />
         <div className="relative flex items-start gap-4">
           <span className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-sm sm:flex"><MessagesSquare size={23} aria-hidden="true" /></span>
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-[#efd9db] bg-white/80 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary shadow-sm">Learn together</p>
+            <p className="inline-flex items-center gap-2 rounded-full border border-primary-border bg-white/80 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-primary shadow-sm">Learn together</p>
             <h1 className="mt-3 text-2xl font-black tracking-[-0.04em] text-fg sm:text-3xl">Assignment Discussion Rooms</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted sm:text-base">Find a course room to ask questions, share assignment ideas and study alongside classmates.</p>
           </div>
@@ -141,7 +141,7 @@ export function AssignmentDiscussionsPage() {
         {filteredCourses.length ? (
           <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{filteredCourses.map((course) => <CourseCard key={course.id} course={course} />)}</ul>
         ) : (
-          <section className="rounded-2xl border border-dashed border-[#e6cdcf] bg-white px-5 py-9 text-center">
+          <section className="rounded-2xl border border-dashed border-primary-border bg-white px-5 py-9 text-center">
             <BookOpen size={22} className="mx-auto text-primary" aria-hidden="true" />
             <h3 className="mt-3 font-extrabold text-fg">No courses found</h3>
             <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-muted">Try another search or check whether courses have been added to the academic catalog.</p>
@@ -182,7 +182,7 @@ export function AssignmentDiscussionRoomPage() {
   if (discussions.isError) return <ErrorState error={discussions.error} retry={() => void discussions.refetch()} title="Could not load course discussions" />;
   if (!course.data) {
     return (
-      <section className="rounded-2xl border border-dashed border-[#e6cdcf] bg-white px-5 py-9 text-center">
+      <section className="rounded-2xl border border-dashed border-primary-border bg-white px-5 py-9 text-center">
         <h2 className="font-extrabold text-fg">Course not found</h2>
         <p className="mt-1 text-sm text-muted">This course is unavailable or inactive in the academic catalog.</p>
         <Link to="/app/assignment-discussions" className="btn mt-4 min-h-9">Browse courses</Link>
@@ -253,7 +253,7 @@ export function AssignmentDiscussionRoomPage() {
           />
         </section>
       ) : (
-        <section className="rounded-2xl border border-dashed border-[#e6cdcf] bg-white px-5 py-9 text-center">
+        <section className="rounded-2xl border border-dashed border-primary-border bg-white px-5 py-9 text-center">
           <MessagesSquare size={22} className="mx-auto text-primary" aria-hidden="true" />
           <h2 className="mt-3 font-extrabold text-fg">No discussions yet</h2>
           <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-muted">Start a course discussion to ask a question or invite classmates to study together.</p>
@@ -409,7 +409,7 @@ function DiscussionCard({
     <li id={`discussion-${discussion.id}`} className={`rounded-2xl border bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5 ${highlighted ? "border-primary ring-2 ring-primary/20" : "border-line"}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <span className="rounded-full bg-[#fff1ef] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary">{categoryLabel(discussion.category)}</span>
+          <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-primary">{categoryLabel(discussion.category)}</span>
           <h3 className="mt-3 break-words font-extrabold leading-6 text-fg">{discussion.title}</h3>
           <p className="mt-1 text-xs text-muted">{discussion.author?.display_name ?? "CampusConnect user"} · {timeAgo(discussion.created_at)}{discussion.updated_at !== discussion.created_at ? " · edited" : ""}</p>
         </div>
@@ -439,7 +439,7 @@ function DiscussionCard({
           await onRefresh();
         }}
       /></div>}
-      {!!discussion.replies.length && <ul className="mt-4 space-y-3 border-l-2 border-[#f0dadd] pl-3 sm:pl-5">{discussion.replies.map((reply) => <DiscussionReplyItem key={reply.id} discussionId={discussion.id} reply={reply} userId={userId} onReport={onReport} onRefresh={onRefresh} />)}</ul>}
+      {!!discussion.replies.length && <ul className="mt-4 space-y-3 border-l-2 border-primary-border pl-3 sm:pl-5">{discussion.replies.map((reply) => <DiscussionReplyItem key={reply.id} discussionId={discussion.id} reply={reply} userId={userId} onReport={onReport} onRefresh={onRefresh} />)}</ul>}
     </li>
   );
 }
@@ -471,7 +471,7 @@ function DiscussionReplyItem({
   });
   const own = !!userId && reply.author_id === userId;
   return (
-    <li className="rounded-xl bg-[#fbfaf9] p-3 sm:p-4">
+    <li className="rounded-xl bg-bg p-3 sm:p-4">
       {editing ? <EditReplyForm reply={reply} pending={edit.isPending} error={edit.error} onCancel={() => setEditing(false)} onSave={(body) => edit.mutate(body)} /> : <>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <p className="text-xs font-semibold text-fg">{reply.author?.display_name ?? "CampusConnect user"} <span className="font-normal text-muted">· {timeAgo(reply.created_at)}</span></p>

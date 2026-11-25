@@ -35,8 +35,8 @@ export function ProjectBoardPage() {
           <p className="mt-1 text-sm text-muted">Turn a good idea into a great collaboration.</p></div>
         <button className="btn-primary inline-flex items-center gap-2" onClick={() => setCreating(true)}><Plus size={16} /> Start a project</button>
       </header>
-      <section className="rounded-3xl bg-gradient-to-br from-[#4c213e] via-[#74334b] to-[#bc4950] p-6 text-white sm:p-8">
-        <p className="text-xs font-bold uppercase tracking-[.2em] text-pink-100">Make it happen together</p>
+      <section className="rounded-3xl bg-gradient-to-br from-primary-deep via-primary to-primary-hover p-6 text-white sm:p-8">
+        <p className="text-xs font-bold uppercase tracking-[.2em] text-white/85">Make it happen together</p>
         <h2 className="mt-2 max-w-2xl text-2xl font-black sm:text-3xl">Find curious minds for the work you believe in.</h2>
         <p className="mt-2 max-w-xl text-sm leading-6 text-white/80">Discover student-led research, software, design, business and campus projects.</p>
       </section>
@@ -55,7 +55,7 @@ export function ProjectBoardPage() {
 
 function ProjectCard({ project }: { project: ProjectListItem }) {
   return <article className={`${card} flex flex-col gap-3`}>
-    <div className="flex items-start justify-between gap-3"><span className="rounded-full bg-[#fff2f0] px-2.5 py-1 text-xs font-bold text-primary">{label(project.category)}</span><span className="text-xs text-muted">{project.status.replace("_", " ")}</span></div>
+    <div className="flex items-start justify-between gap-3"><span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary">{label(project.category)}</span><span className="text-xs text-muted">{project.status.replace("_", " ")}</span></div>
     <div><h2 className="text-lg font-extrabold leading-snug"><Link to={`/app/projects/${project.id}`} className="hover:text-primary">{project.title}</Link></h2>
       <p className="mt-1 line-clamp-3 text-sm leading-6 text-muted">{project.description}</p></div>
     <div className="flex flex-wrap gap-1.5">{project.required_skills.slice(0, 5).map((skill) => <span key={skill} className="rounded-full border border-line px-2 py-1 text-[11px] text-muted">{skill}</span>)}</div>
@@ -190,7 +190,7 @@ export function ProjectWorkspacePage() {
       </div>
       <p className="whitespace-pre-wrap text-sm leading-6 text-muted">{value.description}</p>
       {value.objectives && <p className="rounded-xl bg-bg p-3 text-sm"><strong>Objectives:</strong> {value.objectives}</p>}
-      <div className="flex flex-wrap gap-2">{value.required_skills.map((x) => <span key={x} className="rounded-full bg-[#fff2f0] px-2.5 py-1 text-xs font-semibold text-primary">{x}</span>)}</div>
+      <div className="flex flex-wrap gap-2">{value.required_skills.map((x) => <span key={x} className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">{x}</span>)}</div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted"><span className="inline-flex items-center gap-1"><Users size={14} /> Up to {value.max_collaborators} collaborators</span>{value.deadline && <span className="inline-flex items-center gap-1"><Clock3 size={14} /> Due {value.deadline}</span>}</div>
     </section>
     {notice && <p role="status" className="text-sm text-primary">{notice}</p>}

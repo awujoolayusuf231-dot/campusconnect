@@ -99,7 +99,7 @@ export function PortfolioDashboardPage() {
         <div className="flex items-start justify-between gap-4"><div>
           <p className="text-xs font-bold uppercase tracking-wider text-muted">Portfolio link</p>
           <h2 className="mt-1 break-all text-lg font-extrabold text-fg">/portfolio/{portfolio.data.slug}</h2>
-        </div><span className={`rounded-full px-3 py-1 text-xs font-bold ${portfolio.data.is_public ? "bg-emerald-50 text-emerald-700" : "bg-[#f4f1ef] text-muted"}`}>
+        </div><span className={`rounded-full px-3 py-1 text-xs font-bold ${portfolio.data.is_public ? "bg-success-soft text-success" : "bg-bg text-muted"}`}>
           {portfolio.data.is_public ? "Published" : "Private"}
         </span></div>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -116,7 +116,7 @@ export function PortfolioDashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-extrabold text-fg">Your portfolio sections</h2><p className="mt-1 text-xs text-muted">Only items you mark public appear on your public page.</p></div>
           <Link className="btn min-h-9 rounded-lg px-3 text-xs" to="/app/portfolio/edit">Manage sections</Link></div>
         {portfolio.data.items.length ? <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {portfolio.data.items.map((item) => <li key={item.id} className="rounded-xl border border-line bg-[#fffdfc] p-3">
+          {portfolio.data.items.map((item) => <li key={item.id} className="rounded-xl border border-line bg-bg p-3">
             <div className="flex items-center justify-between gap-2"><span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">{ITEM_LABELS[item.item_type]}</span>
               <span className="text-[10px] font-bold text-muted">{item.is_public ? "Public item" : "Private item"}</span></div>
             <p className="mt-1 line-clamp-1 text-sm font-bold text-fg">{textValue(item.content, item.item_type === "skill" ? "name" : "title")}</p>
@@ -243,7 +243,7 @@ export function PortfolioEditorPage() {
       </div>
     </header>
     {errorMessage && <p role="alert" className="err">{errorMessage}</p>}
-    {shareMessage && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{shareMessage}</p>}
+    {shareMessage && <p role="status" className="rounded-xl border border-success-border bg-success-soft px-3 py-2 text-sm text-success">{shareMessage}</p>}
     <section className="card space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-extrabold text-fg">Introduction</h2><p className="mt-1 text-xs text-muted">Import your profile as a starting point, then review each field.</p></div>
         <button className="btn min-h-9 rounded-lg px-3 text-xs" type="button" onClick={importProfile}>Import from profile</button></div>
@@ -283,7 +283,7 @@ export function PortfolioEditorPage() {
         </div>
       </div>
       <ol className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {values.section_order.map((section, index) => <li key={section} className="flex items-center justify-between rounded-xl border border-line bg-[#fffdfc] px-3 py-2 text-sm font-semibold capitalize text-fg">
+        {values.section_order.map((section, index) => <li key={section} className="flex items-center justify-between rounded-xl border border-line bg-bg px-3 py-2 text-sm font-semibold capitalize text-fg">
           <span>{section}</span><span className="flex gap-1">
             <button type="button" disabled={index === 0} onClick={() => saveSectionOrder(index, -1)} className="rounded p-1 text-muted hover:bg-bg disabled:opacity-30" aria-label={`Move ${section} up`}><ArrowUp size={15} /></button>
             <button type="button" disabled={index === values.section_order.length - 1} onClick={() => saveSectionOrder(index, 1)} className="rounded p-1 text-muted hover:bg-bg disabled:opacity-30" aria-label={`Move ${section} down`}><ArrowDown size={15} /></button>
@@ -380,7 +380,7 @@ function PortfolioItemEditor({ item, nextOrder, onCancel, onSave, saving, error 
   const common = (key: string, label: string, placeholder?: string, maxLength = 200) =>
     <Field key={key} label={label} value={textValue(content, key)} maxLength={maxLength}
       placeholder={placeholder} onChange={(value) => setText(key, value)} />;
-  return <div className="mt-4 space-y-3 rounded-2xl border border-[#eadbd8] bg-[#fffaf8] p-4">
+  return <div className="mt-4 space-y-3 rounded-2xl border border-[#eadbd8] bg-bg p-4">
     <div className="flex items-center justify-between"><h3 className="font-extrabold text-fg">{item ? "Edit item" : "Add portfolio item"}</h3><button type="button" className="text-xs font-bold text-muted hover:text-primary" onClick={onCancel}>Close</button></div>
     {!item && <label className="block space-y-1.5 text-sm font-semibold text-fg"><span>Section type</span>
       <select className="field w-full" value={type} onChange={(event) => { const next = event.target.value as PortfolioItemType; setType(next); setContent(defaultItemContent(next)); }}>
@@ -482,9 +482,8 @@ function PublicPortfolioView({ portfolio }: { portfolio: PublicPortfolio }) {
   const email = portfolio.contact_email ?? "";
   const isDeveloperTemplate = portfolio.template_key === "developer";
   const isCreativeTemplate = portfolio.template_key === "creative";
-  const isAcademicTemplate = portfolio.template_key === "academic";
   const visibleSections = portfolio.section_order.filter((section) => itemGroups.has(section === "achievements" ? "achievement" : section === "certificates" ? "certificate" : section === "projects" ? "project" : section === "skills" ? "skill" : section === "education" ? "education" : "experience"));
-  return <main className="min-h-screen bg-[#f7f5f3] px-4 py-8 sm:px-7 sm:py-12" style={{ "--portfolio-accent": portfolio.accent_color } as CSSProperties}>
+  return <main className="min-h-screen bg-bg px-4 py-8 sm:px-7 sm:py-12" style={{ "--portfolio-accent": portfolio.accent_color } as CSSProperties}>
     <div className="mx-auto max-w-5xl">
       <header className={`overflow-hidden rounded-[2rem] border border-line shadow-sm ${isDeveloperTemplate ? "bg-slate-950 text-white" : isCreativeTemplate ? "bg-gradient-to-br from-white via-[#fff8fb] to-[#f2eafb]" : "bg-white"}`}>
         <div className="h-2 w-full bg-[var(--portfolio-accent)]" />
@@ -492,7 +491,7 @@ function PublicPortfolioView({ portfolio }: { portfolio: PublicPortfolio }) {
           <div className="flex items-center gap-4">
             {avatar ? <img src={avatar} alt="" className="h-20 w-20 rounded-2xl object-cover ring-4 ring-[#f6efed] sm:h-24 sm:w-24" /> : <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#f6efed] text-2xl font-black text-primary sm:h-24 sm:w-24">{portfolio.display_name.slice(0, 1)}</div>}
             <div><p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[var(--portfolio-accent)]">Student portfolio</p>
-              <h1 className={`mt-1 text-2xl font-black tracking-tight sm:text-4xl ${isDeveloperTemplate ? "text-white" : "text-fg"} ${isAcademicTemplate ? "font-serif" : ""}`}>{portfolio.display_name}</h1>
+              <h1 className={`mt-1 text-2xl font-black tracking-tight sm:text-4xl ${isDeveloperTemplate ? "text-white" : "text-fg"}`}>{portfolio.display_name}</h1>
               {portfolio.headline && <p className={`mt-2 text-sm font-semibold sm:text-base ${isDeveloperTemplate ? "text-slate-200" : "text-muted"}`}>{portfolio.headline}</p>}
               {portfolio.location && <p className={`mt-1 text-xs ${isDeveloperTemplate ? "text-slate-300" : "text-muted"}`}>{portfolio.location}</p>}
             </div>

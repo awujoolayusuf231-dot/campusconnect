@@ -64,7 +64,7 @@ export function Composer({ communityId }: { communityId?: string }) {
         <button
           type="button"
           onClick={openComposer}
-          className="flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent bg-bg px-3 text-left text-sm text-muted transition hover:border-[#f0d7da] hover:bg-[#fffafa] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-4"
+          className="flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent bg-bg px-3 text-left text-sm text-muted transition hover:border-primary-border hover:bg-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-4"
           aria-haspopup="dialog"
         >
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f7e7e9] text-primary"><UsersRound size={17} aria-hidden="true" /></span>
@@ -73,7 +73,7 @@ export function Composer({ communityId }: { communityId?: string }) {
         </button>
         <div className="mt-3 flex items-center justify-between border-t border-line/80 pt-3">
           <span className="hidden text-xs font-medium text-muted sm:inline">Share a moment with your community</span>
-          <button type="button" onClick={openComposer} className="ml-auto inline-flex min-h-9 items-center gap-2 rounded-xl px-3 text-xs font-bold text-muted transition hover:bg-[#fff1f2] hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-haspopup="dialog">
+          <button type="button" onClick={openComposer} className="ml-auto inline-flex min-h-9 items-center gap-2 rounded-xl px-3 text-xs font-bold text-muted transition hover:bg-primary-soft hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-haspopup="dialog">
             <ImagePlus size={16} aria-hidden="true" /> Photo or video
           </button>
         </div>
@@ -98,7 +98,7 @@ export function Composer({ communityId }: { communityId?: string }) {
           className="fixed inset-0 z-30 flex items-end justify-center bg-black/45 p-0 sm:items-center sm:p-5"
           onMouseDown={(event) => { if (event.target === event.currentTarget && !m.isPending) setOpen(false); }}
         >
-          <section role="dialog" aria-modal="true" aria-labelledby="composer-title" className="max-h-[92dvh] w-full overflow-y-auto rounded-t-[24px] border border-line/70 bg-[#fbfaf9] shadow-2xl sm:max-w-xl sm:rounded-[24px]">
+          <section role="dialog" aria-modal="true" aria-labelledby="composer-title" className="max-h-[92dvh] w-full overflow-y-auto rounded-t-[24px] border border-line/70 bg-bg shadow-2xl sm:max-w-xl sm:rounded-[24px]">
             <div className="flex items-start justify-between gap-4 rounded-t-[24px] border-b border-line bg-white px-4 py-4 sm:px-6 sm:py-5">
               <div>
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-primary">Your campus community</p>
@@ -148,7 +148,7 @@ export function Composer({ communityId }: { communityId?: string }) {
                   <ImagePlus size={16} aria-hidden="true" /> Add photos
                   <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(event) => pick(event.target.files)} />
                 </label>
-                {files.length > 0 && <span className="rounded-full bg-[#f8e9ea] px-3 py-1.5 text-xs font-semibold text-primary">{files.length} image(s) selected</span>}
+                {files.length > 0 && <span className="rounded-full bg-primary-tint px-3 py-1.5 text-xs font-semibold text-primary">{files.length} image(s) selected</span>}
                 <span className="ml-auto text-xs tabular-nums text-muted">{body.length}/2000</span>
               </div>
               {fileError && <p role="alert" className="err">{fileError}</p>}

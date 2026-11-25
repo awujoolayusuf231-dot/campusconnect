@@ -111,7 +111,7 @@ export function MentionTextarea({
           type="button"
           role="option"
           aria-selected="false"
-          className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-[#fff4f2] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-primary-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => choose(person.username)}
         >
