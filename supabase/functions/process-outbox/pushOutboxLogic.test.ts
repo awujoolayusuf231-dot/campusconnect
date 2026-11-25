@@ -4,10 +4,74 @@ import {
   effectiveAccountStatus,
   isLocalSupabaseUrl,
   preferenceForNotification,
+  pushCopy,
+  pushData,
   shouldSendPush,
+  webpushHeaders,
 } from "./pushOutboxLogic";
 
 describe("push outbox decisions", () => {
+  it("includes the notification ID as a string and applies message-specific FCM lifetime headers", () => {
+    const copy = pushCopy("message", "Amina", "conversation", "conversation-1");
+    const data = pushData(copy, "123456");
+
+    expect(data).toEqual({
+      title: "New message",
+      body: "Amina sent you a message",
+      url: "/app/messages/conversation-1",
+      tag: "message:conversation-1",
+      notification_id: "123456",
+    });
+    expect(Object.values(data).every((value) => typeof value === "string")).toBe(true);
+    expect(webpushHeaders("message")).toEqual({ TTL: "259200", Urgency: "high" });
+    expect(webpushHeaders("like")).toEqual({ TTL: "259200", Urgency: "normal" });
+  });
+
+  it("builds specific private-safe push copy, routes, and message tags", () => {
+    expect(pushCopy("message", "Amina", "conversation", "conv/1")).toEqual({
+      title: "New message",
+      body: "Amina sent you a message",
+      url: "/app/messages/conv%2F1",
+      tag: "message:conv/1",
+    });
+    expect(pushCopy("like", "Amina", "post", "post-1").body).toBe("Amina liked your post");
+    expect(pushCopy("repost", "Amina", "post", "post-1").body).toBe("Amina reposted your post");
+    expect(pushCopy("comment", "Amina", "post", "post-1").body).toBe("Amina commented on your post");
+    expect(pushCopy("follow", "Amina", "user", "user-1", "amina").body).toBe("Amina started following you");
+    expect(pushCopy("community_join", "Amina", "community", "community-1").body).toBe("Amina joined your community");
+    expect(pushCopy("project_application", "Amina", "project", "project-1").body).toBe("Amina applied to your project");
+    expect(pushCopy("discussion_reply", "Amina", "assignment_discussion", "discussion-1", null, {
+      course_id: "course-1",
+    })).toMatchObject({
+      body: "Amina replied to your discussion",
+      url: "/app/assignment-discussions/courses/course-1?discussion=discussion-1",
+    });
+    expect(pushCopy("celebration_reminder", null, "celebration", "card-1")).toEqual({
+      title: "CampusConnect",
+      body: "You have a celebration reminder.",
+      url: "/app/celebrations/card-1",
+      tag: "",
+    });
+  });
+
+  it("falls back to a safe generic copy and truncates actor names", () => {
+    const copy = pushCopy("message", "a".repeat(45), "conversation", "conversation-1");
+    expect(copy).toEqual({
+      title: "New message",
+      body: `${"a".repeat(40)} sent you a message`,
+      url: "/app/messages/conversation-1",
+      tag: "message:conversation-1",
+    });
+    expect(pushCopy("message", null, "conversation", "conv-1").body).toBe("Someone sent you a message");
+    expect(pushCopy("unknown", "Amina", "unknown", "item-1")).toMatchObject({
+      title: "CampusConnect",
+      body: "You have a new update.",
+      url: "/app/notifications",
+      tag: "",
+    });
+    expect(Object.values(copy).every((value) => typeof value === "string")).toBe(true);
+  });
+
   it("rechecks category preferences for all user-controlled notification groups", () => {
     expect(preferenceForNotification("follow")).toBe("notify_follows");
     expect(preferenceForNotification("repost")).toBe("notify_likes");

@@ -40,6 +40,7 @@ const sections = [
   { to: "/app/flashcards/saved", label: "Saved questions" },
   { to: "/app/flashcards/performance", label: "Performance" },
   { to: "/app/flashcards/advanced", label: "Advanced learning" },
+  { to: "/app/group-quiz", label: "Group Quiz" },
 ];
 
 const advancedFeatures: { slug: string; title: string; description: string; icon: LucideIcon; detail: string }[] = [

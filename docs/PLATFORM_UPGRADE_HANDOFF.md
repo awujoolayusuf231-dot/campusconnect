@@ -31,10 +31,17 @@ It requires the existing notification and social visibility foundations,
 including `public.internal_post_visible_to(uuid,uuid)`. Its preflight checks
 stop if those prerequisites are missing or an object already exists.
 
+The follow-up migration
+[`20261116000040_fix_recommend_students_ambiguous_column.sql`](../supabase/migrations/20261116000040_fix_recommend_students_ambiguous_column.sql)
+fixes an ambiguous output-column reference in `recommend_students`. Apply it
+only where migration 39's function already exists; it does not change tables,
+RLS, recommendation filters, or function grants.
+
 Production schema and migration history were previously found to be out of
-sync. Do not apply this migration or use `supabase db push` until that drift is
-reconciled. No hosted SQL, secrets, or function deployments were changed for
-this implementation.
+sync. Do not rerun migration 39 or use `supabase db push` until that drift is
+reconciled. The hosted logs confirm the migration 39 function exists; apply
+migration 40 only after confirming that state. No hosted SQL, secrets, or
+function deployments were changed for this implementation.
 
 The regression suite is
 [`local_discovery_notifications.sql`](../supabase/tests/local_discovery_notifications.sql).

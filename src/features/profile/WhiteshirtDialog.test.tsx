@@ -12,10 +12,11 @@ describe("extractBoardUrl", () => {
 });
 
 describe("WhiteshirtDialog", () => {
-  it("only ever embeds the fixed whiteshirt.fun address, sandboxed", () => {
+  it("embeds the fixed referral URL, sandboxed", () => {
     render(<WhiteshirtDialog onUse={() => undefined} onClose={() => undefined} />);
     const frame = screen.getByTitle("whiteshirt.fun");
-    expect(frame).toHaveAttribute("src", WHITESHIRT_HOME);
+    expect(WHITESHIRT_HOME).toBe("https://www.whiteshirt.fun/?ref=ecomedge");
+    expect(frame).toHaveAttribute("src", "https://www.whiteshirt.fun/?ref=ecomedge");
     expect(frame.getAttribute("sandbox")).toContain("allow-scripts");
     expect(frame.getAttribute("sandbox")).not.toContain("allow-top-navigation");
   });

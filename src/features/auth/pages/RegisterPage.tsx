@@ -15,7 +15,12 @@ import { GoogleSignInButton } from "@/features/auth/GoogleSignInButton";
 
 const schema = z.object({
   email: z.string().trim().email("Enter a valid email"),
-  password: z.string().min(8, "At least 8 characters").max(72, "At most 72 characters"),
+  password: z.string()
+    .min(8, "At least 8 characters")
+    .max(72, "At most 72 characters")
+    .regex(/[A-Z]/, "Include at least one uppercase letter")
+    .regex(/[a-z]/, "Include at least one lowercase letter")
+    .regex(/[0-9]/, "Include at least one number"),
   displayName: z.string().trim().min(1, "Enter your name").max(60),
   username: usernameSchema,
   institutionId: z.string().optional(),

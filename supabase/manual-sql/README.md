@@ -20,9 +20,13 @@ against a database until its current state has been checked.
 - The repository's existing `feed_timeline` is a chronological, security-
   invoker RPC. The frontend already records impressions through Migration B's
   `record_post_impressions`, but does not yet show author analytics.
+- The current tracked feed-ranking work is in migrations
+  `20261118000042_post_views_and_hot_scores.sql` and
+  `20261118000043_ranked_feed_variants_and_mutes.sql`. These add
+  `get_ranked_feed`, views/dwell tracking, hot scores, variant exposures, and
+  mutes. They have not been applied by this change.
 - Existing RLS hides posts using profile visibility, account status,
-  bidirectional blocks, and active community membership. There is no
-  post-specific audience column or ranked-feed RPC.
+  bidirectional blocks, and active community membership.
 
 Do not copy Migration A or B into this folder or apply either blindly. Use
 `00_preflight.sql` first. If A or B is missing, review and apply the existing
@@ -40,15 +44,16 @@ local database. If either is already present, do not apply it again.
 4. Review and apply [`01_post_visibility.sql`](./01_post_visibility.sql). It
    adds post audiences and updates the existing shared visibility helpers;
    it does not create replacement tables or policies.
-5. Review and apply [`02_ranked_feed.sql`](./02_ranked_feed.sql). It adds a
-   ranked-feed RPC and private numeric settings in the existing
-   `platform_settings` table.
-6. If the ranked-feed RPC is already installed and its prerequisites are
-   confirmed, review and apply
-   [`04_ranked_feed_fairness.sql`](./04_ranked_feed_fairness.sql). It adds a
-   bounded recent-exposure signal to the existing RPC without changing its
-   result shape. Do not apply it until production schema/migration drift has
-   been reconciled.
+5. For the current app, apply tracked migrations
+   `20261118000042_post_views_and_hot_scores.sql`, then
+   `20261118000043_ranked_feed_variants_and_mutes.sql`. Do not also apply the
+   older manual ranked-feed scripts below without reconciling their separate
+   RPCs and ranking behavior.
+6. [`02_ranked_feed.sql`](./02_ranked_feed.sql) and
+   [`04_ranked_feed_fairness.sql`](./04_ranked_feed_fairness.sql) are legacy
+   manual alternatives, not prerequisites for the tracked `get_ranked_feed`.
+   Only use them for a separately reviewed/manual installation after checking
+   production schema drift.
 7. Run [`03_verify.sql`](./03_verify.sql). It is read-only. Then run the
    existing local hashtag, impression, and social RLS test suites before
    enabling the new UI for users.

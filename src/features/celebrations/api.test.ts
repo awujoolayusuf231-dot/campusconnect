@@ -5,6 +5,29 @@ const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
 vi.mock("@/lib/supabase", () => ({ supabase: { rpc: mocks.rpc } }));
 
 import { fetchFeedTimeline, validateCelebration, type SaveCelebrationInput } from "./api";
+import { recordPostViews } from "@/features/social/api";
+
+describe("Batched post-view recording", () => {
+  it("sends unique post ids and accumulated dwell time in batches of at most 50", async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: null });
+    const views = Array.from({ length: 51 }, (_, index) => ({
+      postId: `post-${index}`,
+      dwellMs: 1200,
+    }));
+    views.push({ postId: "post-0", dwellMs: 800 });
+
+    await recordPostViews(views);
+
+    expect(mocks.rpc).toHaveBeenNthCalledWith(1, "record_post_views", {
+      p_post_ids: Array.from({ length: 50 }, (_, index) => `post-${index}`),
+      p_dwell_ms: [2000, ...Array.from({ length: 49 }, () => 1200)],
+    });
+    expect(mocks.rpc).toHaveBeenNthCalledWith(2, "record_post_views", {
+      p_post_ids: ["post-50"],
+      p_dwell_ms: [1200],
+    });
+  });
+});
 
 const card: SaveCelebrationInput = {
   title: "Happy birthday",
@@ -54,6 +77,7 @@ describe("Celebration card validation", () => {
     reposter_name: null,
     rank_score: 2.5,
     ranked_at: "2026-11-11T10:00:00.000Z",
+    feed_variant: "ranked" as const,
   };
 
   describe("fetchFeedTimeline ranked scope", () => {
@@ -62,14 +86,15 @@ describe("Celebration card validation", () => {
       mocks.rpc.mockResolvedValue({ data: [rankedRow], error: null });
     });
 
-    it("uses the ranked RPC and maps its stable pagination cursor", async () => {
+    it("uses the ranked RPC and maps its stable pagination cursor and variant", async () => {
       const first = await fetchFeedTimeline("for_you", null);
 
-      expect(mocks.rpc).toHaveBeenCalledWith("feed_ranked_posts", {
+      expect(mocks.rpc).toHaveBeenCalledWith("get_ranked_feed", {
         p_before_score: null,
         p_before: null,
         p_before_id: null,
         p_as_of: null,
+        p_variant: null,
         p_limit: 20,
       });
       expect(first[0]).toMatchObject({
@@ -77,6 +102,7 @@ describe("Celebration card validation", () => {
         item_id: "post-1",
         rank_score: 2.5,
         ranked_at: rankedRow.ranked_at,
+        feed_variant: "ranked",
         item: { body: "A ranked post" },
       });
 
@@ -86,12 +112,14 @@ describe("Celebration card validation", () => {
         activity_at: rankedRow.activity_at,
         rank_score: 2.5,
         ranked_at: rankedRow.ranked_at,
+        feed_variant: "ranked",
       });
-      expect(mocks.rpc).toHaveBeenLastCalledWith("feed_ranked_posts", {
+      expect(mocks.rpc).toHaveBeenLastCalledWith("get_ranked_feed", {
         p_before_score: 2.5,
         p_before: rankedRow.activity_at,
         p_before_id: "post-1",
         p_as_of: rankedRow.ranked_at,
+        p_variant: "ranked",
         p_limit: 20,
       });
     });

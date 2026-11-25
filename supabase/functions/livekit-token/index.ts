@@ -1,9 +1,10 @@
 import { AccessToken } from "npm:livekit-server-sdk@2.9.6";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { authenticateSupabaseUser, getBearerToken } from "./auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info, x-supabase-api-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -19,7 +20,8 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") return response({ error: "method_not_allowed" }, 405);
 
   const authorization = request.headers.get("Authorization");
-  if (!authorization?.startsWith("Bearer ")) return response({ error: "unauthorized" }, 401);
+  const accessToken = getBearerToken(authorization);
+  if (!accessToken) return response({ error: "unauthorized" }, 401);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
@@ -49,15 +51,29 @@ Deno.serve(async (request) => {
     global: { headers: { Authorization: authorization } },
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const { data: userData, error: userError } = await userClient.auth.getUser();
-  if (userError || !userData.user) return response({ error: "unauthorized" }, 401);
+  const authentication = await authenticateSupabaseUser(accessToken, userClient);
+  if (!authentication.ok) {
+    console.warn("LiveKit token authentication rejected.", {
+      code: authentication.code,
+      status: authentication.status,
+    });
+    return response({ error: "unauthorized" }, 401);
+  }
 
   const { data, error } = await userClient.rpc("voice_authorize_token", {
     p_room: roomId,
     p_can_publish: canPublish,
   });
   if (error || !data?.length) {
-    if (error) console.warn("LiveKit token authorization denied.", error.code);
+    if (error) {
+      console.warn("LiveKit token authorization denied.", { code: error.code, message: error.message });
+      const databaseNotReady = error.code === "PGRST202" || error.code === "42883";
+      const expectedAuthError = ["room_not_live", "join_room_before_token", "speaker_permission_required"].includes(error.message);
+      const errorCode = databaseNotReady ? "voice_database_not_ready"
+        : expectedAuthError ? error.message
+        : "room_access_denied";
+      return response({ error: errorCode }, databaseNotReady ? 503 : 403);
+    }
     return response({ error: "room_access_denied" }, 403);
   }
 
@@ -66,7 +82,7 @@ Deno.serve(async (request) => {
   if (canPublish && !participantCanPublish) return response({ error: "speaker_permission_required" }, 403);
 
   const token = new AccessToken(liveKitKey, liveKitSecret, {
-    identity: userData.user.id,
+    identity: authentication.user.id,
     ttl: "10m",
   });
   token.addGrant({

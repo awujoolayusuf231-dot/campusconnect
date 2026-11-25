@@ -66,13 +66,13 @@ Authenticated by the `X-Cron-Secret` header (see SCHEDULER_AND_KEEPALIVE.md). Pe
 6. Finish with `purge_notification_outbox()` in a loop while it returns `"more": true` (finished rows after 30 days; revoked tokens after 90 days; tokens unseen for 270 days).
 To verify before relying on them (I could not test any of this): the Edge Function runtime can sign the Google OAuth JWT FCM v1 needs (the Admin SDK may not run there, so plan on plain `fetch`), Resend's current free limits and idempotency header support, and Edge Function execution time limits (size batches to finish well inside them).
 
-## 4. Contract for the frontend (nothing of this exists yet)
-- Never ask for notification permission on page load. Ask after an explicit tap ("Turn on notifications") or after a meaningful first action, with a sentence explaining what will be sent. Handle "denied" gracefully; never assume granted.
-- After permission: get the FCM web token (VAPID public key is public configuration, a `VITE_` variable), then `register_push_token(token, 'web', label)`. Call it again on each app start when permission is already granted (it refreshes `last_seen_at`).
-- Logout: call `revoke_push_token(currentToken)` BEFORE `signOut()` (the call needs the session). If the user is offline, the token is also moved automatically the next time anyone registers it, and the sender revokes tokens that FCM rejects.
-- Settings screen: `get_my_notification_settings` (one row per type, effective push/email values, essential types flagged non-optional), `get_my_notification_channels` (is a device registered, is the email verified), `list_my_devices` / `remove_my_device`. Show email toggles disabled with an explanation when the email is not verified.
-- The existing service worker (`public/sw.js`) caches the app shell only. It needs `push` and `notificationclick` handlers that open the right route by type. iPhone/iPad web push works only for a home-screen-installed app (iOS 16.4+); Android Chrome works in the browser.
-- Environment: Firebase public web config and the VAPID public key are public (`VITE_*`). The Firebase service-account JSON and the Resend API key are Edge Function secrets only, never in the repo or any `VITE_` variable.
+## 4. Frontend web-push contract (implemented)
+- Permission is requested only after the student selects **Enable on this device**. A denied permission is reported with browser-settings guidance; unsupported iPhone/iPad browsers are told to install CampusConnect to the Home Screen (iOS/iPadOS 16.4+).
+- The client gets the FCM token with the configured VAPID key and calls `register_push_subscription(p_token)`. It does not write to `push_tokens`; the outbox worker reads `push_subscriptions`.
+- After a student has opted in, the client refreshes the token on authenticated app startup and when the app becomes visible. Sign-out unregisters the current token before Supabase sign-out; disabling push unregisters it and deletes the local FCM token.
+- `public/firebase-messaging-sw.js` is served at the site root with scope `/`. It receives Firebase configuration from the same browser build variables used by the app, displays data-only background messages, and opens or focuses same-origin notification links. The active service worker also caches the app shell; `public/sw.js` remains a compatibility shim.
+- `onMessage` displays foreground messages through the service-worker registration. iPhone/iPad web push requires a Home Screen-installed app (iOS/iPadOS 16.4+); Android Chrome works in the browser.
+- Environment: Firebase browser config and the VAPID public key are public `VITE_FIREBASE_*` values. Verify that `VITE_FIREBASE_PROJECT_ID` matches `project_id` in the server-only `FIREBASE_SERVICE_ACCOUNT`. Never put the service-account JSON or Resend API key in the repo or any `VITE_` variable.
 
 ## 5. Security review of C
 | Area | Result |

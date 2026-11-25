@@ -151,6 +151,23 @@ export function ProfilePage() {
         </div>
       </section>
 
+      {mine && (
+        <section aria-label="Profile tools" className="grid grid-cols-2 gap-2 rounded-2xl border border-line bg-white p-3 sm:grid-cols-3 sm:p-4">
+          {[
+            { to: "/app/analytics", label: "Analytics" },
+            { to: "/app/subscription", label: "Membership" },
+            { to: "/app/saved-posts", label: "Saved Posts" },
+            { to: "/app/celebrations", label: "Celebrations" },
+            { to: "/app/portfolio", label: "Portfolio" },
+            { to: "/app/cv-builder", label: "CV" },
+          ].map((item) => (
+            <Link key={item.to} to={item.to} className="min-h-11 rounded-xl border border-line px-3 py-3 text-center text-xs font-bold text-fg transition hover:border-primary/30 hover:bg-[#fff4f2] hover:text-primary">
+              {item.label}
+            </Link>
+          ))}
+        </section>
+      )}
+
       <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_8px_24px_rgba(35,24,20,0.035)]">
         <div role="tablist" aria-label="Profile content" className="flex border-b border-line px-2 sm:px-4">
           {(["posts", "reposts"] as Tab[]).map((t) => <button key={t} id={`profile-tab-${t}`} type="button" role="tab" aria-selected={tab === t} aria-controls="profile-posts" className={`min-h-12 border-b-2 px-4 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary ${tab === t ? "border-primary font-bold text-primary" : "border-transparent font-semibold text-muted hover:text-fg"}`} onClick={() => { setTab(t); setLimit(20); }}>{t === "posts" ? "Posts" : "Reposts"}</button>)}

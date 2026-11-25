@@ -5,7 +5,9 @@ import {
   isLocalSupabaseUrl,
   preferenceForNotification,
   pushCopy,
+  pushData,
   shouldSendPush,
+  webpushHeaders,
   type DeviceResult,
 } from "../process-outbox/pushOutboxLogic.ts";
 
@@ -28,6 +30,25 @@ type PushJob = {
   entity_type: string | null;
   entity_id: string | null;
   tokens: string[];
+};
+type EnrichedPushJob = PushJob & {
+  notification_id: string;
+  actor_name: string;
+  actor_username: string | null;
+  notification_data: Record<string, unknown>;
+};
+type OutboxNotificationDetails = {
+  id: number;
+  notification_id: number | string;
+  notification: {
+    actor_id: string | null;
+    data: Record<string, unknown>;
+  } | null;
+};
+type ActorProfile = {
+  id: string;
+  display_name: string | null;
+  username: string | null;
 };
 type FirebaseAccount = { client_email: string; private_key: string; project_id: string };
 type PushPreferences = {
@@ -101,16 +122,16 @@ async function sendToDevice(
   projectId: string,
   accessToken: string,
   token: string,
-  notificationType: string,
-  entityType: string | null,
-  entityId: string | null,
+  job: EnrichedPushJob,
 ): Promise<DeviceResult> {
-  const copy = pushCopy(notificationType);
-  const url = notificationType === "celebration_reminder"
-      && entityType === "celebration"
-      && entityId
-    ? `/app/celebrations/${encodeURIComponent(entityId)}`
-    : copy.url;
+  const copy = pushCopy(
+    job.notification_type,
+    job.actor_name,
+    job.entity_type,
+    job.entity_id,
+    job.actor_username,
+    job.notification_data,
+  );
   try {
     const response = await fetch(
       `https://fcm.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/messages:send`,
@@ -120,8 +141,8 @@ async function sendToDevice(
         body: JSON.stringify({
           message: {
             token,
-            data: { ...copy, url },
-            webpush: { headers: { TTL: "86400", Urgency: "normal" } },
+            data: pushData(copy, job.notification_id),
+            webpush: { headers: webpushHeaders(job.notification_type) },
           },
         }),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -169,6 +190,47 @@ async function finishJob(
     p_error: error,
   });
   if (finishError) throw new Error(`Could not finish outbox job ${job.outbox_id}.`);
+}
+
+async function enrichPushJobs(
+  client: ReturnType<typeof createClient>,
+  jobs: PushJob[],
+): Promise<EnrichedPushJob[]> {
+  const { data: outboxRows, error: outboxError } = await client
+    .from("push_outbox")
+    .select("id,notification_id,notification:notifications!inner(actor_id,data)")
+    .in("id", jobs.map((job) => job.outbox_id));
+  if (outboxError) throw new Error("Could not load push notification details.");
+
+  const details = (outboxRows ?? []) as unknown as OutboxNotificationDetails[];
+  const detailByOutboxId = new Map(details.map((row) => [row.id, row]));
+  const actorIds = [...new Set(details.flatMap((row) => row.notification?.actor_id ?? []))];
+  const profileById = new Map<string, ActorProfile>();
+  if (actorIds.length > 0) {
+    const { data: profiles, error: profilesError } = await client
+      .from("profiles")
+      .select("id,display_name,username")
+      .in("id", actorIds);
+    if (profilesError) throw new Error("Could not load push actor profiles.");
+    for (const profile of (profiles ?? []) as ActorProfile[]) profileById.set(profile.id, profile);
+  }
+
+  return jobs.map((job) => {
+    const outboxDetail = detailByOutboxId.get(job.outbox_id);
+    if (!outboxDetail?.notification) {
+      throw new Error(`Could not find notification details for outbox job ${job.outbox_id}.`);
+    }
+    const notification = outboxDetail.notification;
+    const profile = notification?.actor_id ? profileById.get(notification.actor_id) : undefined;
+    const actorName = profile?.display_name?.trim() || profile?.username?.trim() || "Someone";
+    return {
+      ...job,
+      notification_id: String(outboxDetail.notification_id),
+      actor_name: actorName.slice(0, 40),
+      actor_username: profile?.username ?? null,
+      notification_data: notification?.data ?? {},
+    };
+  });
 }
 
 async function recheckEligibility(
@@ -262,7 +324,7 @@ async function processJob(
   client: ReturnType<typeof createClient>,
   account: FirebaseAccount,
   accessToken: string,
-  job: PushJob,
+  job: EnrichedPushJob,
 ): Promise<"delivered" | "retry" | "failed"> {
   try {
     const eligibility = await recheckEligibility(client, job);
@@ -280,9 +342,7 @@ async function processJob(
           account.project_id,
           accessToken,
           token,
-          job.notification_type,
-          job.entity_type,
-          job.entity_id,
+          job,
         )
       ),
     );
@@ -319,7 +379,7 @@ async function processJobs(
   client: ReturnType<typeof createClient>,
   account: FirebaseAccount,
   accessToken: string,
-  jobs: PushJob[],
+  jobs: EnrichedPushJob[],
 ): Promise<{ outcomes: Array<"delivered" | "retry" | "failed">; completionFailed: boolean }> {
   const outcomes = new Array<"delivered" | "retry" | "failed">(jobs.length);
   let nextIndex = 0;
@@ -398,13 +458,14 @@ export async function handleProcessOutbox(request: Request): Promise<Response> {
     if (!jobs.length) {
       return Response.json({ claimed: 0, delivered: 0, failed: 0, retried: 0 }, { headers: corsHeaders });
     }
+    const enrichedJobs = await enrichPushJobs(client, jobs);
 
     let accessToken: string;
     try {
       accessToken = await firebaseAccessToken(account);
     } catch {
       const finishes = await Promise.allSettled(
-        jobs.map((job) => finishJob(client, job, "retry", "firebase_oauth_request_failed")),
+        enrichedJobs.map((job) => finishJob(client, job, "retry", "firebase_oauth_request_failed")),
       );
       if (finishes.some((finish) => finish.status === "rejected")) {
         throw new Error("Firebase OAuth failed and one or more claimed jobs could not be requeued.");
@@ -412,7 +473,7 @@ export async function handleProcessOutbox(request: Request): Promise<Response> {
       throw new Error("Firebase OAuth failed; claimed push jobs were queued for retry.");
     }
 
-    const { outcomes, completionFailed } = await processJobs(client, account, accessToken, jobs);
+    const { outcomes, completionFailed } = await processJobs(client, account, accessToken, enrichedJobs);
     if (completionFailed) {
       return Response.json(
         { error: "Some claimed push jobs could not be completed; their leases will expire for retry." },
@@ -420,7 +481,7 @@ export async function handleProcessOutbox(request: Request): Promise<Response> {
       );
     }
     return Response.json({
-      claimed: jobs.length,
+      claimed: enrichedJobs.length,
       delivered: outcomes.filter((outcome) => outcome === "delivered").length,
       failed: outcomes.filter((outcome) => outcome === "failed").length,
       retried: outcomes.filter((outcome) => outcome === "retry").length,

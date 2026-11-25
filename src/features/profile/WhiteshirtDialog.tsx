@@ -4,7 +4,7 @@ import { celebrationUrlSchema } from "@/validation/profile";
 import { LoadingState } from "@/app/LoadingState";
 
 // The ONLY site this dialog can show. Fixed on purpose: never built from user input.
-export const WHITESHIRT_HOME = "https://www.whiteshirt.fun/";
+export const WHITESHIRT_HOME = "https://www.whiteshirt.fun/?ref=ecomedge";
 
 /** Finds the first valid whiteshirt.fun link inside pasted text. Lookalike domains and other sites are ignored. */
 export function extractBoardUrl(input: string): string | null {

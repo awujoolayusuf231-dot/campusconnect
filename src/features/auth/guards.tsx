@@ -7,6 +7,7 @@ export function RequireAuth() {
   const loc = useLocation();
   if (loading) return <LoadingState label="Checking your account" variant="page" />;
   if (!session) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+  if (!session.user.email_confirmed_at) return <Navigate to="/login" replace state={{ unverified: true }} />;
   return <Outlet />;
 }
 

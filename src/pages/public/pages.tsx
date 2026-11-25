@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PublicLayout } from "./PublicLayout";
-import { usePublicSettings } from "@/lib/publicSettings";
 
 type Section = { id: string; title: string; content: ReactNode };
 
@@ -290,7 +289,35 @@ export function TermsPage() {
 }
 
 export function ContactPage() {
-  const supportEmail = usePublicSettings().data?.support_email;
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [message, setMessage] = useState("");
+
+  async function submitContact(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const accessKey = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY?.trim();
+    if (!accessKey) {
+      setStatus("error");
+      setMessage("Contact form setup is incomplete. Add VITE_WEB3FORMS_ACCESS_KEY to .env.local, then restart the development server.");
+      return;
+    }
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    formData.set("access_key", accessKey);
+    formData.set("subject", "CampusConnect support request");
+    setStatus("sending");
+    setMessage("");
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", { method: "POST", body: formData });
+      const result = await response.json() as { success?: boolean; message?: string };
+      if (!response.ok || !result.success) throw new Error(result.message || "Your message could not be sent.");
+      setStatus("sent");
+      setMessage("Thanks! Your message has been submitted.");
+      form.reset();
+    } catch (error) {
+      setStatus("error");
+      setMessage(error instanceof Error ? error.message : "Your message could not be sent.");
+    }
+  }
 
   return (
     <PublicLayout wide>
@@ -317,13 +344,20 @@ export function ContactPage() {
             </article>
           </div>
         </section>
-        <section className="flex flex-col gap-4 rounded-[26px] border border-[#f0d7d9] bg-[#fff7f7] p-6 sm:flex-row sm:items-center sm:p-8">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-sm"><Mail size={21} aria-hidden="true" /></span>
-          <div className="min-w-0">
-            <p className="text-xs font-extrabold uppercase tracking-[0.17em] text-primary">Contact support</p>
-            <h2 className="mt-1 text-xl font-black text-fg">{supportEmail ? "We’d be glad to hear from you." : "Support email coming soon"}</h2>
-            <p className="mt-1 text-sm leading-6 text-muted">{supportEmail ? <>Email us at <a className="font-bold text-primary underline underline-offset-2" href={`mailto:${supportEmail}`}>{supportEmail}</a>. Please never send your password.</> : <>A support contact has not been published yet. For now, use the in-app reporting tools or check our <Link to="/community-guidelines" className="font-bold text-primary underline underline-offset-2">community guidelines</Link>.</>}</p>
+        <section className="rounded-[26px] border border-[#f0d7d9] bg-[#fff7f7] p-6 sm:p-8">
+          <div className="mb-5 flex items-center gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-sm"><Mail size={21} aria-hidden="true" /></span>
+            <div><p className="text-xs font-extrabold uppercase tracking-[0.17em] text-primary">Contact support</p><h2 className="mt-1 text-xl font-black text-fg">Send us a message</h2></div>
           </div>
+          <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => void submitContact(event)} noValidate>
+            <div><label className="label" htmlFor="contact-name">Name</label><input id="contact-name" name="name" className="input" required autoComplete="name" /></div>
+            <div><label className="label" htmlFor="contact-email">Email address</label><input id="contact-email" name="email" type="email" className="input" required autoComplete="email" /></div>
+            <div className="sm:col-span-2"><label className="label" htmlFor="contact-message">Message</label><textarea id="contact-message" name="message" className="input min-h-36 resize-y" required minLength={10} /></div>
+            <div className="sm:col-span-2">
+              <button type="submit" className="btn-primary min-h-11 w-full sm:w-auto" disabled={status === "sending"}>{status === "sending" ? "Sending…" : "Send message"}</button>
+              {message && <p role={status === "error" ? "alert" : "status"} className={`mt-3 text-sm ${status === "error" ? "text-danger" : "text-muted"}`}>{message}</p>}
+            </div>
+          </form>
         </section>
         <p className="text-sm leading-6 text-muted">Looking for the basics? Read our <Link to="/community-guidelines" className="font-bold text-primary underline underline-offset-2">community guidelines</Link> or explore <Link to="/features" className="font-bold text-primary underline underline-offset-2">CampusConnect features</Link>.</p>
       </div>

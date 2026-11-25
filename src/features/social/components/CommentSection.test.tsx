@@ -169,6 +169,71 @@ describe("CommentSection", () => {
     });
   });
 
+  it("shows comment likes and reshares immediately while their requests are pending", async () => {
+    let finishLike: (() => void) | undefined;
+    let finishReshare: ((postId: string) => void) | undefined;
+    mocks.likeComment.mockImplementation(() => new Promise<void>((resolve) => { finishLike = resolve; }));
+    mocks.repostComment.mockImplementation(() => new Promise<string>((resolve) => { finishReshare = resolve; }));
+    mocks.fetchComments.mockResolvedValue([{
+      id: "comment-1",
+      author_id: "student-3",
+      body: "Thoughtful comment",
+      created_at: "2026-11-11T09:00:00.000Z",
+      edited_at: null,
+      parent_comment_id: null,
+      like_count: 2,
+      repost_count: 0,
+      liked_by_me: false,
+      reposted_by_me: false,
+      replies: [],
+      author: { username: "thoughtful", display_name: "Thoughtful Student", avatar_path: null },
+    }]);
+    renderComments();
+    await screen.findByText("Thoughtful comment");
+
+    const like = screen.getByRole("button", { name: "Like comment" });
+    fireEvent.click(like);
+    expect(like).toHaveAttribute("aria-pressed", "true");
+    expect(like).toHaveClass("text-primary");
+    expect(like).toHaveTextContent("3");
+
+    const reshare = screen.getByRole("button", { name: "Reshare comment" });
+    fireEvent.click(reshare);
+    expect(reshare).toHaveAttribute("aria-pressed", "true");
+    expect(reshare).toHaveClass("text-primary");
+    expect(reshare).toHaveTextContent("Reposted · 1");
+
+    finishLike?.();
+    finishReshare?.("post-repost");
+  });
+
+  it("rolls a comment like back when the request fails", async () => {
+    mocks.likeComment.mockRejectedValueOnce(new Error("network error"));
+    mocks.fetchComments.mockResolvedValue([{
+      id: "comment-1",
+      author_id: "student-3",
+      body: "Thoughtful comment",
+      created_at: "2026-11-11T09:00:00.000Z",
+      edited_at: null,
+      parent_comment_id: null,
+      like_count: 2,
+      repost_count: 0,
+      liked_by_me: false,
+      reposted_by_me: false,
+      replies: [],
+      author: { username: "thoughtful", display_name: "Thoughtful Student", avatar_path: null },
+    }]);
+    renderComments();
+    await screen.findByText("Thoughtful comment");
+
+    fireEvent.click(screen.getByRole("button", { name: "Like comment" }));
+    const unlike = screen.getByRole("button", { name: "Unlike comment" });
+    expect(unlike).toHaveAttribute("aria-pressed", "true");
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Like comment" })).toHaveAttribute("aria-pressed", "false"));
+    expect(screen.getByRole("button", { name: "Like comment" })).toHaveTextContent("2");
+  });
+
   it("loads additional visible comments in pages instead of silently stopping at the first page", async () => {
     mocks.fetchComments.mockImplementation(async (_postId: string, page = 0) => page === 0
       ? Array.from({ length: 50 }, (_, index) => ({

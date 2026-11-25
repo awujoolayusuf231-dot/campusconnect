@@ -13,8 +13,8 @@ type Values = z.infer<typeof schema>;
 
 export function LoginPage() {
   const nav = useNavigate();
-  const loc = useLocation() as { state?: { from?: string } };
-  const [serverError, setServerError] = useState("");
+  const loc = useLocation() as { state?: { from?: string; unverified?: boolean } };
+  const [serverError, setServerError] = useState(loc.state?.unverified ? "Please verify your email address before continuing." : "");
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Values>({ resolver: zodResolver(schema) });
 
   async function onSubmit(v: Values) {
