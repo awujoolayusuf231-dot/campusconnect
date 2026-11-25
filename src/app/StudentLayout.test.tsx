@@ -45,7 +45,7 @@ describe("StudentLayout navigation", () => {
     mocks.counts = { notifications: 7, messages: 0 };
   });
 
-  it("keeps the primary mobile navigation focused on the four most-used destinations", () => {
+  it("keeps the primary mobile navigation focused on the core destinations", () => {
     renderStudentLayout();
 
     const mobileNavigation = getMobileMainNavigation();
@@ -57,23 +57,18 @@ describe("StudentLayout navigation", () => {
       "/app/communities",
       "/app/messages",
     ]);
-    expect(within(mobileNavigation).getByRole("button", { name: "More navigation" })).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("opens secondary destinations from More and closes the menu after navigation", () => {
+  it("opens Learn, Collaborate and Discover from the hamburger menu", () => {
     renderStudentLayout();
-    const mobileNavigation = getMobileMainNavigation();
+    const hamburger = screen.getByRole("button", { name: "Open navigation menu" });
+    expect(hamburger).toHaveClass("lg:hidden");
+    fireEvent.click(hamburger);
 
-    fireEvent.click(within(mobileNavigation).getByRole("button", { name: "More navigation" }));
-
-    const moreMenu = within(mobileNavigation).getByRole("link", { name: "Study Notes" });
-    expect(moreMenu).toHaveAttribute("href", "/app/study-notes");
-    expect(within(mobileNavigation).getByRole("link", { name: "Past Questions" })).toBeVisible();
-    expect(within(mobileNavigation).getByRole("link", { name: "Flashcards & Quizzes" })).toHaveAttribute("href", "/app/flashcards");
-    fireEvent.click(moreMenu);
-
-    expect(screen.getByText("Study notes content")).toBeInTheDocument();
-    expect(within(mobileNavigation).queryByRole("link", { name: "Past Questions" })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Learn" }).some((link) => link.getAttribute("href") === "/app/learn")).toBe(true);
+    expect(screen.getAllByRole("link", { name: "Collaborate" }).some((link) => link.getAttribute("href") === "/app/collaborate")).toBe(true);
+    expect(screen.getAllByRole("link", { name: "Discover opportunities" }).some((link) => link.getAttribute("href") === "/app/discover-hub")).toBe(true);
+    expect(screen.getAllByRole("link", { name: "Find students" })).toHaveLength(3);
   });
 
   it("puts the notification link and unread count in the header", () => {

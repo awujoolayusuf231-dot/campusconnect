@@ -28,7 +28,7 @@ export function ProtectedPostImage({ path }: { path: string }) {
   }, [path]);
 
   return src
-    ? <img src={src} alt="Attached to post" loading="lazy" className="max-h-[min(70vh,34rem)] w-full rounded-xl border border-line/60 bg-bg object-cover" />
+    ? <img src={src} alt="Attached to post" loading="lazy" draggable={false} className="max-h-[min(70vh,34rem)] w-full rounded-xl border border-line/60 bg-bg object-cover" />
     : <div role="img" aria-label="Attached image unavailable" className="flex min-h-24 items-center justify-center rounded-xl border border-line/60 bg-bg text-sm text-muted">
         {unavailable ? "Image unavailable" : "Loading image…"}
       </div>;

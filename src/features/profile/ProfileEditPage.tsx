@@ -7,7 +7,7 @@ import { z } from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/features/auth/AuthProvider";
-import { celebrationUrlSchema } from "@/validation/profile";
+import { celebrationUrlSchema, usernameSchema } from "@/validation/profile";
 import { listActiveInstitutions } from "@/features/institutions/api";
 import { InstitutionPicker } from "@/features/institutions/InstitutionPicker";
 import { MAX_INPUT_IMAGE_BYTES, validateImages } from "@/features/social/api";
@@ -26,6 +26,7 @@ import { WhiteshirtDialog } from "./WhiteshirtDialog";
 import { LoadingState } from "@/app/LoadingState";
 
 const schema = z.object({
+  username: usernameSchema,
   display_name: z.string().trim().min(1, "Enter your name").max(60),
   bio: z.string().max(280),
   institution_id: z.string(),
@@ -80,7 +81,7 @@ export function ProfileEditPage() {
   const { register, control, handleSubmit, setError, setValue, formState: { errors, isSubmitting } } = useForm<Values>({
     resolver: zodResolver(schema),
     values: own.data ? {
-      display_name: String(own.data.display_name ?? ""), bio: String(own.data.bio ?? ""), institution_id: String(own.data.institution_id ?? ""),
+      username: String(own.data.username ?? ""), display_name: String(own.data.display_name ?? ""), bio: String(own.data.bio ?? ""), institution_id: String(own.data.institution_id ?? ""),
       faculty: String(own.data.faculty ?? ""), department: String(own.data.department ?? ""), academic_level: String(own.data.academic_level ?? ""),
       graduation_year: own.data.graduation_year ? String(own.data.graduation_year) : "", location: String(own.data.location ?? ""),
       interests: ((own.data.interests as string[] | undefined) ?? []).join(", "), website_url: String(own.data.website_url ?? ""),
@@ -91,18 +92,23 @@ export function ProfileEditPage() {
 
   async function onSubmit(v: Values) {
     setMsg("");
+    if (v.username !== String(own.data?.username ?? "")) {
+      const { data: available, error: availabilityError } = await supabase.rpc("is_username_available", { p_username: v.username });
+      if (availabilityError) { setMsg("Could not check that username. Please try again."); return; }
+      if (available === false) { setError("username", { message: "That username is taken" }); return; }
+    }
     const interests = v.interests.split(",").map((s) => s.trim()).filter(Boolean);
     if (interests.length > 10) { setError("interests", { message: "At most 10 interests" }); return; }
     const { error } = await supabase.from("profiles").update({
-      display_name: v.display_name.trim(), bio: nullIfEmpty(v.bio), institution_id: v.institution_id || null,
+      username: v.username, display_name: v.display_name.trim(), bio: nullIfEmpty(v.bio), institution_id: v.institution_id || null,
       faculty: nullIfEmpty(v.faculty), department: nullIfEmpty(v.department), academic_level: nullIfEmpty(v.academic_level),
       graduation_year: v.graduation_year ? Number(v.graduation_year) : null, location: nullIfEmpty(v.location), interests,
       website_url: nullIfEmpty(v.website_url), celebration_url: nullIfEmpty(v.celebration_url), show_celebration: v.show_celebration, visibility: v.visibility,
     }).eq("id", uid);
     if (error) { setMsg("Could not save your profile. Please check the fields and try again."); return; }
+    await supabase.auth.updateUser({ data: { username: v.username } });
     void qc.invalidateQueries({ queryKey: ["profile"] }); void qc.invalidateQueries({ queryKey: ["own-profile"] });
-    const username = String(own.data?.username ?? "");
-    nav(username ? `/app/u/${username}` : "/app");
+    nav(`/app/u/${v.username}`);
   }
 
   async function onAvatar(files: FileList | null) {
@@ -300,6 +306,7 @@ export function ProfileEditPage() {
             <h2 className="font-extrabold text-fg">About you</h2>
             <p className="mt-1 text-xs text-muted">Help your campus community get to know you.</p>
           </div>
+        {field("username", "Username", { autoComplete: "username", autoCapitalize: "none" })}
         {field("display_name", "Name")}
         <div><label className="label" htmlFor="bio">Bio</label><textarea id="bio" rows={4} maxLength={280} className="input min-h-28 resize-y leading-6" placeholder="A little about you…" {...register("bio")} />{errors.bio && <p className="err">{errors.bio.message}</p>}<p className="mt-1 text-right text-xs text-muted">Up to 280 characters</p></div>
         <div><label className="label" htmlFor="institution_id">Institution (self-reported, not verified)</label>

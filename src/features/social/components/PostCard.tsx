@@ -1,8 +1,8 @@
 import { useEffect, useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, Bookmark, Eye, Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
-import { blockUser, deletePost, likePost, muteUser, postShareUrl, repostPost, savePost, unlikePost, unsavePost, unrepostPost, type FeedPost, type PublicPostMetrics } from "../api";
+import { BarChart3, Bookmark, Eye, Heart, MessageCircle, Pencil, Repeat2, Share2 } from "lucide-react";
+import { blockUser, deletePost, editPost, likePost, muteUser, postShareUrl, repostPost, savePost, unlikePost, unsavePost, unrepostPost, type FeedPost, type PublicPostMetrics } from "../api";
 import { socialErrorMessage } from "@/lib/errors";
 import { formatCount } from "@/lib/format";
 import { timeAgo } from "@/lib/time";
@@ -31,12 +31,15 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
   const [showComments, setShowComments] = useState(defaultOpenComments);
   const [dialog, setDialog] = useState<"report" | "delete" | "block" | "mute" | null>(null);
   const [shareNote, setShareNote] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [editBody, setEditBody] = useState(post.body);
   const [likedByMe, setLikedByMe] = useState(post.liked_by_me);
   const [likeCount, setLikeCount] = useState(post.like_count);
   const [repostedByMe, setRepostedByMe] = useState(post.reposted_by_me);
   const [repostCount, setRepostCount] = useState(post.repost_count);
   const impressionRef = usePostImpression(trackImpression, post.id);
   const mine = post.author_id === me;
+  const canEdit = mine && Date.now() - new Date(post.created_at).getTime() <= 5 * 60 * 1000;
   const refresh = () => { for (const k of ["feed", "author-posts", "community-posts", "profile-reposts", "profile-stats", "post"]) void qc.invalidateQueries({ queryKey: [k] }); };
 
   useEffect(() => {
@@ -75,6 +78,10 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
     refresh();
     void qc.invalidateQueries({ queryKey: ["saved-posts"] });
   } });
+  const edit = useMutation({
+    mutationFn: () => editPost(post.id, editBody),
+    onSuccess: () => { setEditing(false); refresh(); },
+  });
   const block = useMutation({ mutationFn: () => blockUser(post.author_id), onSuccess: () => { setDialog(null); refresh(); void qc.invalidateQueries({ queryKey: ["discover"] }); } });
   const mute = useMutation({ mutationFn: () => muteUser(post.author_id), onSuccess: () => { setDialog(null); refresh(); } });
 
@@ -130,7 +137,12 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
           </Link>{post.edited_at ? " · edited" : ""}</p>
         </div>
         <div className="flex shrink-0 gap-1 text-xs">
-          {mine ? <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => setDialog("delete")}>Delete</button> : (
+          {mine ? (
+            <>
+              {canEdit && <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => { setEditBody(post.body); setEditing(true); }}><Pencil size={14} className="mr-1 inline" aria-hidden="true" />Edit</button>}
+              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => setDialog("delete")}>Delete</button>
+            </>
+          ) : (
             <>
               <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => setDialog("report")}>Report</button>
               <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-[#fff1f2] hover:text-primary" onClick={() => setDialog("mute")}>Mute</button>
@@ -139,18 +151,32 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
         </div>
       </header>
       <div className="min-w-0">
-        <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[15px] leading-7 text-[#393433]"
-          style={!fullPost && post.body.length > POST_PREVIEW_LIMIT ? {
-            display: "-webkit-box",
-            WebkitBoxOrient: "vertical",
-            WebkitLineClamp: 6,
-            overflow: "hidden",
-          } : undefined}>
-          <PostBody body={post.body} />
-        </p>
-        {!fullPost && post.body.length > POST_PREVIEW_LIMIT && <Link to={`/app/p/${post.id}`} className="mt-1 inline-flex min-h-8 items-center rounded-lg px-2 text-sm font-bold text-primary hover:bg-[#fff1f2] hover:underline">
-          Show more
-        </Link>}
+        {editing ? (
+          <form className="space-y-2" onSubmit={(event) => { event.preventDefault(); if (editBody.trim()) edit.mutate(); }}>
+            <label className="label" htmlFor={`edit-post-${post.id}`}>Edit post</label>
+            <textarea id={`edit-post-${post.id}`} className="input min-h-28 w-full resize-y" maxLength={2000} value={editBody} onChange={(event) => setEditBody(event.target.value)} />
+            <div className="flex justify-end gap-2">
+              <button type="button" className="btn min-h-9" onClick={() => setEditing(false)}>Cancel</button>
+              <button type="submit" className="btn-primary min-h-9" disabled={edit.isPending || !editBody.trim()}>Save</button>
+            </div>
+            {edit.isError && <p role="alert" className="err">{socialErrorMessage((edit.error as Error).message)}</p>}
+          </form>
+        ) : (
+          <>
+            <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[15px] leading-7 text-[#393433]"
+              style={!fullPost && post.body.length > POST_PREVIEW_LIMIT ? {
+                display: "-webkit-box",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: 6,
+                overflow: "hidden",
+              } : undefined}>
+              <PostBody body={post.body} />
+            </p>
+            {!fullPost && post.body.length > POST_PREVIEW_LIMIT && <Link to={`/app/p/${post.id}`} className="mt-1 inline-flex min-h-8 items-center rounded-lg px-2 text-sm font-bold text-primary hover:bg-[#fff1f2] hover:underline">
+              Show more
+            </Link>}
+          </>
+        )}
       </div>
       {images && images.length > 0 && (
         <div className={`grid gap-2 ${images.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
@@ -183,7 +209,7 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
         <div className="px-4 pb-4 sm:px-5">
           {shareNote && <p role="status" className="text-xs text-muted">{shareNote}</p>}
           {actionError && <p role="alert" className="err">{socialErrorMessage(String(actionError.message))}</p>}
-          {showComments && <CommentSection postId={post.id} me={me} canReshare={!inCommunity} />}
+          {showComments && <CommentSection postId={post.id} postAuthorId={post.author_id} me={me} canReshare={!inCommunity} />}
         </div>
       )}
       {dialog === "report" && <ReportDialog type="post" targetId={post.id} onClose={() => setDialog(null)} />}

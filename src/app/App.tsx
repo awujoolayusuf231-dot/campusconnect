@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { RequireAuth, RequireStaff } from "@/features/auth/guards";
 import { LoadingState } from "@/app/LoadingState";
 
@@ -109,6 +109,9 @@ const CompetitionDetailsPage = lazy(() => import("@/features/competitions/Compet
 const CompetitionReviewPage = lazy(() => import("@/features/competitions/CompetitionsPages").then((m) => ({ default: m.CompetitionReviewPage })));
 const VoiceSpacesPage = lazy(() => import("@/features/voice/VoiceSpacesPages").then((m) => ({ default: m.VoiceSpacesPage })));
 const VoiceRoomPage = lazy(() => import("@/features/voice/VoiceSpacesPages").then((m) => ({ default: m.VoiceRoomPage })));
+const LearnHub = lazy(() => import("@/features/academic/AcademicResourcesHub").then((m) => ({ default: m.LearnHub })));
+const CollaborateHub = lazy(() => import("@/features/academic/AcademicResourcesHub").then((m) => ({ default: m.CollaborateHub })));
+const DiscoverHub = lazy(() => import("@/features/academic/AcademicResourcesHub").then((m) => ({ default: m.DiscoverHub })));
 
 export function App() {
   const location = useLocation();
@@ -137,6 +140,11 @@ export function App() {
             <Route path="/app/tags/:tag" element={<HashtagPage />} />
             <Route path="/app/p/:id" element={<PostPage />} />
             <Route path="/app/saved-posts" element={<SavedPostsPage />} />
+            <Route path="/app/learning" element={<Navigate to="/app/flashcards" replace />} />
+            <Route path="/app/academic" element={<Navigate to="/app/learn" replace />} />
+            <Route path="/app/learn" element={<LearnHub />} />
+            <Route path="/app/collaborate" element={<CollaborateHub />} />
+            <Route path="/app/discover-hub" element={<DiscoverHub />} />
             <Route path="/app/analytics" element={<AccountAnalyticsPage />} />
             <Route path="/app/subscription" element={<SubscriptionPage />} />
             <Route path="/app/communities" element={<CommunitiesPage />} />

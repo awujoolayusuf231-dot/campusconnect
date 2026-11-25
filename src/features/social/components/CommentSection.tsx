@@ -21,7 +21,7 @@ type CommentMutation = {
 
 type CommentInteractionOverrides = Partial<Pick<CommentRow, "liked_by_me" | "like_count" | "reposted_by_me" | "repost_count">>;
 
-export function CommentSection({ postId, me, canReshare = true }: { postId: string; me: string; canReshare?: boolean }) {
+export function CommentSection({ postId, postAuthorId = "", me, canReshare = true }: { postId: string; postAuthorId?: string; me: string; canReshare?: boolean }) {
   const qc = useQueryClient();
   const [text, setText] = useState("");
   const [replyText, setReplyText] = useState("");
@@ -223,7 +223,7 @@ export function CommentSection({ postId, me, canReshare = true }: { postId: stri
               title={canReshare ? "Share this comment as a public post" : "Community comments cannot be reshared"} onClick={() => toggleCommentReshare(comment, repostedByMe, repostCount)}>
               <Repeat2 size={14} aria-hidden="true" />{repostedByMe ? "Reposted" : "Reshare"}{repostCount > 0 ? ` · ${formatCount(repostCount)}` : ""}
             </button>
-            {comment.author_id === me
+            {comment.author_id === me || postAuthorId === me
               ? <button type="button" className="text-xs font-semibold text-muted underline-offset-2 hover:text-primary hover:underline disabled:opacity-50" disabled={del.isPending} onClick={() => del.mutate(comment.id)}>Delete</button>
               : <button type="button" className="text-xs font-semibold text-muted underline-offset-2 hover:text-primary hover:underline" onClick={() => setReporting(comment.id)}>Report</button>}
           </div>

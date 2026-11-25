@@ -322,6 +322,7 @@ export const unlikePost = (postId: string) => rpc("unlike_post", { p_post: postI
 export const repostPost = (postId: string) => rpc("repost_post", { p_post: postId });
 export const unrepostPost = (postId: string) => rpc("unrepost_post", { p_post: postId });
 export const deletePost = (postId: string) => rpc("delete_own_post", { p_post: postId });
+export const editPost = (postId: string, body: string) => rpc("edit_own_post", { p_post: postId, p_body: body });
 export const addComment = (postId: string, body: string) => rpc("add_comment", { p_post: postId, p_body: body });
 export const replyToComment = (postId: string, body: string, parentCommentId: string) =>
   rpc("reply_to_comment", { p_post: postId, p_body: body, p_parent_comment: parentCommentId });
@@ -335,7 +336,7 @@ export const recordPostDetailView = (postId: string) => rpc("record_post_detail_
 export const recordCommentImpressions = (commentIds: string[]) =>
   rpc("record_comment_impressions", { p_comment_ids: commentIds });
 export const recordProfileView = (profileId: string) => rpc("record_profile_view", { p_profile: profileId });
-export const deleteComment = (id: string) => rpc("delete_own_comment", { p_comment: id });
+export const deleteComment = (id: string) => rpc("delete_post_comment", { p_comment: id });
 export const followUser = (id: string) => rpc("follow_user", { p_target: id });
 export const unfollowUser = (id: string) => rpc("unfollow_user", { p_target: id });
 export type ReportTarget = "user" | "post" | "comment" | "community" | "message" | "opportunity" | "assignment_discussion" | "assignment_discussion_reply";
