@@ -1,8 +1,11 @@
 import { supabase } from "@/lib/supabase";
+import { optimizeImage } from "@/lib/image";
 import type { FeedPost, FeedScope, FeedVariant } from "@/features/social/api";
 import type { CelebrationField, CelebrationOccasion, StudioTemplate } from "./catalog";
 
 export const CELEBRATION_IMAGE_BUCKET = "celebration-images";
+export const CELEBRATION_IMAGE_URL_STALE_TIME = 50 * 60 * 1000;
+export const CELEBRATION_IMAGE_URL_GC_TIME = 55 * 60 * 1000;
 export const MAX_CELEBRATION_IMAGE_BYTES = 5 * 1024 * 1024;
 export const CELEBRATION_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export const CELEBRATION_CATEGORIES = [
@@ -272,13 +275,18 @@ export async function saveCelebrationCard(input: SaveCelebrationInput): Promise<
   const userId = userData.user?.id;
   if (!userId) throw new Error("Sign in to save a celebration card.");
 
-  const initialStatus: CelebrationStatus = input.publish && (!input.imageFile || input.keepCurrentPublication) ? "published" : "draft";
+  const optimizedFile = input.imageFile ? await optimizeImage(input.imageFile, 1600, 0.82) : null;
+  if (optimizedFile) {
+    const imageError = validateCelebrationImage(optimizedFile);
+    if (imageError) throw new Error(imageError);
+  }
+  const initialStatus: CelebrationStatus = input.publish && (!optimizedFile || input.keepCurrentPublication) ? "published" : "draft";
   const previousPhoto = input.photoPath ?? null;
-  const initialPath = input.imageFile && !input.id ? null : previousPhoto;
+  const initialPath = optimizedFile && !input.id ? null : previousPhoto;
   const cardId = await saveCardRpc(input, input.id ?? null, initialPath, initialStatus);
-  if (!input.imageFile) return cardId;
+  if (!optimizedFile) return cardId;
 
-  const file = input.imageFile;
+  const file = optimizedFile;
   const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
   const photoPath = `${userId}/${cardId}/${crypto.randomUUID()}.${extension}`;
   const { error: uploadError } = await supabase.storage.from(CELEBRATION_IMAGE_BUCKET).upload(photoPath, file, {

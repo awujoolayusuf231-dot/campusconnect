@@ -13,7 +13,7 @@ const AUDIENCE_OPTIONS: { value: MainPostVisibility; label: string; description:
   { value: "private", label: "Only me", description: "Only you can see this post." },
 ];
 
-export function Composer({ communityId }: { communityId?: string }) {
+export function Composer({ communityId, showInlineTrigger = true }: { communityId?: string; showInlineTrigger?: boolean }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState("");
@@ -60,24 +60,26 @@ export function Composer({ communityId }: { communityId?: string }) {
 
   return createPortal(
     <>
-      <section className="rounded-2xl border border-line bg-white p-3 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-4" aria-label="Create a post">
-        <button
-          type="button"
-          onClick={openComposer}
-          className="flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent bg-bg px-3 text-left text-sm text-muted transition hover:border-primary-border hover:bg-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-4"
-          aria-haspopup="dialog"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f7e7e9] text-primary"><UsersRound size={17} aria-hidden="true" /></span>
-          <span className="flex-1">What’s happening on campus?</span>
-          <span className="hidden rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-primary shadow-sm sm:inline">Write a post</span>
-        </button>
-        <div className="mt-3 flex items-center justify-between border-t border-line/80 pt-3">
-          <span className="hidden text-xs font-medium text-muted sm:inline">Share a moment with your community</span>
-          <button type="button" onClick={openComposer} className="ml-auto inline-flex min-h-9 items-center gap-2 rounded-xl px-3 text-xs font-bold text-muted transition hover:bg-primary-soft hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-haspopup="dialog">
-            <ImagePlus size={16} aria-hidden="true" /> Photo or video
+      {showInlineTrigger && (
+        <section className="rounded-2xl border border-line bg-white p-3 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-4" aria-label="Create a post">
+          <button
+            type="button"
+            onClick={openComposer}
+            className="flex min-h-12 w-full items-center gap-3 rounded-xl border border-transparent bg-bg px-3 text-left text-sm text-muted transition hover:border-primary-border hover:bg-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-4"
+            aria-haspopup="dialog"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f7e7e9] text-primary"><UsersRound size={17} aria-hidden="true" /></span>
+            <span className="flex-1">What’s happening on campus?</span>
+            <span className="hidden rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-primary shadow-sm sm:inline">Write a post</span>
           </button>
-        </div>
-      </section>
+          <div className="mt-3 flex items-center justify-between border-t border-line/80 pt-3">
+            <span className="hidden text-xs font-medium text-muted sm:inline">Share a moment with your community</span>
+            <button type="button" onClick={openComposer} className="ml-auto inline-flex min-h-9 items-center gap-2 rounded-xl px-3 text-xs font-bold text-muted transition hover:bg-primary-soft hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-haspopup="dialog">
+              <ImagePlus size={16} aria-hidden="true" /> Photo or video
+            </button>
+          </div>
+        </section>
+      )}
       <button
         ref={trigger}
         type="button"

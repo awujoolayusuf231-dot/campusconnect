@@ -19,6 +19,10 @@ describe("WhiteshirtDialog", () => {
     expect(frame).toHaveAttribute("src", "https://www.whiteshirt.fun/?ref=ecomedge");
     expect(frame.getAttribute("sandbox")).toContain("allow-scripts");
     expect(frame.getAttribute("sandbox")).not.toContain("allow-top-navigation");
+    const openInBrowser = screen.getByRole("link", { name: /open in browser/i });
+    expect(openInBrowser).toHaveAttribute("href", WHITESHIRT_HOME);
+    expect(openInBrowser).toHaveAttribute("target", "_blank");
+    expect(openInBrowser).toHaveAttribute("rel", "noopener noreferrer");
   });
   it("keeps the button disabled for non-whiteshirt links and enables it for a valid one", () => {
     const onUse = vi.fn();

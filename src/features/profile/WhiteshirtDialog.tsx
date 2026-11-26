@@ -37,18 +37,19 @@ export function WhiteshirtDialog({ onUse, onClose }: Props) {
     try { setPasted(await navigator.clipboard.readText()); }
     catch { setClipboardNote("Your browser did not allow reading the clipboard. Paste the link into the box instead."); }
   }
-  // A small separate browser window (not a tab) as a fallback if whiteshirt.fun refuses to be shown inside another site.
-  const openSmallWindow = () => { window.open(WHITESHIRT_HOME, "whiteshirt", "popup=yes,width=480,height=760,noopener,noreferrer"); };
-
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="ws-title" className="fixed inset-0 z-40 flex items-stretch justify-center bg-black/50 md:items-center md:p-6">
       <div className="flex h-full w-full flex-col bg-bg md:h-[88dvh] md:max-w-4xl md:overflow-hidden md:rounded-xl md:border md:border-line">
         <header className="flex items-center gap-3 border-b border-line bg-surface p-3 pt-[calc(0.75rem+env(safe-area-inset-top))] md:pt-3">
           <h2 id="ws-title" className="flex-1 font-semibold">Create your celebration board on whiteshirt.fun</h2>
-          <button type="button" className="btn hidden md:inline-flex" onClick={openSmallWindow}>Open in a small window <ExternalLink size={14} className="ml-1" aria-hidden="true" /></button>
           <button type="button" aria-label="Close" autoFocus className="rounded p-1 hover:bg-bg" onClick={onClose}><X size={20} /></button>
         </header>
-        <p className="border-b border-line bg-surface px-3 py-2 text-xs text-muted">This is the real whiteshirt.fun site shown inside CampusConnect. Your CampusConnect login is not shared with it, and CampusConnect cannot see what you type there. Create your board, then paste its link below.</p>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface px-3 py-2">
+          <p className="min-w-0 flex-1 text-xs text-muted">Whiteshirt.fun is a separate site and may block embedded viewing. Your CampusConnect login is not shared with it.</p>
+          <a href={WHITESHIRT_HOME} target="_blank" rel="noopener noreferrer" className="btn min-h-9 shrink-0 gap-1.5 px-3 text-xs font-bold">
+            Open in browser <ExternalLink size={14} aria-hidden="true" />
+          </a>
+        </div>
         <div className="relative flex-1 bg-surface">
           {!loaded && <div className="absolute inset-0 grid place-items-center bg-surface/90 p-4"><LoadingState label="Opening your celebration board" variant="panel" /></div>}
           <iframe title="whiteshirt.fun" src={WHITESHIRT_HOME} onLoad={() => setLoaded(true)} className="relative h-full w-full border-0"
@@ -57,8 +58,7 @@ export function WhiteshirtDialog({ onUse, onClose }: Props) {
         </div>
         {(slow || loaded) && (
           <p className="border-t border-line bg-surface px-3 py-2 text-xs text-muted">
-            Blank page or “refused to connect”? whiteshirt.fun may not allow being shown inside other sites.{" "}
-            <button type="button" className="underline" onClick={openSmallWindow}>Open it in a small window</button>, create your board there, then come back and paste the link.
+            If the embedded page is blank or says “refused to connect”, open it in your browser, create your board there, then come back and paste the link.
           </p>)}
         <footer className="space-y-2 border-t border-line bg-surface p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <label className="label" htmlFor="ws-link">When your board is ready, paste its link here</label>

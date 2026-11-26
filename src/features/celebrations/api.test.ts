@@ -1,10 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { beforeEach, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
-vi.mock("@/lib/supabase", () => ({ supabase: { rpc: mocks.rpc } }));
+const mocks = vi.hoisted(() => ({
+  rpc: vi.fn(),
+  getUser: vi.fn(),
+  upload: vi.fn(),
+  remove: vi.fn(),
+  optimizeImage: vi.fn(),
+}));
+vi.mock("@/lib/supabase", () => ({
+  supabase: {
+    rpc: mocks.rpc,
+    auth: { getUser: mocks.getUser },
+    storage: { from: () => ({ upload: mocks.upload, remove: mocks.remove }) },
+  },
+}));
+vi.mock("@/lib/image", () => ({ optimizeImage: mocks.optimizeImage }));
 
-import { fetchFeedTimeline, validateCelebration, type SaveCelebrationInput } from "./api";
+import { fetchFeedTimeline, saveCelebrationCard, validateCelebration, type SaveCelebrationInput } from "./api";
 import { recordPostViews } from "@/features/social/api";
 
 describe("Batched post-view recording", () => {
@@ -56,6 +69,26 @@ const card: SaveCelebrationInput = {
 describe("Celebration card validation", () => {
   it("accepts a valid occasion-specific card", () => {
     expect(validateCelebration(card)).toBeNull();
+  });
+
+  describe("Celebration card image uploads", () => {
+    it("optimizes the photo before storing it", async () => {
+      const original = new File(["original"], "photo.png", { type: "image/png" });
+      const optimized = new File(["optimized"], "photo.webp", { type: "image/webp" });
+      mocks.getUser.mockResolvedValue({ data: { user: { id: "student-1" } }, error: null });
+      mocks.rpc.mockResolvedValue({ data: "card-1", error: null });
+      mocks.upload.mockResolvedValue({ error: null });
+      mocks.optimizeImage.mockResolvedValue(optimized);
+
+      await saveCelebrationCard({ ...card, imageFile: original });
+
+      expect(mocks.optimizeImage).toHaveBeenCalledWith(original, 1600, 0.82);
+      expect(mocks.upload).toHaveBeenCalledWith(
+        expect.stringMatching(/^student-1\/card-1\/.+\.webp$/),
+        optimized,
+        { contentType: "image/webp", upsert: false },
+      );
+    });
   });
 
   const rankedRow = {

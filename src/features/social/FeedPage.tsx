@@ -80,7 +80,7 @@ export function FeedPage() {
         </div>
       </section>
       <OnboardingCard />
-      <Composer />
+      <Composer showInlineTrigger={false} />
       <div id="feed-panel" role="tabpanel" aria-labelledby={`feed-tab-${scope}`} className="space-y-4" aria-label={`${TABS.find(([value]) => value === scope)?.[1] ?? "Campus"} posts`}>
       {feed.isLoading && <div role="status" className="space-y-3" aria-label="Loading feed">{[0, 1, 2].map((i) => <div key={i} className="card h-36 animate-pulse border-transparent bg-white shadow-[0_8px_24px_rgba(35,24,20,0.035)]" />)}</div>}
       {feed.isError && <p role="alert" className="card border-danger/20 bg-white text-sm text-danger">

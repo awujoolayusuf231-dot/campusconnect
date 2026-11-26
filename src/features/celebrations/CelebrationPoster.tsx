@@ -101,7 +101,7 @@ export function CelebrationPoster({
       className={`relative isolate w-full overflow-hidden border border-white/15 shadow-[0_22px_60px_rgba(30,18,18,0.22)] ${square ? "aspect-square" : "aspect-[3/4]"} ${alignment}`}
       style={{ color: theme.text, backgroundColor: theme.background }}
     >
-      <img src={fullPhoto} alt="" aria-hidden="true" crossOrigin="anonymous" className={`absolute inset-0 h-full w-full object-cover ${fullBleedPhoto ? "opacity-100" : "opacity-50"}`} style={{ objectPosition: `${theme.photoX}% ${theme.photoY}%`, transform: `scale(${theme.photoScale})` }} />
+      <img src={fullPhoto} alt="" aria-hidden="true" crossOrigin="anonymous" loading={square ? "lazy" : "eager"} decoding="async" className={`absolute inset-0 h-full w-full object-cover ${fullBleedPhoto ? "opacity-100" : "opacity-50"}`} style={{ objectPosition: `${theme.photoX}% ${theme.photoY}%`, transform: `scale(${theme.photoScale})` }} />
       <div aria-hidden="true" className="absolute inset-0" style={{ background: `linear-gradient(180deg, ${theme.background}45 0%, ${theme.background}14 35%, ${theme.background}e8 100%)` }} />
       {theme.showDecorations !== false && (
         <>
@@ -114,7 +114,7 @@ export function CelebrationPoster({
       {layout === "portrait" && (
         <div className="absolute inset-x-0 bottom-0 z-10 flex min-h-[48%] flex-col justify-end px-[8%] pb-[8%] pt-[18%] text-left" style={{ background: `linear-gradient(0deg, ${theme.background} 0%, ${theme.background}f2 63%, transparent 100%)` }}>
           <p className="text-[0.62rem] font-extrabold uppercase tracking-[0.2em]" style={{ color: theme.accent }}>{occasion.eyebrow}</p>
-          {framedPhoto && <div className="mb-4 mt-2 h-20 w-20 overflow-hidden rounded-full border-[3px] border-white/80 shadow-xl"><img src={photoUrl!} alt="" className="h-full w-full object-cover" style={{ objectPosition: `${theme.photoX}% ${theme.photoY}%` }} /></div>}
+          {framedPhoto && <div className="mb-4 mt-2 h-20 w-20 overflow-hidden rounded-full border-[3px] border-white/80 shadow-xl"><img src={photoUrl!} alt="" loading={square ? "lazy" : "eager"} decoding="async" className="h-full w-full object-cover" style={{ objectPosition: `${theme.photoX}% ${theme.photoY}%` }} /></div>}
           <h1 className={`mt-3 break-words leading-[0.92] ${titleSize} ${font}`}>{displayName}</h1>
           <p className="mt-3 text-xs font-semibold uppercase tracking-[0.13em] opacity-90">{card.title}</p>
           <p className="mt-3 line-clamp-3 max-w-[34rem] whitespace-pre-wrap text-sm leading-6 opacity-95">{card.message || occasion.emotionalLine}</p>
@@ -132,7 +132,7 @@ export function CelebrationPoster({
             {qrValue && <QRCodeSVG value={qrValue} size={54} bgColor="#ffffff" fgColor="#231f20" includeMargin />}
           </header>
           <div className="my-auto py-[8%]">
-          {framedPhoto && <div className="mb-4 h-20 w-full overflow-hidden rounded-xl border border-white/50"><img src={photoUrl!} alt="" className="h-full w-full object-cover" style={{ objectPosition: `${theme.photoX}% ${theme.photoY}%` }} /></div>}
+          {framedPhoto && <div className="mb-4 h-20 w-full overflow-hidden rounded-xl border border-white/50"><img src={photoUrl!} alt="" loading={square ? "lazy" : "eager"} decoding="async" className="h-full w-full object-cover" style={{ objectPosition: `${theme.photoX}% ${theme.photoY}%` }} /></div>}
             {theme.showCountdown && <p className="mb-3 text-xs font-black uppercase tracking-[0.17em]" style={{ color: theme.accent }}>{countdownFor(card.celebration_at, card.timezone)}</p>}
             <p className="text-[0.62rem] font-extrabold uppercase tracking-[0.2em]">{card.title}</p>
             <h1 className={`mt-4 break-words leading-[0.86] ${titleSize} ${font}`}>{displayName}</h1>
@@ -154,7 +154,7 @@ export function CelebrationPoster({
             <span className="mt-4 h-px w-20" style={{ backgroundColor: theme.accent }} />
           </header>
           <div className="z-10 flex flex-col items-center px-[4%] py-[4%]">
-            {framedPhoto && <div className="mb-5 h-24 w-24 overflow-hidden rounded-full border-[3px] p-1" style={{ borderColor: theme.accent }}><img src={photoUrl!} alt="" className="h-full w-full rounded-full object-cover" style={{ objectPosition: `${theme.photoX}% ${theme.photoY}%` }} /></div>}
+            {framedPhoto && <div className="mb-5 h-24 w-24 overflow-hidden rounded-full border-[3px] p-1" style={{ borderColor: theme.accent }}><img src={photoUrl!} alt="" loading={square ? "lazy" : "eager"} decoding="async" className="h-full w-full rounded-full object-cover" style={{ objectPosition: `${theme.photoX}% ${theme.photoY}%` }} /></div>}
             <p className="text-[0.62rem] font-bold uppercase tracking-[0.2em]">{card.title}</p>
             <h1 className={`mt-3 break-words leading-tight ${titleSize} ${font}`}>{displayName}</h1>
             <p className="mt-4 max-w-xl whitespace-pre-wrap text-sm leading-6 opacity-90">{card.message || occasion.emotionalLine}</p>
@@ -176,7 +176,7 @@ export function CelebrationPoster({
           <div className="my-auto">
             <p className="text-[0.6rem] font-black uppercase tracking-[0.2em]" style={{ color: theme.accent }}>{occasion.eyebrow}</p>
             <h1 className={`mt-3 break-words leading-[0.9] ${titleSize} ${font}`}>{displayName}</h1>
-            {framedPhoto && <div className="mt-5 h-24 w-full overflow-hidden rounded-2xl border-2 border-white/80 shadow-xl"><img src={photoUrl!} alt="" className="h-full w-full object-cover" style={{ objectPosition: `${theme.photoX}% ${theme.photoY}%` }} /></div>}
+            {framedPhoto && <div className="mt-5 h-24 w-full overflow-hidden rounded-2xl border-2 border-white/80 shadow-xl"><img src={photoUrl!} alt="" loading={square ? "lazy" : "eager"} decoding="async" className="h-full w-full object-cover" style={{ objectPosition: `${theme.photoX}% ${theme.photoY}%` }} /></div>}
             <p className="mt-4 text-xs font-bold uppercase tracking-[0.14em]">{card.title}</p>
             <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-6">{card.message || occasion.emotionalLine}</p>
           </div>

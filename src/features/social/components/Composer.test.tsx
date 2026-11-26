@@ -11,11 +11,11 @@ vi.mock("../api", () => ({
   searchStudents: vi.fn().mockResolvedValue([]),
 }));
 
-function renderComposer() {
+function renderComposer(props?: { showInlineTrigger?: boolean }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter><Composer /></MemoryRouter>
+      <MemoryRouter><Composer {...props} /></MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -36,6 +36,13 @@ describe("Composer", () => {
     expect(dialog.parentElement?.parentElement).toBe(document.body);
     expect(dialog).toBeInTheDocument();
     expect(screen.getByLabelText("What's happening?")).toHaveFocus();
+  });
+
+  it("can hide the inline composer while keeping the floating create button", () => {
+    renderComposer({ showInlineTrigger: false });
+
+    expect(screen.queryByRole("region", { name: "Create a post" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create a post" })).toBeInTheDocument();
   });
 
   it("submits a post from the opened editor", async () => {

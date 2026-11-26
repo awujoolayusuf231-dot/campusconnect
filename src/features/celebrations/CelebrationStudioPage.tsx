@@ -8,6 +8,8 @@ import { celebrationUrlSchema } from "@/validation/profile";
 import {
   getCelebration,
   getCelebrationImageUrl,
+  CELEBRATION_IMAGE_URL_GC_TIME,
+  CELEBRATION_IMAGE_URL_STALE_TIME,
   listCelebrationCatalog,
   saveCelebrationCard,
   validateCelebration,
@@ -98,7 +100,13 @@ export function CelebrationStudioPage() {
 
   const catalog = useQuery({ queryKey: ["celebrations", "studio-catalog"], queryFn: listCelebrationCatalog, staleTime: 60_000 });
   const existing = useQuery({ queryKey: ["celebration", celebrationId], queryFn: () => getCelebration(celebrationId), enabled: editing });
-  const image = useQuery({ queryKey: ["celebration-image", photoPath], enabled: Boolean(photoPath && !imageFile), queryFn: () => getCelebrationImageUrl(photoPath!) });
+  const image = useQuery({
+    queryKey: ["celebration-image", photoPath],
+    enabled: Boolean(photoPath && !imageFile),
+    queryFn: () => getCelebrationImageUrl(photoPath!),
+    staleTime: CELEBRATION_IMAGE_URL_STALE_TIME,
+    gcTime: CELEBRATION_IMAGE_URL_GC_TIME,
+  });
   const occasions = catalog.data?.occasions ?? CELEBRATION_OCCASIONS;
   const templates = catalog.data?.templates ?? CELEBRATION_TEMPLATES;
   const occasion = occasions.find((row) => row.id === category) ?? occasions[0]!;

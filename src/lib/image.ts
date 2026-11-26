@@ -22,20 +22,28 @@ export async function optimizeImage(file: File, maxDimension: number, quality = 
   if (!ACCEPTED.test(file.type)) throw new Error("unsupported_image");
   try {
     const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-    const { width, height } = fitWithin(bitmap.width, bitmap.height, maxDimension);
+    const sourceWidth = bitmap.width;
+    const sourceHeight = bitmap.height;
+    const { width, height } = fitWithin(sourceWidth, sourceHeight, maxDimension);
     const canvas = document.createElement("canvas");
     canvas.width = width; canvas.height = height;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.drawImage(bitmap, 0, 0, width, height);
-    bitmap.close();
+    if (!ctx) {
+      bitmap.close();
+      return file;
+    }
+    try {
+      ctx.drawImage(bitmap, 0, 0, width, height);
+    } finally {
+      bitmap.close();
+    }
     let blob = await toBlob(canvas, "image/webp", quality);
     if (!blob || blob.type !== "image/webp") {           // Safari etc. cannot encode WebP: fall back to JPEG on white
       ctx.globalCompositeOperation = "destination-over"; ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, width, height);
       blob = await toBlob(canvas, "image/jpeg", quality);
     }
     if (!blob) return file;
-    const sameSize = width === bitmap.width && height === bitmap.height;
+    const sameSize = width === sourceWidth && height === sourceHeight;
     if (sameSize && blob.size >= file.size && !/^image\/png$/.test(file.type)) return file; // already small; keep the original
     const base = file.name.replace(/\.[^.]+$/, "") || "image";
     return new File([blob], `${base}.${EXT[blob.type] ?? "jpg"}`, { type: blob.type });

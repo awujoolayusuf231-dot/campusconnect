@@ -9,6 +9,8 @@ import { CelebrationPoster } from "./CelebrationPoster";
 import {
   addCelebrationReminder,
   cancelCelebrationReminder,
+  CELEBRATION_IMAGE_URL_GC_TIME,
+  CELEBRATION_IMAGE_URL_STALE_TIME,
   deleteCelebrationCard,
   getCelebration,
   getCelebrationImageUrl,
@@ -87,8 +89,14 @@ function CelebrationVisual({ card, photoUrl, compact = false }: { card: Pick<Fee
 }
 
 function CelebrationImage({ card, compact = false }: { card: CelebrationCard | FeedCelebration; compact?: boolean }) {
-  const image = useQuery({ queryKey: ["celebration-image", card.photo_path], enabled: !!card.photo_path, queryFn: () => getCelebrationImageUrl(card.photo_path!) });
-  return <><CelebrationVisual card={card} photoUrl={image.data} compact={compact} />{image.isError && <p role="alert" className="mt-2 text-xs text-danger">The celebration photo could not be loaded.</p>}</>;
+  const image = useQuery({
+    queryKey: ["celebration-image", card.photo_path],
+    enabled: !!card.photo_path,
+    queryFn: () => getCelebrationImageUrl(card.photo_path!),
+    staleTime: CELEBRATION_IMAGE_URL_STALE_TIME,
+    gcTime: CELEBRATION_IMAGE_URL_GC_TIME,
+  });
+  return <><CelebrationVisual card={card} photoUrl={image.data} compact={compact} />{image.isError && <p role="alert" className="mt-2 text-xs text-danger">The celebration photo could not be loaded. <button type="button" className="font-bold underline underline-offset-2" onClick={() => void image.refetch()}>Try again</button></p>}</>;
 }
 
 function daysUntil(value: string) {
@@ -162,7 +170,13 @@ export function CreateCelebrationPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const templates = TEMPLATES.filter((template) => template.category === category);
-  const imageUrl = useQuery({ queryKey: ["celebration-image", photoPath], enabled: !!photoPath && !imageFile, queryFn: () => getCelebrationImageUrl(photoPath!) });
+  const imageUrl = useQuery({
+    queryKey: ["celebration-image", photoPath],
+    enabled: !!photoPath && !imageFile,
+    queryFn: () => getCelebrationImageUrl(photoPath!),
+    staleTime: CELEBRATION_IMAGE_URL_STALE_TIME,
+    gcTime: CELEBRATION_IMAGE_URL_GC_TIME,
+  });
   useEffect(() => {
     if (!existing.data || loaded) return;
     const card = existing.data;
