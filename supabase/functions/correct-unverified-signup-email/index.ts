@@ -120,6 +120,16 @@ Deno.serve(async (request) => {
     return response({ error: "invalid_credentials" }, 401);
   }
 
+  const { data: emailInUse, error: emailCheckError } = await adminClient.rpc(
+    "unverified_signup_email_in_use",
+    { p_email: newEmail, p_exclude_user_id: userId },
+  );
+  if (emailCheckError || typeof emailInUse !== "boolean") {
+    console.error("Signup email correction availability check failed.", emailCheckError?.code);
+    return response({ error: "email_correction_unavailable" }, 503);
+  }
+  if (emailInUse) return response({ error: "email_unavailable" }, 409);
+
   const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, {
     email: newEmail,
     email_confirm: false,
@@ -128,11 +138,32 @@ Deno.serve(async (request) => {
     if (updateError.code === "email_exists" || updateError.code === "user_already_exists") {
       return response({ error: "email_unavailable" }, 409);
     }
+    const { data: emailNowInUse, error: recheckError } = await adminClient.rpc(
+      "unverified_signup_email_in_use",
+      { p_email: newEmail, p_exclude_user_id: userId },
+    );
+    if (!recheckError && emailNowInUse === true) {
+      return response({ error: "email_unavailable" }, 409);
+    }
+    const providerCode = typeof updateError.code === "string"
+      && /^[a-z0-9_]{1,64}$/i.test(updateError.code)
+      ? updateError.code
+      : "unknown";
+    const providerMessage = updateError.message
+      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
+      .slice(0, 240);
     console.error("Unverified signup email update failed.", {
       status: updateError.status,
-      code: updateError.code,
+      code: providerCode,
+      name: updateError.name,
+      message: providerMessage,
+      emailConflictCheckFailed: Boolean(recheckError),
     });
-    return response({ error: "email_update_failed" }, 500);
+    return response({
+      error: "email_update_failed",
+      provider_code: providerCode,
+      provider_status: updateError.status,
+    }, 500);
   }
 
   return response({ email_updated: true });

@@ -23,16 +23,25 @@ async function correctionErrorMessage(error: unknown) {
     const response = error.context;
     if (response instanceof Response) {
       let code: string | undefined;
+      let providerCode: string | undefined;
+      let providerStatus: number | undefined;
       try {
         const body: unknown = JSON.parse(await response.clone().text());
         if (typeof body === "object" && body !== null) {
           if ("error" in body && typeof body.error === "string") code = body.error;
           else if ("code" in body && typeof body.code === "string") code = body.code;
+          if ("provider_code" in body && typeof body.provider_code === "string") providerCode = body.provider_code;
+          if ("provider_status" in body && typeof body.provider_status === "number") providerStatus = body.provider_status;
         }
       } catch (parseError) {
         if (!(parseError instanceof SyntaxError)) throw parseError;
       }
-      console.error("Unverified-signup email correction was rejected.", { status: response.status, code });
+      console.error("Unverified-signup email correction was rejected.", {
+        status: response.status,
+        code,
+        providerCode,
+        providerStatus,
+      });
       if (!code && response.status >= 500) {
         return "The email correction service could not complete the update. Try again later; if it continues, contact CampusConnect support.";
       }
@@ -51,8 +60,17 @@ async function correctionErrorMessage(error: unknown) {
           return "That email address is already associated with another account.";
         case "email_correction_unavailable":
           return "Email correction is temporarily unavailable. Try again later.";
-        case "email_update_failed":
+        case "email_update_failed": {
+          if (providerCode && providerCode !== "unknown") {
+            return `We verified your signup details, but Supabase Auth rejected the email update (code: ${providerCode}). Try another address or contact CampusConnect support.`;
+          }
+          if (providerStatus) {
+            return `We verified your signup details, but Supabase Auth rejected the email update (HTTP ${providerStatus}). Try again later or contact CampusConnect support.`;
+          }
           return "We verified your signup details, but could not update the email address. Try again later or contact CampusConnect support.";
+        }
+        case "email_address_invalid":
+          return "Supabase Auth rejected that email address. Check the address and try again.";
         case "invalid_request":
           return "Check the new email address and try again. Email correction is available only before verification.";
         default:

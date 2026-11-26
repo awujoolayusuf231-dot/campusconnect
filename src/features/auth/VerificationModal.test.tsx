@@ -75,7 +75,10 @@ describe("VerificationModal", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mocks.invoke.mockResolvedValue({
       data: null,
-      error: new FunctionsHttpError(new Response(JSON.stringify({ error: "email_update_failed" }), { status: 500 })),
+      error: new FunctionsHttpError(new Response(JSON.stringify({
+        error: "email_update_failed",
+        provider_code: "validation_failed",
+      }), { status: 500 })),
     });
     render(
       <MemoryRouter>
@@ -88,7 +91,55 @@ describe("VerificationModal", () => {
     fireEvent.change(screen.getByLabelText("Signup password"), { target: { value: "ExamplePassword1" } });
     fireEvent.click(screen.getByRole("button", { name: /update email and resend/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/verified your signup details, but could not update/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Supabase Auth rejected the email update \(code: validation_failed\)/i);
+    errorSpy.mockRestore();
+  });
+
+  it("shows the Auth provider status when no provider error code is available", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.invoke.mockResolvedValue({
+      data: null,
+      error: new FunctionsHttpError(new Response(JSON.stringify({
+        error: "email_update_failed",
+        provider_code: "unknown",
+        provider_status: 422,
+      }), { status: 500 })),
+    });
+    render(
+      <MemoryRouter>
+        <VerificationModal email="old@example.com" userId="pending-user-id" onEmailUpdated={vi.fn()} onCancel={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /wrong email/i }));
+    fireEvent.change(screen.getByLabelText("Correct email address"), { target: { value: "new@example.com" } });
+    fireEvent.change(screen.getByLabelText("Signup password"), { target: { value: "ExamplePassword1" } });
+    fireEvent.click(screen.getByRole("button", { name: /update email and resend/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Supabase Auth rejected the email update \(HTTP 422\)/i);
+    errorSpy.mockRestore();
+  });
+
+  it("explains when the corrected email is already in use", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.invoke.mockResolvedValue({
+      data: null,
+      error: new FunctionsHttpError(new Response(JSON.stringify({
+        error: "email_unavailable",
+      }), { status: 409 })),
+    });
+    render(
+      <MemoryRouter>
+        <VerificationModal email="old@example.com" userId="pending-user-id" onEmailUpdated={vi.fn()} onCancel={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /wrong email/i }));
+    fireEvent.change(screen.getByLabelText("Correct email address"), { target: { value: "new@example.com" } });
+    fireEvent.change(screen.getByLabelText("Signup password"), { target: { value: "ExamplePassword1" } });
+    fireEvent.click(screen.getByRole("button", { name: /update email and resend/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/already associated with another account/i);
     errorSpy.mockRestore();
   });
 });
