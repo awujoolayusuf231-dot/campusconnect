@@ -25,13 +25,23 @@ async function correctionErrorMessage(error: unknown) {
       let code: string | undefined;
       try {
         const body: unknown = JSON.parse(await response.clone().text());
-        if (typeof body === "object" && body !== null && "error" in body && typeof body.error === "string") {
-          code = body.error;
+        if (typeof body === "object" && body !== null) {
+          if ("error" in body && typeof body.error === "string") code = body.error;
+          else if ("code" in body && typeof body.code === "string") code = body.code;
         }
       } catch (parseError) {
         if (!(parseError instanceof SyntaxError)) throw parseError;
       }
       console.error("Unverified-signup email correction was rejected.", { status: response.status, code });
+      if (!code && response.status >= 500) {
+        return "The email correction service could not complete the update. Try again later; if it continues, contact CampusConnect support.";
+      }
+      if (!code && response.status === 401) {
+        return "Check the original signup email and password. Email correction is available only before verification.";
+      }
+      if (!code && response.status === 429) {
+        return "Too many correction attempts. Wait 15 minutes before trying again.";
+      }
       switch (code) {
         case "invalid_credentials":
           return "Check the original signup email and password. Email correction is available only before verification.";
@@ -41,6 +51,10 @@ async function correctionErrorMessage(error: unknown) {
           return "That email address is already associated with another account.";
         case "email_correction_unavailable":
           return "Email correction is temporarily unavailable. Try again later.";
+        case "email_update_failed":
+          return "We verified your signup details, but could not update the email address. Try again later or contact CampusConnect support.";
+        case "invalid_request":
+          return "Check the new email address and try again. Email correction is available only before verification.";
         default:
           return "We could not update that email address. Try again or contact CampusConnect support.";
       }
@@ -54,10 +68,12 @@ export function VerificationModal({
   email,
   userId,
   onEmailUpdated,
+  onCancel,
 }: {
   email: string;
   userId: string | null;
   onEmailUpdated: (email: string) => void;
+  onCancel: () => void;
 }) {
   const navigate = useNavigate();
   const [currentEmail, setCurrentEmail] = useState(email);
@@ -179,11 +195,21 @@ export function VerificationModal({
       >
         <div className="h-1.5 bg-gradient-to-r from-primary-deep via-primary to-[#ea8a78]" />
         <div className="px-5 py-6 sm:px-8 sm:py-8">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-[0_5px_12px_rgba(197,43,58,0.2)]">
-              <GraduationCap size={20} aria-hidden="true" />
-            </span>
-            <span className="text-base font-black tracking-tight text-fg">Campus<span className="text-primary">Connect</span></span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-[0_5px_12px_rgba(197,43,58,0.2)]">
+                <GraduationCap size={20} aria-hidden="true" />
+              </span>
+              <span className="text-base font-black tracking-tight text-fg">Campus<span className="text-primary">Connect</span></span>
+            </div>
+            <button
+              type="button"
+              className="min-h-10 rounded-xl px-3 text-sm font-semibold text-muted hover:bg-bg hover:text-fg disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isCorrecting || isResending}
+              onClick={onCancel}
+            >
+              Cancel
+            </button>
           </div>
 
           <div className="mx-auto mt-5 flex h-[68px] w-[68px] items-center justify-center rounded-[22px] bg-primary-soft text-primary">

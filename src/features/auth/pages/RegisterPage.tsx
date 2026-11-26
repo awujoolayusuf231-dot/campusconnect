@@ -114,6 +114,7 @@ export function RegisterPage() {
           email={verification.email}
           userId={verification.userId}
           onEmailUpdated={(email) => setVerification((current) => current ? { ...current, email } : current)}
+          onCancel={() => setVerification(null)}
         />
       )}
     </>

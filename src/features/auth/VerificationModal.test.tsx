@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -31,7 +32,7 @@ describe("VerificationModal", () => {
     const onEmailUpdated = vi.fn();
     render(
       <MemoryRouter>
-        <VerificationModal email="old@example.com" userId="pending-user-id" onEmailUpdated={onEmailUpdated} />
+        <VerificationModal email="old@example.com" userId="pending-user-id" onEmailUpdated={onEmailUpdated} onCancel={vi.fn()} />
       </MemoryRouter>,
     );
 
@@ -55,5 +56,39 @@ describe("VerificationModal", () => {
     }));
     expect(onEmailUpdated).toHaveBeenCalledWith("new@example.com");
     expect(await screen.findByRole("status")).toHaveTextContent(/fresh verification link/i);
+  });
+
+  it("lets a user cancel the pending verification dialog", () => {
+    const onCancel = vi.fn();
+    render(
+      <MemoryRouter>
+        <VerificationModal email="old@example.com" userId="pending-user-id" onEmailUpdated={vi.fn()} onCancel={onCancel} />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it("explains when the correction service could not update the email address", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.invoke.mockResolvedValue({
+      data: null,
+      error: new FunctionsHttpError(new Response(JSON.stringify({ error: "email_update_failed" }), { status: 500 })),
+    });
+    render(
+      <MemoryRouter>
+        <VerificationModal email="old@example.com" userId="pending-user-id" onEmailUpdated={vi.fn()} onCancel={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /wrong email/i }));
+    fireEvent.change(screen.getByLabelText("Correct email address"), { target: { value: "new@example.com" } });
+    fireEvent.change(screen.getByLabelText("Signup password"), { target: { value: "ExamplePassword1" } });
+    fireEvent.click(screen.getByRole("button", { name: /update email and resend/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/verified your signup details, but could not update/i);
+    errorSpy.mockRestore();
   });
 });

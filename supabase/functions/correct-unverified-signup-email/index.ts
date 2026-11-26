@@ -125,8 +125,13 @@ Deno.serve(async (request) => {
     email_confirm: false,
   });
   if (updateError) {
-    if (updateError.code === "email_exists") return response({ error: "email_unavailable" }, 409);
-    console.error("Unverified signup email update failed.", updateError.status);
+    if (updateError.code === "email_exists" || updateError.code === "user_already_exists") {
+      return response({ error: "email_unavailable" }, 409);
+    }
+    console.error("Unverified signup email update failed.", {
+      status: updateError.status,
+      code: updateError.code,
+    });
     return response({ error: "email_update_failed" }, 500);
   }
 
