@@ -1,14 +1,70 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { adminErrorMessage } from "@/lib/errors";
 import { listActiveInstitutions } from "@/features/institutions/api";
 import { useMyPermissions } from "../useMyPermissions";
 import { LoadingState } from "@/app/LoadingState";
+import { ConfirmDialog } from "@/features/social/components/ConfirmDialog";
 
 interface Row { user_id: string; username: string; display_name: string; institution_id: string | null; status: string; role: string; email: string | null; joined_at: string; total_count: number }
 const PAGE = 25;
 const STATUSES = ["active", "restricted", "suspended", "disabled", "pending_deletion"];
+const GENERIC_ADMIN_ERROR = "The action failed. Please try again.";
+
+function deletionAuthorizationError(error: { code?: string; message: string; details?: string | null; hint?: string | null }) {
+  console.error("Account deletion authorization RPC failed.", {
+    code: error.code,
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+  });
+  if (error.code === "PGRST202" || error.message.includes("admin_request_user_deletion")) {
+    return new Error("The database cannot find the account-deletion authorization RPC. Confirm migration 20261126000047 is applied and reload the Supabase schema cache.");
+  }
+  const friendly = adminErrorMessage(error.message);
+  if (friendly !== GENERIC_ADMIN_ERROR) return new Error(friendly);
+  return new Error(`Database deletion authorization failed (${error.code || "unknown"}). Check the browser console for details.`);
+}
+
+async function deleteAccount(targetId: string) {
+  const { error } = await supabase.functions.invoke("admin-delete-account", {
+    body: { user_id: targetId },
+  });
+  if (!error) return;
+
+  if (error instanceof FunctionsFetchError) {
+    console.error("Could not reach the admin-delete-account Edge Function.", error.message);
+    throw new Error("Could not reach the account deletion function. Confirm it is deployed to this Supabase project and check the network.");
+  }
+
+  if (error instanceof FunctionsHttpError || error instanceof FunctionsRelayError) {
+    const response = error.context;
+    if (response instanceof Response) {
+      const bodyText = await response.clone().text();
+      let code: string | undefined;
+      try {
+        const body: unknown = JSON.parse(bodyText);
+        if (typeof body === "object" && body !== null && "error" in body && typeof body.error === "string") {
+          code = body.error;
+        }
+      } catch (parseError) {
+        if (!(parseError instanceof SyntaxError)) throw parseError;
+      }
+      console.error("Account deletion Edge Function returned an error.", { status: response.status, code });
+      if (code) {
+        const friendly = adminErrorMessage(code);
+        if (friendly !== GENERIC_ADMIN_ERROR) throw new Error(friendly);
+        throw new Error(`Account deletion function returned HTTP ${response.status} (error code: ${code}). Check its Supabase Edge Function logs.`);
+      }
+      throw new Error(`Account deletion function returned HTTP ${response.status}. Check its Supabase Edge Function logs.`);
+    }
+  }
+
+  console.error("Unexpected account deletion Edge Function error.", error);
+  throw new Error("The account deletion function returned an unexpected error. Check its Supabase Edge Function logs.");
+}
 
 export function UsersPage() {
   const qc = useQueryClient();
@@ -17,6 +73,7 @@ export function UsersPage() {
   const [q, setQ] = useState(""); const [term, setTerm] = useState("");
   const [status, setStatus] = useState(""); const [inst, setInst] = useState(""); const [page, setPage] = useState(0);
   const [target, setTarget] = useState<Row | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Row | null>(null);
 
   const institutions = useQuery({ queryKey: ["institutions", "active"], queryFn: listActiveInstitutions });
   const users = useQuery({ queryKey: ["admin", "users", term, status, inst, page], queryFn: async () => {
@@ -46,7 +103,10 @@ export function UsersPage() {
                 <td className="p-3">{u.email ?? <span className="text-muted">hidden</span>}</td>
                 <td className="p-3">{u.role}</td><td className="p-3">{u.status}</td>
                 <td className="p-3">{new Date(u.joined_at).toLocaleDateString()}</td>
-                <td className="p-3 text-right">{canModerate && u.role === "student" && <button className="btn" onClick={() => setTarget(u)}>Moderate</button>}</td>
+                <td className="p-3 text-right">{canModerate && u.role === "student" && <div className="flex justify-end gap-2">
+                  <button type="button" className="btn" onClick={() => setTarget(u)}>Moderate</button>
+                  <button type="button" className="btn-danger" onClick={() => setDeleteTarget(u)}>Delete</button>
+                </div>}</td>
               </tr>))}
           </tbody>
         </table>
@@ -56,8 +116,63 @@ export function UsersPage() {
         <div className="flex gap-2"><button className="btn" disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</button><button className="btn" disabled={(page + 1) * PAGE >= total} onClick={() => setPage(page + 1)}>Next</button></div>
       </div>
       {target && <ModerateDialog user={target} onClose={() => setTarget(null)} onDone={() => { setTarget(null); void qc.invalidateQueries({ queryKey: ["admin", "users"] }); }} />}
+      {deleteTarget && <DeleteUserDialog
+        user={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onDone={() => {
+          setDeleteTarget(null);
+          void Promise.all([
+            qc.invalidateQueries({ queryKey: ["admin", "users"] }),
+            qc.invalidateQueries({ queryKey: ["admin", "stats"] }),
+            qc.invalidateQueries({ queryKey: ["admin", "account-deletion-requests"] }),
+          ]);
+        }}
+      />}
     </div>
   );
+}
+
+function DeleteUserDialog({ user, onClose, onDone }: { user: Row; onClose: () => void; onDone: () => void }) {
+  const [reason, setReason] = useState("");
+  const deletion = useMutation({
+    mutationFn: async () => {
+      const { error: requestError } = await supabase.rpc("admin_request_user_deletion", {
+        p_target: user.user_id,
+        p_reason: reason.trim(),
+      });
+      if (requestError) throw deletionAuthorizationError(requestError);
+
+      await deleteAccount(user.user_id);
+    },
+    onSuccess: onDone,
+  });
+
+  return (
+    <ConfirmDialog
+      title={`Permanently delete @${user.username}?`}
+      confirmLabel="Delete account permanently"
+      busy={deletion.isPending}
+      confirmDisabled={reason.trim().length < 5}
+      onCancel={() => { if (!deletion.isPending) onClose(); }}
+      onConfirm={() => deletion.mutate()}
+    >
+      <p>This permanently deletes the student’s sign-in account and associated database records. This cannot be undone.</p>
+      <label className="label mt-3" htmlFor="delete-user-reason">Reason (recorded in the audit log)</label>
+      <textarea
+        id="delete-user-reason"
+        className="input"
+        rows={3}
+        maxLength={500}
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+      />
+      {deletion.isError && <p role="alert" className="err">{displayDeletionError(deletion.error.message)}</p>}
+    </ConfirmDialog>
+  );
+}
+
+function displayDeletionError(message: string) {
+  return message || GENERIC_ADMIN_ERROR;
 }
 
 function ModerateDialog({ user, onClose, onDone }: { user: Row; onClose: () => void; onDone: () => void }) {

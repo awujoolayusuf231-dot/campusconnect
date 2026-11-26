@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Bell, BookOpen, GraduationCap, Home, MessageCircle, Settings, Sparkles, UserRound, Users, Menu, LogOut, Info, LifeBuoy, Compass } from "lucide-react";
+import { Bell, BookOpen, GraduationCap, Home, MessageCircle, Settings, Sparkles, UserRound, Users, Menu, LogOut, Info, LifeBuoy, Compass, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
@@ -96,24 +96,27 @@ export function StudentLayout() {
             </NavLink>
             {!inChat && <>
               {role !== "student" && <NavLink to="/admin" className="hidden text-sm font-semibold text-muted hover:text-primary lg:block">Admin</NavLink>}
-              <button type="button" aria-label="Open navigation menu" aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-muted lg:hidden">
-                <Menu size={20} aria-hidden="true" />
+              <button type="button" aria-label={moreOpen ? "Close navigation menu" : "Open navigation menu"} aria-controls="mobile-navigation-menu" aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-muted lg:hidden">
+                {moreOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
               </button>
             </>}
           </div>
         </div>
       </header>
       {moreOpen && (
-        <div className="fixed right-3 top-20 z-30 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl border border-line bg-white p-2 shadow-[0_12px_36px_rgba(35,24,20,0.18)] lg:hidden">
-          {menuItems.map((item) => (
-            <Link key={item.label} to={item.to} onClick={() => setMoreOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-fg hover:bg-primary-soft hover:text-primary">
-              <item.icon size={17} aria-hidden="true" />{item.label}
-            </Link>
-          ))}
-          <button type="button" onClick={() => void signOut()} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-danger hover:bg-danger-soft">
-            <LogOut size={17} aria-hidden="true" />Log out
-          </button>
-        </div>
+        <>
+          <button type="button" aria-label="Dismiss navigation menu" onClick={() => setMoreOpen(false)} className="fixed inset-0 z-[19] cursor-default bg-transparent lg:hidden" />
+          <nav id="mobile-navigation-menu" aria-label="Mobile menu" className="fixed right-3 top-20 z-30 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl border border-line bg-white p-2 shadow-[0_12px_36px_rgba(35,24,20,0.18)] lg:hidden">
+            {menuItems.map((item) => (
+              <Link key={item.label} to={item.to} onClick={() => setMoreOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-fg hover:bg-primary-soft hover:text-primary">
+                <item.icon size={17} aria-hidden="true" />{item.label}
+              </Link>
+            ))}
+            <button type="button" onClick={() => void signOut()} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-danger hover:bg-danger-soft">
+              <LogOut size={17} aria-hidden="true" />Log out
+            </button>
+          </nav>
+        </>
       )}
       <div className="mx-auto flex w-full max-w-[1600px]">
         <aside className={inChat ? "hidden" : "fixed bottom-0 top-16 z-10 hidden w-[250px] flex-col border-r border-line/70 bg-bg px-4 py-6 lg:flex xl:w-[270px] xl:px-5"}>

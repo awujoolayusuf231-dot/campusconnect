@@ -9,6 +9,7 @@ vi.mock("@/lib/publicSettings", () => ({
 }));
 
 import { HomePage } from "./HomePage";
+import { MissionPage } from "./public/pages";
 
 describe("public landing page", () => {
   it("shows the campus introduction and account actions to signed-out visitors", () => {
@@ -18,8 +19,18 @@ describe("public landing page", () => {
     expect(screen.getByRole("heading", { level: 1, name: /connect\. learn/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Our Mission" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Our Purpose" })).toBeInTheDocument();
+    expect(screen.getByText(/our mission is to connect students across institutions/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /read our mission/i })).toHaveAttribute("href", "/mission");
     expect(screen.getByRole("link", { name: /join the community/i })).toHaveAttribute("href", "/register");
     expect(screen.getAllByRole("link", { name: /log in/i }).some((link) => link.getAttribute("href") === "/login")).toBe(true);
+  });
+
+  it("explains the mission on its own public page", () => {
+    auth.value = { session: null, loading: false };
+    render(<MemoryRouter><MissionPage /></MemoryRouter>);
+
+    expect(screen.getByRole("heading", { level: 1, name: "A more connected student experience." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Connection that leads to growth." })).toBeInTheDocument();
   });
 
   it("sends signed-in visitors straight to the app", () => {

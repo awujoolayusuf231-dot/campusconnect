@@ -8,10 +8,15 @@ import { Composer } from "./components/Composer";
 import { OnboardingCard } from "@/features/onboarding/OnboardingCard";
 import { PostCard } from "./components/PostCard";
 import { LoadingState } from "@/app/LoadingState";
-import { ArrowDown, Globe2, UsersRound, GraduationCap, Search, Sparkles } from "lucide-react";
+import { ArrowDown, Globe2, UsersRound, GraduationCap, Sparkles } from "lucide-react";
 import { CelebrationSpotlight } from "./CelebrationSpotlight";
 
-const TABS: [FeedScope, string][] = [["for_you", "For you"], ["all", "Everyone"], ["following", "Following"], ["institution", "My institution"]];
+const TABS: [FeedScope, string, string][] = [
+  ["for_you", "For you", "For you"],
+  ["all", "Everyone", "Everyone"],
+  ["following", "Following", "Following"],
+  ["institution", "My institution", "Campus"],
+];
 const TAB_ICONS = { for_you: Sparkles, all: Globe2, following: UsersRound, institution: GraduationCap };
 const CelebrationFeedCard = lazy(() => import("@/features/celebrations/CelebrationsPages").then((module) => ({ default: module.CelebrationFeedCard })));
 
@@ -49,26 +54,10 @@ export function FeedPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <section aria-label="Campus feed navigation" className="sticky top-16 z-10 -mx-3 rounded-b-2xl border-x border-b border-line bg-white/95 px-3 pb-2 pt-2 shadow-[0_8px_24px_rgba(35,24,20,0.08)] backdrop-blur-xl sm:mx-0 sm:rounded-2xl sm:border sm:p-3">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <p className="flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-[0.14em] text-primary sm:text-[10px]"><Sparkles size={12} aria-hidden="true" /> Your campus, in the loop</p>
-            <h1 className="mt-0.5 text-lg font-black leading-tight tracking-tight text-fg sm:text-xl">Campus feed</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="hidden text-xs font-medium text-muted sm:block">See what’s happening around you</span>
-            <Link
-              to="/app/discover"
-              className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-line bg-white px-2.5 text-xs font-bold text-fg transition hover:border-primary/30 hover:bg-primary-soft hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary sm:px-3"
-            >
-              <Search size={15} aria-hidden="true" />
-              <span>Find students</span>
-            </Link>
-          </div>
-        </div>
+      <section aria-label="Feed highlights and filters" className="sticky top-16 z-10 -mx-3 rounded-b-2xl border-x border-b border-line bg-white/95 px-3 pb-2 pt-2 shadow-[0_8px_24px_rgba(35,24,20,0.08)] backdrop-blur-xl sm:mx-0 sm:rounded-2xl sm:border sm:p-3">
         <CelebrationSpotlight />
-        <div role="tablist" aria-label="Feed" className="mt-1 flex gap-1 overflow-x-auto border-t border-line px-0.5">
-          {TABS.map(([v, l]) => {
+        <div role="tablist" aria-label="Feed" className="flex w-full gap-0.5 border-t border-line px-0.5 sm:gap-1">
+          {TABS.map(([v, l, shortLabel]) => {
             const Icon = TAB_ICONS[v];
             return (
               <button
@@ -76,12 +65,15 @@ export function FeedPage() {
                 id={`feed-tab-${v}`}
                 type="button"
                 role="tab"
+                aria-label={l}
                 aria-selected={scope === v}
                 aria-controls="feed-panel"
-                className={`relative flex min-h-10 shrink-0 items-center gap-1.5 border-b-2 px-2.5 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:min-h-11 sm:gap-2 sm:px-3 sm:text-sm ${scope === v ? "border-primary font-bold text-primary" : "border-transparent font-semibold text-muted hover:bg-primary-soft hover:text-fg"}`}
+                className={`relative flex min-h-10 min-w-0 flex-1 items-center justify-center gap-1 border-b-2 px-1 text-[10px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:min-h-11 sm:flex-none sm:gap-2 sm:px-3 sm:text-sm ${scope === v ? "border-primary font-bold text-primary" : "border-transparent font-semibold text-muted hover:bg-primary-soft hover:text-fg"}`}
                 onClick={() => setScope(v)}
               >
-                <Icon size={14} aria-hidden="true" />{l}
+                <Icon size={14} aria-hidden="true" />
+                <span className="hidden whitespace-nowrap sm:inline">{l}</span>
+                <span className="whitespace-nowrap sm:hidden">{shortLabel}</span>
               </button>
             );
           })}

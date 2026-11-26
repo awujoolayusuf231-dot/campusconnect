@@ -71,6 +71,19 @@ describe("StudentLayout navigation", () => {
     expect(screen.getAllByRole("link", { name: "Find students" })).toHaveLength(3);
   });
 
+  it("closes the hamburger menu when the open page area is clicked", () => {
+    renderStudentLayout();
+    fireEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
+    expect(screen.getByRole("navigation", { name: "Mobile menu" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss navigation menu" }));
+
+    expect(screen.queryByRole("navigation", { name: "Mobile menu" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close navigation menu" }));
+    expect(screen.queryByRole("navigation", { name: "Mobile menu" })).not.toBeInTheDocument();
+  });
+
   it("puts the notification link and unread count in the header", () => {
     renderStudentLayout();
 

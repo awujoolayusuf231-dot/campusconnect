@@ -48,7 +48,9 @@ describe("FeedPage", () => {
   it("offers a ranked For you feed and keeps the existing timeline scopes connected", async () => {
     renderFeed();
 
-    expect(screen.getByRole("link", { name: /find students/i })).toHaveAttribute("href", "/app/discover");
+    const stickyPanel = screen.getByRole("region", { name: "Feed highlights and filters" });
+    expect(within(stickyPanel).queryByRole("link", { name: /find students/i })).not.toBeInTheDocument();
+    expect(within(stickyPanel).queryByRole("heading", { name: "Campus feed" })).not.toBeInTheDocument();
     await waitFor(() => expect(mocks.fetchFeedTimeline).toHaveBeenCalledWith("for_you", null));
     fireEvent.click(screen.getByRole("tab", { name: "Everyone" }));
     await waitFor(() => expect(mocks.fetchFeedTimeline).toHaveBeenCalledWith("all", null));
@@ -61,13 +63,14 @@ describe("FeedPage", () => {
     expect(screen.getByRole("tab", { name: "My institution" })).toHaveAttribute("aria-selected", "true");
   });
 
-  it("keeps the feed title, celebrations, and scope tabs together in a compact sticky panel", () => {
+  it("keeps celebrations and scope tabs together in a compact sticky panel", () => {
     renderFeed();
 
-    const stickyPanel = screen.getByRole("heading", { name: "Campus feed" }).closest("section")!;
+    const stickyPanel = screen.getByRole("region", { name: "Feed highlights and filters" });
     expect(stickyPanel).toHaveClass("sticky", "top-16");
     expect(stickyPanel).toContainElement(screen.getByTestId("celebration-spotlight"));
     expect(within(stickyPanel).getByRole("tablist", { name: "Feed" })).toBeInTheDocument();
+    expect(within(stickyPanel).queryByText("Your campus, in the loop")).not.toBeInTheDocument();
   });
 
   it("keeps the existing empty guidance for the institution-only feed", async () => {

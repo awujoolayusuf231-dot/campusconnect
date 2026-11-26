@@ -229,6 +229,55 @@ export function AboutPage() {
   );
 }
 
+export function MissionPage() {
+  const commitments = [
+    { icon: UsersRound, title: "Connect across campuses", text: "Help students meet peers, find communities, and build relationships beyond their own lecture halls." },
+    { icon: BookOpen, title: "Make learning social", text: "Create room to share knowledge, ask questions, and learn with other students." },
+    { icon: BriefcaseBusiness, title: "Open up opportunity", text: "Bring projects, competitions, events, and career opportunities closer to the students who can benefit from them." },
+  ];
+
+  return (
+    <PublicLayout wide>
+      <div className="space-y-8 py-2 sm:space-y-12 sm:py-5">
+        <PageHero
+          eyebrow="Our mission"
+          title="A more connected student experience."
+          description="CampusConnect exists to connect students across institutions in a supportive digital community where they can learn, collaborate, discover opportunities, and grow together."
+          icon={HeartHandshake}
+        />
+        <section className="grid gap-6 rounded-[26px] border border-line bg-white p-6 shadow-[0_8px_24px_rgba(35,24,20,0.04)] sm:grid-cols-[0.8fr_1.2fr] sm:p-9">
+          <SectionHeading eyebrow="Why it matters" title="Student life is bigger than the classroom." />
+          <div className="space-y-4 text-sm leading-7 text-muted sm:text-base">
+            <p>Students have ideas, knowledge, interests, and ambitions that deserve a place to meet. Yet campus conversations and opportunities can be scattered across disconnected spaces.</p>
+            <p>We bring those experiences closer together—so students can find their people, take part in a community, help one another learn, and discover what they might do next.</p>
+          </div>
+        </section>
+        <section>
+          <SectionHeading eyebrow="How we do it" title="Connection that leads to growth." description="We make our mission practical by bringing the most useful parts of student life into one welcoming space." />
+          <div className="mt-6 grid gap-3 md:grid-cols-3">
+            {commitments.map(({ icon: Icon, title, text }) => (
+              <article key={title} className="rounded-2xl border border-line bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.04)] sm:p-6">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-tint text-primary"><Icon size={20} aria-hidden="true" /></span>
+                <h2 className="mt-4 font-extrabold text-fg">{title}</h2>
+                <p className="mt-2 text-sm leading-6 text-muted">{text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section className="rounded-[26px] bg-primary-soft p-6 sm:p-8">
+          <h2 className="text-xl font-black text-fg sm:text-2xl">Our commitment</h2>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-muted sm:text-base">
+            We aim to build a useful, respectful, and inclusive community for students across universities, polytechnics, and colleges of education. Students should be able to participate, find support, and make informed choices about how they connect.
+          </p>
+          <Link to="/community-guidelines" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline">
+            Read our community guidelines <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </section>
+      </div>
+    </PublicLayout>
+  );
+}
+
 export function GuidelinesPage() {
   return (
     <LegalPage

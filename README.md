@@ -19,6 +19,12 @@ npm run build
 Authentication > URL Configuration: Site URL `http://localhost:5173` (and your production URL later) and add
 `http://localhost:5173/**` to Redirect URLs. Authentication > Providers > Email: keep "Confirm email" ON.
 
+### Resend email delivery
+
+The Supabase built-in mailer is for local testing only. For a live project, verify a sending domain in Resend, then configure Supabase Auth > SMTP with host `smtp.resend.com`, port `465`, username `resend`, your Resend API key as the password, and a verified sender address. Keep the key in Supabase's SMTP settings and Edge Function secrets only—never in `.env.local`, any `VITE_` variable, or Git.
+
+Branded Supabase Auth templates are in `supabase/templates/`; copy them to the matching hosted Auth template fields. Supabase Auth continues to create and validate account verification, email-change, and password recovery links. Welcome and opt-in activity email use the Resend outbox worker. Apply the migration, configure the secrets/webhook/cron, and deploy steps in [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) before expecting live delivery.
+
 ## Become the owner
 1. Register in the app and verify your email (done for the first account on CampusConnect01).
 2. Supabase dashboard > SQL editor (runs as postgres, NOT available to the API):

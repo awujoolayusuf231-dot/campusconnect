@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useMutation } from "@tanstack/react-query";
 import { REPORT_CATEGORIES, submitReport, type ReportTarget } from "../api";
 import { socialErrorMessage } from "@/lib/errors";
@@ -12,10 +13,17 @@ export function ReportDialog({ type, targetId, onClose }: { type: ReportTarget; 
     : type === "assignment_discussion_reply"
       ? "discussion reply"
       : type;
-  return (
-    <div role="dialog" aria-modal="true" aria-label={`Report ${targetLabel}`} className="fixed inset-0 z-20 flex items-end justify-center bg-black/40 p-4 md:items-center"
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, []);
+
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label={`Report ${targetLabel}`} className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/40 p-4"
+      onClick={(event) => event.stopPropagation()}
       onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
-      <div className="card w-full max-w-md space-y-3">
+      <div className="card max-h-[calc(100dvh-2rem)] w-full max-w-md space-y-3 overflow-y-auto">
         {m.isSuccess ? (
           <>
             <h2 className="font-semibold">Thanks for the report</h2>
@@ -38,6 +46,7 @@ export function ReportDialog({ type, targetId, onClose }: { type: ReportTarget; 
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -16,6 +16,7 @@ export function RequireStaff() {
   const { session, role, loading } = useAuth();
   if (loading) return <LoadingState label="Checking your access" variant="page" />;
   if (!session) return <Navigate to="/login" replace />;
+  if (!session.user.email_confirmed_at) return <Navigate to="/login" replace state={{ unverified: true }} />;
   if (role === "student") return <Navigate to="/" replace />;
   return <Outlet />;
 }

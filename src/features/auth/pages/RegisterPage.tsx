@@ -13,6 +13,7 @@ import { InstitutionPicker } from "@/features/institutions/InstitutionPicker";
 import { AuthPageLayout } from "@/features/auth/AuthPageLayout";
 import { GoogleSignInButton } from "@/features/auth/GoogleSignInButton";
 import { PasswordInput } from "@/features/auth/PasswordInput";
+import { VerificationModal } from "@/features/auth/VerificationModal";
 
 const schema = z.object({
   email: z.string().trim().email("Enter a valid email"),
@@ -29,7 +30,7 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 
 export function RegisterPage() {
-  const [done, setDone] = useState(false);
+  const [verification, setVerification] = useState<{ email: string; userId: string | null } | null>(null);
   const [serverError, setServerError] = useState("");
   const settings = usePublicSettings();
   const institutions = useQuery({ queryKey: ["institutions", "active"], queryFn: listActiveInstitutions });
@@ -39,15 +40,15 @@ export function RegisterPage() {
     setServerError("");
     const { data: free } = await supabase.rpc("is_username_available", { p_username: v.username });
     if (free === false) { setError("username", { message: "That username is taken" }); return; }
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: v.email, password: v.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/login`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: { username: v.username, display_name: v.displayName, institution_id: v.institutionId || undefined },
       },
     });
     if (error) { setServerError(friendlyAuthError(error.message)); return; }
-    setDone(true); // Same message whether or not the email already exists (no account enumeration).
+    setVerification({ email: v.email.trim(), userId: data.user?.id ?? null });
   }
 
   if (settings.data?.registration_open === false) return (
@@ -56,17 +57,10 @@ export function RegisterPage() {
     </AuthPageLayout>
   );
 
-  if (done) return (
-    <AuthPageLayout mode="register" eyebrow="Almost there" title="Check your email." description="We’ve sent a verification link if this address can be registered.">
-      <div className="rounded-2xl border border-line bg-bg p-5" role="status">
-        <p className="text-sm leading-6 text-muted">Open the verification link in your inbox, then <Link className="font-semibold text-primary underline" to="/login">log in</Link> to join your campus.</p>
-      </div>
-    </AuthPageLayout>
-  );
-
   return (
-    <AuthPageLayout mode="register" eyebrow="Your campus community awaits" title="Find your people." description="Create an account to connect, join communities, and discover opportunities made for student life.">
-      <div className="space-y-4">
+    <>
+      <AuthPageLayout mode="register" eyebrow="Your campus community awaits" title="Find your people." description="Create an account to connect, join communities, and discover opportunities made for student life.">
+        <div className="space-y-4">
         <GoogleSignInButton redirectTo={`${window.location.origin}/app`} disabled={isSubmitting} />
         <div className="flex items-center gap-3" aria-hidden="true"><span className="h-px flex-1 bg-line" /><span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted">or sign up with email</span><span className="h-px flex-1 bg-line" /></div>
         <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="space-y-3.5" noValidate>
@@ -97,7 +91,15 @@ export function RegisterPage() {
           <button className="btn-primary min-h-11 w-full" disabled={isSubmitting}>{isSubmitting ? "Creating…" : "Create your account"}</button>
           <p className="text-center text-sm text-muted">Already part of the community? <Link className="font-bold text-primary hover:underline" to="/login">Log in</Link></p>
         </form>
-      </div>
-    </AuthPageLayout>
+        </div>
+      </AuthPageLayout>
+      {verification && (
+        <VerificationModal
+          email={verification.email}
+          userId={verification.userId}
+          onEmailUpdated={(email) => setVerification((current) => current ? { ...current, email } : current)}
+        />
+      )}
+    </>
   );
 }

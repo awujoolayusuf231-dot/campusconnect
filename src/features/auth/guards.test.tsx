@@ -23,15 +23,27 @@ describe("route guards", () => {
     render(tree(<RequireAuth />, "/feed"));
     expect(screen.getByText("login page")).toBeInTheDocument();
   });
+  it("redirects unverified users away from protected pages", () => {
+    auth.value = { session: { user: { email_confirmed_at: null } }, role: "student", loading: false };
+    render(tree(<RequireAuth />, "/feed"));
+    expect(screen.queryByText("feed")).not.toBeInTheDocument();
+    expect(screen.getByText("login page")).toBeInTheDocument();
+  });
   it("keeps students out of /admin", () => {
-    auth.value = { session: {}, role: "student", loading: false };
+    auth.value = { session: { user: { email_confirmed_at: "2025-01-01" } }, role: "student", loading: false };
     render(tree(<RequireStaff />, "/admin"));
     expect(screen.queryByText("admin area")).not.toBeInTheDocument();
     expect(screen.getByText("home")).toBeInTheDocument();
   });
   it("lets moderators reach the admin shell", () => {
-    auth.value = { session: {}, role: "moderator", loading: false };
+    auth.value = { session: { user: { email_confirmed_at: "2025-01-01" } }, role: "moderator", loading: false };
     render(tree(<RequireStaff />, "/admin"));
     expect(screen.getByText("admin area")).toBeInTheDocument();
+  });
+  it("denies unverified staff access", () => {
+    auth.value = { session: { user: { email_confirmed_at: null } }, role: "moderator", loading: false };
+    render(tree(<RequireStaff />, "/admin"));
+    expect(screen.queryByText("admin area")).not.toBeInTheDocument();
+    expect(screen.getByText("login page")).toBeInTheDocument();
   });
 });

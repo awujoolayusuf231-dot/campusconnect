@@ -24,7 +24,7 @@ export function HomePage() {
                     Connect. Learn. <span className="text-primary">Collaborate. Grow.</span>
               </h1>
               <p className="mt-5 max-w-lg text-base leading-7 text-muted sm:text-lg sm:leading-8">
-                CampusConnect brings student life into one connected community—so you can meet people, share knowledge, collaborate, discover opportunities, and build meaningful relationships beyond the classroom.
+                Our mission is to connect students across institutions in a supportive digital community where they can learn, collaborate, discover opportunities, and grow together.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 {s?.registration_open === false
@@ -37,8 +37,17 @@ export function HomePage() {
 
             <div className="relative min-h-[280px] overflow-hidden bg-primary-deep sm:min-h-[360px] lg:min-h-full">
               <img
-                src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1800&q=85"
+                src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=75"
+                srcSet={[
+                  "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=640&q=72 640w",
+                  "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=960&q=75 960w",
+                  "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1280&q=75 1280w",
+                  "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=75 1600w",
+                ].join(", ")}
+                sizes="(min-width: 1024px) 50vw, 100vw"
                 alt=""
+                loading="eager"
+                decoding="async"
                 className="hero-image absolute inset-0 h-full w-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#311014]/75 via-[#4c0d13]/10 to-[#4c0d13]/10" />
@@ -55,6 +64,9 @@ export function HomePage() {
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-white/65 px-3 py-1.5 text-xs font-semibold text-fg"><BookOpen size={14} className="text-primary" aria-hidden="true" /> Communities</span>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-white/65 px-3 py-1.5 text-xs font-semibold text-fg"><BriefcaseBusiness size={14} className="text-primary" aria-hidden="true" /> Opportunities</span>
                 </div>
+                <Link to="/mission" className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-3.5 py-2 text-xs font-extrabold text-white transition hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                  Read our mission <ArrowRight size={15} aria-hidden="true" />
+                </Link>
               </div>
             </div>
           </div>

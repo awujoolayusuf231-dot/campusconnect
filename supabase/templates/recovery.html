@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Reset your CampusConnect password</title>
+  </head>
+  <body style="margin:0;background:#f7f5f4;color:#241f20;font-family:Arial,Helvetica,sans-serif">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f7f5f4;padding:32px 12px">
+      <tr><td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#fff;border:1px solid #e8e1df;border-radius:20px;overflow:hidden">
+          <tr><td style="height:6px;background:#c52b3a;font-size:0">&nbsp;</td></tr>
+          <tr><td style="padding:32px 28px">
+            <p style="margin:0 0 28px;color:#241f20;font-size:18px;font-weight:700">Campus<span style="color:#c52b3a">Connect</span></p>
+            <h1 style="margin:0 0 12px;font-size:24px;line-height:1.3">Reset your password</h1>
+            <p style="margin:0 0 24px;color:#625b5d;font-size:15px;line-height:1.7">Use the secure link below to choose a new password. The link expires for your protection.</p>
+            <p style="margin:0 0 28px"><a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#c52b3a;border-radius:10px;color:#fff;font-size:14px;font-weight:700;padding:13px 20px;text-decoration:none">Reset password</a></p>
+            <p style="margin:0;color:#756e70;font-size:12px;line-height:1.6">If the button doesn’t work, copy this link into your browser:<br><a href="{{ .ConfirmationURL }}" style="color:#a82331;word-break:break-all">{{ .ConfirmationURL }}</a></p>
+            <p style="margin:24px 0 0;color:#756e70;font-size:12px;line-height:1.6">If you didn’t request a password reset, ignore this email. Your password won’t change.</p>
+          </td></tr>
+          <tr><td style="border-top:1px solid #eee8e6;padding:18px 28px;color:#756e70;font-size:12px;line-height:1.6">CampusConnect · Your campus community, connected.</td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>

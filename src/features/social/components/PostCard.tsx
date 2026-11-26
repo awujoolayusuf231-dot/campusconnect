@@ -1,7 +1,7 @@
 import { useEffect, useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, Bookmark, Eye, Heart, MessageCircle, Pencil, Repeat2, Share2 } from "lucide-react";
+import { Ban, BarChart3, Bookmark, Eye, Flag, Heart, MessageCircle, Pencil, Repeat2, Share2, Trash2, VolumeX } from "lucide-react";
 import { blockUser, deletePost, editPost, likePost, muteUser, postShareUrl, repostPost, savePost, unlikePost, unsavePost, unrepostPost, type FeedPost, type PublicPostMetrics } from "../api";
 import { socialErrorMessage } from "@/lib/errors";
 import { formatCount } from "@/lib/format";
@@ -136,17 +136,17 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
             {fullPost ? <time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString()}</time> : timeAgo(post.created_at)}
           </Link>{post.edited_at ? " · edited" : ""}</p>
         </div>
-        <div className="flex shrink-0 gap-1 text-xs">
+        <div className="flex shrink-0 gap-1">
           {mine ? (
             <>
               {canEdit && <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-primary-soft hover:text-primary" onClick={() => { setEditBody(post.body); setEditing(true); }}><Pencil size={14} className="mr-1 inline" aria-hidden="true" />Edit</button>}
-              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-primary-soft hover:text-primary" onClick={() => setDialog("delete")}>Delete</button>
+              <button type="button" aria-label="Delete" title="Delete post" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-danger-soft hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" onClick={() => setDialog("delete")}><Trash2 size={17} aria-hidden="true" /></button>
             </>
           ) : (
             <>
-              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-primary-soft hover:text-primary" onClick={() => setDialog("report")}>Report</button>
-              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-primary-soft hover:text-primary" onClick={() => setDialog("mute")}>Mute</button>
-              <button className="rounded-lg px-2 py-1.5 font-semibold text-muted hover:bg-primary-soft hover:text-primary" onClick={() => setDialog("block")}>Block</button>
+              <button type="button" aria-label="Report" title="Report post" className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-primary-soft hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" onClick={() => setDialog("report")}><Flag size={17} aria-hidden="true" /></button>
+              <button type="button" aria-label="Mute" title={`Mute @${post.username}`} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-primary-soft hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" onClick={() => setDialog("mute")}><VolumeX size={17} aria-hidden="true" /></button>
+              <button type="button" aria-label="Block" title={`Block @${post.username}`} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:bg-danger-soft hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" onClick={() => setDialog("block")}><Ban size={17} aria-hidden="true" /></button>
             </>)}
         </div>
       </header>

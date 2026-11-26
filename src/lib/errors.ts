@@ -13,6 +13,14 @@ export function adminErrorMessage(message: string): string {
   if (message.includes("insufficient_rank")) return "You cannot act on an account with equal or higher rank.";
   if (message.includes("cannot_moderate_self")) return "You cannot moderate your own account.";
   if (message.includes("reason_required")) return "Please enter a reason (at least 5 characters).";
+  if (message.includes("direct_deletion_only_available_for_student_accounts")) return "Only student accounts can be deleted from this page.";
+  if (message.includes("cannot_delete_self_or_missing_target") || message.includes("target_not_found")) return "That account is no longer available. Refresh the users list and try again.";
+  if (message.includes("pending_deletion_request_not_found")) return "The deletion request could not be approved. Confirm the latest account-deletion migration is applied.";
+  if (message.includes("account_deletion_not_configured")) return "The account deletion function is missing Supabase configuration. Check its deployed server settings.";
+  if (message.includes("account_deletion_failed_request_restored")) return "Supabase could not delete the account, so the deletion request was restored. Check the Edge Function logs.";
+  if (message.includes("account_deletion_failed_request_restore_failed")) return "Deletion failed and its request could not be restored. Check the Edge Function logs and request status before retrying.";
+  if (message.includes("unauthorized")) return "Your session could not be verified. Sign in again and retry.";
+  if (message.includes("PGRST202")) return "The account-deletion RPC is missing from the database schema cache. Confirm the migration is applied, then reload the schema cache.";
   return "The action failed. Please try again.";
 }
 

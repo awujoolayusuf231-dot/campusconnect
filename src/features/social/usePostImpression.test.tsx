@@ -49,8 +49,9 @@ describe("post impression tracking", () => {
 
     act(() => intersectionCallback?.([{ intersectionRatio: 0.5 } as IntersectionObserverEntry], {} as IntersectionObserver));
     await act(async () => { vi.advanceTimersByTime(1050); });
-    expect(mocks.rpc).toHaveBeenCalledTimes(1);
+    expect(mocks.rpc).toHaveBeenCalledTimes(2);
     expect(mocks.rpc).toHaveBeenCalledWith("record_post_impressions", { p_post_ids: ["post-1"] });
+    expect(mocks.rpc).toHaveBeenCalledWith("record_post_views", { p_post_ids: ["post-1"], p_dwell_ms: [1000] });
   });
 
   it("cancels the visibility timer when the post leaves the viewport", async () => {

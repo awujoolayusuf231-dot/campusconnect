@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, GraduationCap, Menu, Users, Compass, Info, Sparkles, LifeBuoy, X } from "lucide-react";
+import { BookOpen, GraduationCap, Menu, Users, Compass, HeartHandshake, Info, Sparkles, LifeBuoy, X } from "lucide-react";
 import { usePublicSettings } from "@/lib/publicSettings";
 import { useAuth } from "@/features/auth/AuthProvider";
 
@@ -12,6 +12,7 @@ export function PublicLayout({ children, wide = false }: { children: ReactNode; 
     { to: session ? "/app/learn" : "/login", label: "Learn", icon: BookOpen },
     { to: session ? "/app/collaborate" : "/login", label: "Collaborate", icon: Users },
     { to: session ? "/app/discover-hub" : "/login", label: "Discover", icon: Compass },
+    { to: "/mission", label: "Our mission", icon: HeartHandshake },
     { to: "/features", label: "Features", icon: Sparkles },
     { to: "/about", label: "About", icon: Info },
     { to: "/contact", label: "Contact", icon: LifeBuoy },

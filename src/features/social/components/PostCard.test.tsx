@@ -13,7 +13,9 @@ vi.mock("../api", () => ({
   unrepostPost: vi.fn(),
   savePost: vi.fn(),
   unsavePost: vi.fn(),
+  submitReport: vi.fn(),
   postShareUrl: (id: string) => `https://campusconnect.example/app/p/${id}`,
+  REPORT_CATEGORIES: [["spam", "Spam"]],
   avatarUrl: () => null,
   searchStudents: vi.fn().mockResolvedValue([]),
   recordCommentImpressions: vi.fn().mockResolvedValue(undefined),
@@ -129,11 +131,61 @@ describe("PostCard content preview", () => {
     await waitFor(() => expect(like).toHaveAttribute("aria-pressed", "false"));
   });
 
-  it("confirms before muting an author", () => {
+  it("opens the mute confirmation as a centered modal above the post card", () => {
     renderCard();
 
     fireEvent.click(screen.getByRole("button", { name: "Mute" }));
-    expect(screen.getByRole("alertdialog")).toHaveTextContent("Their posts will no longer appear in your feeds.");
+    const dialog = screen.getByRole("alertdialog", { name: "Mute @student?" });
+    expect(dialog).toHaveTextContent("Their posts will no longer appear in your feeds.");
+    expect(dialog.parentElement).toBe(document.body);
+    expect(dialog).toHaveClass("items-center");
+    expect(document.body.style.overflow).toBe("hidden");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
+
+  it("opens the block confirmation as a centered modal above the post card", () => {
+    renderCard();
+
+    fireEvent.click(screen.getByRole("button", { name: "Block" }));
+    const dialog = screen.getByRole("alertdialog", { name: "Block @student?" });
+    expect(dialog).toHaveTextContent("You will no longer see their posts");
+    expect(dialog.parentElement).toBe(document.body);
+    expect(dialog).toHaveClass("items-center");
+  });
+
+  it("uses accessible icon-only controls for post moderation actions", () => {
+    renderCard();
+
+    expect(screen.getByRole("button", { name: "Report" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mute" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Block" })).toBeInTheDocument();
+    expect(screen.queryByText("Report")).not.toBeInTheDocument();
+    expect(screen.queryByText("Mute")).not.toBeInTheDocument();
+    expect(screen.queryByText("Block")).not.toBeInTheDocument();
+  });
+
+  it("opens the report form as a centered modal outside the post card", () => {
+    renderCard();
+    fireEvent.click(screen.getByRole("button", { name: "Report" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Report post" });
+    expect(dialog.parentElement).toBe(document.body);
+    expect(dialog).toHaveClass("items-center");
+    expect(document.body.style.overflow).toBe("hidden");
+
+    fireEvent.click(dialog);
+    expect(screen.getByTestId("current-path")).toHaveTextContent("/app/feed");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog", { name: "Report post" })).not.toBeInTheDocument();
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
+
+  it("shows post deletion as an accessible trash icon", () => {
+    renderCard({ author_id: "student-2" });
+
+    expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    expect(screen.queryByText("Delete")).not.toBeInTheDocument();
   });
 
   it("renders full content and attached media without a preview link on the details page", () => {

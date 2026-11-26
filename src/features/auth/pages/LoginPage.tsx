@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,10 +18,30 @@ export function LoginPage() {
   const [serverError, setServerError] = useState(loc.state?.unverified ? "Please verify your email address before continuing." : "");
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Values>({ resolver: zodResolver(schema) });
 
+  useEffect(() => {
+    let active = true;
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        console.error("Could not check the existing login session.", error.message);
+        return;
+      }
+      if (active && data.session?.user.email_confirmed_at) nav("/app", { replace: true });
+    }).catch((error: unknown) => {
+      if (active) console.error("Could not read the existing login session.", error);
+    });
+    return () => { active = false; };
+  }, [nav]);
+
   async function onSubmit(v: Values) {
     setServerError("");
-    const { error } = await supabase.auth.signInWithPassword({ email: v.email, password: v.password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: v.email, password: v.password });
     if (error) { setServerError(friendlyAuthError(error.message)); return; }
+    if (!data.session?.user.email_confirmed_at) {
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) console.error("Could not clear the unverified login session.", signOutError.message);
+      setServerError("Please verify your email address before continuing.");
+      return;
+    }
     const from = loc.state?.from;
     nav(from && from.startsWith("/") ? from : "/app", { replace: true });
   }

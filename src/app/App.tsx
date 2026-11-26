@@ -7,6 +7,7 @@ const StudentLayout = lazy(() => import("@/app/StudentLayout").then((m) => ({ de
 const HomePage = lazy(() => import("@/pages/HomePage").then((m) => ({ default: m.HomePage })));
 const LoginPage = lazy(() => import("@/features/auth/pages/LoginPage").then((m) => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import("@/features/auth/pages/RegisterPage").then((m) => ({ default: m.RegisterPage })));
+const AuthCallbackPage = lazy(() => import("@/features/auth/pages/AuthCallbackPage").then((m) => ({ default: m.AuthCallbackPage })));
 const ForgotPasswordPage = lazy(() => import("@/features/auth/pages/ForgotPasswordPage").then((m) => ({ default: m.ForgotPasswordPage })));
 const ResetPasswordPage = lazy(() => import("@/features/auth/pages/ResetPasswordPage").then((m) => ({ default: m.ResetPasswordPage })));
 const FeedPage = lazy(() => import("@/features/social/FeedPage").then((m) => ({ default: m.FeedPage })));
@@ -18,6 +19,7 @@ const CommunityPage = lazy(() => import("@/features/community/CommunityPage").th
 const NotificationsPage = lazy(() => import("@/features/notifications/NotificationsPage").then((m) => ({ default: m.NotificationsPage })));
 const MessagesPage = lazy(() => import("@/features/messages/MessagesPage").then((m) => ({ default: m.MessagesPage })));
 const AboutPage = lazy(() => import("@/pages/public/pages").then((m) => ({ default: m.AboutPage })));
+const MissionPage = lazy(() => import("@/pages/public/pages").then((m) => ({ default: m.MissionPage })));
 const ContactPage = lazy(() => import("@/pages/public/pages").then((m) => ({ default: m.ContactPage })));
 const FeaturesPage = lazy(() => import("@/pages/public/pages").then((m) => ({ default: m.FeaturesPage })));
 const GuidelinesPage = lazy(() => import("@/pages/public/pages").then((m) => ({ default: m.GuidelinesPage })));
@@ -123,12 +125,14 @@ export function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/mission" element={<MissionPage />} />
         <Route path="/community-guidelines" element={<GuidelinesPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/portfolio/:slug" element={<PublicPortfolioPage />} />

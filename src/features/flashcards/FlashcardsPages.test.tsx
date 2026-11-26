@@ -131,7 +131,7 @@ describe("Flashcards and quizzes pages", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Answers were not submitted, graded or saved.");
     expect(screen.getByRole("button", { name: "Save quiz" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Publish quiz" })).toBeDisabled();
-    expect(screen.getByRole("link", { name: "Group Quiz" })).toHaveAttribute("href", "/app/group-quiz");
+    expect(screen.getAllByRole("link", { name: "Group Quiz" }).some((link) => link.getAttribute("href") === "/app/group-quiz")).toBe(true);
   });
 
   it("marks future learning tools as coming soon and links Group Quiz to its live page", () => {

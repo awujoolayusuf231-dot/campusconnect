@@ -215,5 +215,18 @@ describe("describeNotification", () => {
       expect(mocks.updateEq).toHaveBeenCalledWith("user_id", "user-1");
       expect(mocks.insert).not.toHaveBeenCalled();
     });
+
+    it("lets a user explicitly opt in to email activity notifications", async () => {
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+      render(createElement(MemoryRouter, null,
+        createElement(QueryClientProvider, { client }, createElement(NotificationsPage)),
+      ));
+
+      fireEvent.click(await screen.findByRole("checkbox", { name: "Email activity notifications" }));
+
+      await waitFor(() => expect(mocks.update).toHaveBeenCalledWith({ notify_email: true }));
+      expect(mocks.updateEq).toHaveBeenCalledWith("user_id", "user-1");
+    });
   });
 });

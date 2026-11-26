@@ -16,8 +16,16 @@ export function AuthPageLayout({ mode, eyebrow, title, description, children }: 
       <div className="mx-auto grid min-h-[calc(100dvh-1.5rem)] max-w-7xl overflow-hidden rounded-[26px] border border-line bg-white shadow-[0_24px_80px_rgba(80,30,30,0.10)] sm:min-h-[calc(100dvh-2.5rem)] sm:rounded-[32px] lg:min-h-[calc(100dvh-4rem)] lg:grid-cols-[1.02fr_0.98fr]">
         <aside className="relative flex min-h-[245px] flex-col justify-between overflow-hidden bg-primary-deep px-5 py-5 text-white sm:min-h-[285px] sm:px-8 sm:py-7 lg:min-h-full lg:px-10 lg:py-9 xl:px-14">
           <img
-            src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1400&q=85"
+            src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1100&q=75"
+            srcSet={[
+              "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=480&q=72 480w",
+              "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=768&q=75 768w",
+              "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1100&q=75 1100w",
+            ].join(", ")}
+            sizes="(min-width: 1024px) 50vw, 100vw"
             alt=""
+            loading="eager"
+            decoding="async"
             className="absolute inset-0 h-full w-full object-cover opacity-60"
           />
           <div className="absolute inset-0 bg-gradient-to-br from-primary-deep/80 via-primary-deep/55 to-primary-deep/90" />
