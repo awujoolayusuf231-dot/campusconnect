@@ -65,6 +65,7 @@ const AuditLogPage = lazy(() => import("@/features/admin/pages/AuditLogPage").th
 const StaffPage = lazy(() => import("@/features/admin/pages/StaffPage").then((m) => ({ default: m.StaffPage })));
 const UsersPage = lazy(() => import("@/features/admin/pages/UsersPage").then((m) => ({ default: m.UsersPage })));
 const AccountDeletionRequestsPage = lazy(() => import("@/features/admin/pages/AccountDeletionRequestsPage").then((m) => ({ default: m.AccountDeletionRequestsPage })));
+const ResendContactsPage = lazy(() => import("@/features/admin/pages/ResendContactsPage").then((m) => ({ default: m.ResendContactsPage })));
 const StudyNotesReviewPage = lazy(() => import("@/features/admin/pages/StudyNotesReviewPage").then((m) => ({ default: m.StudyNotesReviewPage })));
 const CelebrationCatalogPage = lazy(() => import("@/features/admin/pages/CelebrationCatalogPage").then((m) => ({ default: m.CelebrationCatalogPage })));
 const AssignmentDiscussionsPage = lazy(() => import("@/features/assignment-discussions/AssignmentDiscussionsPages").then((m) => ({ default: m.AssignmentDiscussionsPage })));
@@ -234,6 +235,7 @@ export function App() {
             <Route index element={<DashboardPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="deletions" element={<AccountDeletionRequestsPage />} />
+            <Route path="resend-contacts" element={<ResendContactsPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="communities" element={<CommunitiesAdminPage />} />
             <Route path="announcements" element={<AnnouncementsPage />} />

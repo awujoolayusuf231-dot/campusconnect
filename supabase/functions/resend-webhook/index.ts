@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
+  resendContactUnsubscribeFromEvent,
   resendOutboxIdFromTags,
   verifyResendWebhookSignature,
 } from "../_shared/resendWebhookLogic.ts";
@@ -13,6 +14,7 @@ const acceptedEventTypes = new Set([
   "email.complained",
   "email.failed",
   "email.suppressed",
+  "contact.updated",
 ]);
 
 function jsonResponse(body: Record<string, unknown>, status = 200): Response {
@@ -100,6 +102,40 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: "invalid_event_data" }, 400);
   }
   const eventData = data as Record<string, unknown>;
+  const occurredAt = typeof event.created_at === "string" ? event.created_at : null;
+  if (!occurredAt || !Number.isFinite(Date.parse(occurredAt))) {
+    return jsonResponse({ error: "invalid_event_time" }, 400);
+  }
+
+  if (event.type === "contact.updated") {
+    const audienceId = Deno.env.get("RESEND_AUDIENCE_ID");
+    if (!audienceId) {
+      console.error("Resend contact webhook cannot verify its audience.");
+      return jsonResponse({ error: "contact_webhook_not_configured" }, 503);
+    }
+    const unsubscribe = resendContactUnsubscribeFromEvent(eventData, audienceId);
+    if (!unsubscribe) {
+      return jsonResponse({ received: true, ignored: true });
+    }
+    const client = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await client.rpc("record_resend_contact_unsubscribe", {
+      p_event_id: eventId,
+      p_contact_id: unsubscribe.contactId,
+      p_audience_id: audienceId,
+      p_email: unsubscribe.email,
+      p_occurred_at: new Date(occurredAt).toISOString(),
+    });
+    if (error) {
+      console.error("Could not record a Resend contact unsubscribe.", {
+        errorCode: error.code ?? "database_error",
+      });
+      return jsonResponse({ error: "contact_unsubscribe_record_failed" }, 503);
+    }
+    return jsonResponse({ received: true });
+  }
+
   const rawProviderEmailId = eventData.email_id;
   const providerEmailId = typeof rawProviderEmailId === "string"
     && rawProviderEmailId.length >= 1
@@ -109,10 +145,6 @@ Deno.serve(async (request) => {
   const outboxId = resendOutboxIdFromTags(eventData.tags);
   if (!providerEmailId && !outboxId) {
     return jsonResponse({ received: true, ignored: true, reason: "event_has_no_correlatable_email_id" });
-  }
-  const occurredAt = typeof event.created_at === "string" ? event.created_at : null;
-  if (!occurredAt || !Number.isFinite(Date.parse(occurredAt))) {
-    return jsonResponse({ error: "invalid_event_time" }, 400);
   }
 
   const client = createClient(supabaseUrl, serviceRoleKey, {

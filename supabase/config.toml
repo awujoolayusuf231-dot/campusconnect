@@ -454,6 +454,9 @@ verify_jwt = false
 [functions.resend-webhook]
 verify_jwt = false
 
+[functions.sync-resend-contacts]
+verify_jwt = false
+
 [functions.livekit-token]
 verify_jwt = false
 

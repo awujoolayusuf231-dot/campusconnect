@@ -21,7 +21,10 @@ export const ADMIN_NAV: AdminNavSection[] = [
   ] },
   { title: "Community", items: [{ label: "Communities", to: "/admin/communities", permission: "communities.manage" }] },
   { title: "Student services", items: [{ label: "Opportunities", to: "/admin/opportunities", permission: "opportunities.manage" }] },
-  { title: "Communication", items: [{ label: "Announcements", to: "/admin/announcements", permission: "announcements.manage" }] },
+  { title: "Communication", items: [
+    { label: "Announcements", to: "/admin/announcements", permission: "announcements.manage" },
+    { label: "Resend audience", to: "/admin/resend-contacts", permission: "settings.manage" },
+  ] },
   { title: "Platform", items: [
     { label: "Celebration Studio", to: "/admin/celebration-studio", permission: "settings.manage" },
     { label: "Settings and flags", to: "/admin/settings", permission: "settings.manage" },

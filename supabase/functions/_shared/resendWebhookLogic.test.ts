@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  resendContactUnsubscribeFromEvent,
   resendOutboxIdFromTags,
   verifyResendWebhookSignature,
 } from "./resendWebhookLogic";
@@ -24,6 +25,29 @@ describe("Resend webhook signatures", () => {
       .toBeNull();
     expect(resendOutboxIdFromTags([{ name: "email_outbox_id", value: "../42" }]))
       .toBeNull();
+  });
+
+  it("accepts only unsubscribe events from the configured audience", () => {
+    const data = {
+      id: "contact-123",
+      email: "student@example.com",
+      segment_ids: ["segment-1"],
+      unsubscribed: true,
+    };
+    expect(resendContactUnsubscribeFromEvent(data, "segment-1")).toEqual({
+      contactId: "contact-123",
+      email: "student@example.com",
+    });
+    expect(resendContactUnsubscribeFromEvent({
+      ...data,
+      audience_id: "legacy-audience",
+    }, "legacy-audience")).toEqual({
+      contactId: "contact-123",
+      email: "student@example.com",
+    });
+    expect(resendContactUnsubscribeFromEvent({ ...data, unsubscribed: false }, "segment-1")).toBeNull();
+    expect(resendContactUnsubscribeFromEvent(data, "another-segment")).toBeNull();
+    expect(resendContactUnsubscribeFromEvent({ ...data, email: "invalid" }, "segment-1")).toBeNull();
   });
 
   it("accepts a valid recent signature and rejects changed or stale payloads", async () => {

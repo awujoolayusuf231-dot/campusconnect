@@ -228,5 +228,22 @@ describe("describeNotification", () => {
       await waitFor(() => expect(mocks.update).toHaveBeenCalledWith({ notify_email: true }));
       expect(mocks.updateEq).toHaveBeenCalledWith("user_id", "user-1");
     });
+
+    it("keeps marketing consent separate and only saves it after explicit opt-in", async () => {
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+      render(createElement(MemoryRouter, null,
+        createElement(QueryClientProvider, { client }, createElement(NotificationsPage)),
+      ));
+
+      const marketingConsent = await screen.findByRole("checkbox", {
+        name: "Campus news and product updates (marketing)",
+      });
+      expect(marketingConsent).not.toBeChecked();
+      fireEvent.click(marketingConsent);
+
+      await waitFor(() => expect(mocks.update).toHaveBeenCalledWith({ marketing_email_consent: true }));
+      expect(mocks.updateEq).toHaveBeenCalledWith("user_id", "user-1");
+    });
   });
 });

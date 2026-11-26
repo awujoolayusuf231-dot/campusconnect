@@ -72,14 +72,14 @@ export function VerificationModal({
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user.email_confirmed_at) navigate("/app", { replace: true });
+      if (session?.user.email_confirmed_at) navigate(CALLBACK_PATH, { replace: true });
     });
     void supabase.auth.getSession().then(({ data, error: sessionError }) => {
       if (sessionError) {
         console.error("Could not check the verified signup session.", sessionError.message);
         return;
       }
-      if (data.session?.user.email_confirmed_at) navigate("/app", { replace: true });
+      if (data.session?.user.email_confirmed_at) navigate(CALLBACK_PATH, { replace: true });
     });
     return () => subscription.unsubscribe();
   }, [navigate]);

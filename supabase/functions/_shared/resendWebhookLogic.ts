@@ -22,6 +22,24 @@ export function resendOutboxIdFromTags(tags: unknown): string | null {
   }
 }
 
+export function resendContactUnsubscribeFromEvent(
+  data: unknown,
+  expectedAudienceId: string,
+): { contactId: string; email: string } | null {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) return null;
+  const eventData = data as Record<string, unknown>;
+  const belongsToConfiguredSegment = Array.isArray(eventData.segment_ids)
+    && eventData.segment_ids.includes(expectedAudienceId);
+  if ((eventData.audience_id !== expectedAudienceId && !belongsToConfiguredSegment)
+    || eventData.unsubscribed !== true) return null;
+  const contactId = eventData.id;
+  const email = eventData.email;
+  if (typeof contactId !== "string" || contactId.length < 1 || contactId.length > 200
+    || typeof email !== "string" || email.trim().length < 3 || email.trim().length > 320
+    || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return null;
+  return { contactId, email: email.trim() };
+}
+
 function constantTimeEqual(left: string, right: string): boolean {
   const encoder = new TextEncoder();
   const a = encoder.encode(left);

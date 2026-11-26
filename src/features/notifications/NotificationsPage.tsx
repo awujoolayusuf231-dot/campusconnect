@@ -27,6 +27,7 @@ type PreferenceKey =
   | "notify_followed_posts"
   | "notify_celebrations"
   | "notify_email"
+  | "marketing_email_consent"
   | "notify_push";
 const PREFS: [PreferenceKey, string, boolean?][] = [
   ["notify_follows", "New followers"],
@@ -38,6 +39,7 @@ const PREFS: [PreferenceKey, string, boolean?][] = [
   ["notify_followed_posts", "New posts from people I follow", false],
   ["notify_celebrations", "Celebration cards"],
   ["notify_email", "Email activity notifications", false],
+  ["marketing_email_consent", "Campus news and product updates (marketing)", false],
   ["notify_push", "Browser push notifications"],
 ];
 
@@ -125,6 +127,7 @@ export function NotificationsPage() {
       <section className="card space-y-2"><h2 className="font-medium">Notify me about</h2>
         {PREFS.map(([key, label, defaultValue]) => <label key={key} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={prefs.data?.[key] ?? defaultValue ?? true} disabled={savePref.isPending} onChange={(e) => savePref.mutate({ key, on: e.target.checked })} />{label}</label>)}
         <p className="text-xs text-muted">Important account, platform, and moderation emails may still be sent.</p>
+        <p className="text-xs text-muted">Marketing emails are optional. Only verified addresses with this preference enabled can receive them; Resend unsubscribes are always respected.</p>
         {savePref.isError && <p role="alert" className="err">Could not save your preference: {(savePref.error as Error).message}</p>}</section>
       <section className="card space-y-2"><h2 className="font-medium">This device</h2>
         {typeof Notification !== "undefined" && Notification.permission === "denied" && <p className="text-xs text-muted">Notifications are blocked. Open this site's browser settings, change Notifications to Allow, then reload CampusConnect.</p>}

@@ -26,6 +26,7 @@ const schema = z.object({
   displayName: z.string().trim().min(1, "Enter your name").max(60),
   username: usernameSchema,
   institutionId: z.string().optional(),
+  marketingConsent: z.boolean().default(false),
 });
 type Values = z.infer<typeof schema>;
 
@@ -34,7 +35,10 @@ export function RegisterPage() {
   const [serverError, setServerError] = useState("");
   const settings = usePublicSettings();
   const institutions = useQuery({ queryKey: ["institutions", "active"], queryFn: listActiveInstitutions });
-  const { register, control, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<Values>({ resolver: zodResolver(schema) });
+  const { register, control, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { marketingConsent: false },
+  });
 
   async function onSubmit(v: Values) {
     setServerError("");
@@ -44,7 +48,12 @@ export function RegisterPage() {
       email: v.email, password: v.password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: { username: v.username, display_name: v.displayName, institution_id: v.institutionId || undefined },
+        data: {
+          username: v.username,
+          display_name: v.displayName,
+          institution_id: v.institutionId || undefined,
+          marketing_email_consent: v.marketingConsent,
+        },
       },
     });
     if (error) { setServerError(friendlyAuthError(error.message)); return; }
@@ -70,6 +79,13 @@ export function RegisterPage() {
           </div>
           <div><label className="label" htmlFor="email">Email address</label><input id="email" type="email" className="input" autoComplete="email" placeholder="you@example.com" {...register("email")} />{errors.email && <p className="err">{errors.email.message}</p>}</div>
           <div><label className="label" htmlFor="password">Create a password</label><PasswordInput id="password" autoComplete="new-password" placeholder="At least 8 characters" {...register("password")} />{errors.password && <p className="err">{errors.password.message}</p>}</div>
+          <div className="rounded-xl border border-line bg-bg p-3">
+            <label className="flex items-start gap-2 text-sm leading-6">
+              <input type="checkbox" className="mt-1" {...register("marketingConsent")} />
+              <span>Send me optional CampusConnect news, product updates, and campus opportunities by email.</span>
+            </label>
+            <p className="mt-1 pl-6 text-xs text-muted">This is optional and separate from account verification and security emails. You can unsubscribe at any time.</p>
+          </div>
           <div><label className="label" htmlFor="institutionId">Institution (optional)</label>
             <Controller
               control={control}
