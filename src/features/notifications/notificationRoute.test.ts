@@ -10,6 +10,7 @@ describe("notificationRoute", () => {
     ["project_application", "project", "/app/projects/project%2F1"],
     ["voice_invitation", "voice_room", "/app/voice-spaces/room%2F1"],
     ["celebration_reminder", "celebration", "/app/celebrations/card%2F1"],
+    ["announcement", "announcement", "/app/notifications?announcement=card%2F1"],
   ])("maps %s/%s to its app route", (type, entityType, route) => {
     expect(notificationRoute({
       type,

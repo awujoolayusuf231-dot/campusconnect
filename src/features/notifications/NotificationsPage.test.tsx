@@ -35,6 +35,18 @@ describe("notification routing and copy", () => {
       to: "/app/voice-spaces/room-1",
     });
   });
+
+  it("routes broadcast notifications to the inbox with their full message available", () => {
+    expect(describeNotification(notification(
+      "announcement",
+      "announcement-1",
+      { title: "Campus update", body: "The library will open late tomorrow." },
+      "announcement",
+    ))).toEqual({
+      text: "Announcement: Campus update",
+      to: "/app/notifications?announcement=announcement-1",
+    });
+  });
 });
 
 describe("NotificationsPage", () => {
@@ -48,5 +60,23 @@ describe("NotificationsPage", () => {
     expect(screen.getByRole("link", { name: "Account settings" })).toHaveAttribute("href", "/app/settings");
     expect(screen.queryByText("Notify me about")).not.toBeInTheDocument();
     expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+  });
+
+  it("shows the complete body of a broadcast on the notifications page", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: [notification("announcement", "announcement-1", {
+        title: "Campus update",
+        body: "The library will open late tomorrow. Please use the east entrance.",
+      }, "announcement")],
+      error: null,
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(createElement(MemoryRouter, null,
+      createElement(QueryClientProvider, { client }, createElement(NotificationsPage)),
+    ));
+
+    const broadcast = await screen.findByRole("link", { name: /Announcement: Campus update/ });
+    expect(broadcast).toHaveAttribute("href", "/app/notifications?announcement=announcement-1");
+    expect(broadcast).toHaveTextContent("The library will open late tomorrow. Please use the east entrance.");
   });
 });

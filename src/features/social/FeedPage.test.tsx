@@ -110,4 +110,54 @@ describe("FeedPage", () => {
 
     expect(await screen.findByRole("article")).toHaveAttribute("data-track-impression", "true");
   });
+
+  it("keeps celebration records out of the post sequence without breaking timeline pagination", async () => {
+    const activityAt = "2026-11-11T09:00:00.000Z";
+    const post = {
+      id: "post-1",
+      author_id: "student-2",
+      body: "A regular post",
+      created_at: activityAt,
+      edited_at: null,
+      like_count: 0,
+      comment_count: 0,
+      repost_count: 0,
+      liked_by_me: false,
+      reposted_by_me: false,
+      username: "student",
+      display_name: "Student",
+      avatar_path: null,
+      activity_at: activityAt,
+      reposter_username: null,
+      reposter_name: null,
+    };
+    const timeline = Array.from({ length: 19 }, (_, index) => ({
+      item_type: "post",
+      item_id: `post-${index + 1}`,
+      activity_at: activityAt,
+      item: { ...post, id: `post-${index + 1}` },
+    }));
+    timeline.push({
+      item_type: "celebration",
+      item_id: "celebration-1",
+      activity_at: activityAt,
+      item: { id: "celebration-1" },
+    } as typeof timeline[number]);
+    mocks.fetchFeedTimeline.mockImplementation((scope: string, cursor: unknown) =>
+      Promise.resolve(scope === "all" && cursor === null ? timeline : []));
+
+    const { container } = renderFeed();
+    fireEvent.click(screen.getByRole("tab", { name: "Everyone" }));
+
+    expect(await screen.findByText("Load more posts")).toBeInTheDocument();
+    expect(container.querySelectorAll("[data-post-id]")).toHaveLength(19);
+    expect(container.querySelector("[data-celebration-poster]")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Load more posts" }));
+    await waitFor(() => expect(mocks.fetchFeedTimeline).toHaveBeenCalledWith("all", {
+      activity_at: activityAt,
+      item_type: "celebration",
+      item_id: "celebration-1",
+    }));
+  });
 });

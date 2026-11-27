@@ -13,12 +13,25 @@ vi.mock("@tanstack/react-query", () => ({ useQuery: () => ({ data: "student" }) 
 vi.mock("@/features/notifications/useRealtimeCounts", () => ({ useUnreadCounts: () => mocks.counts }));
 vi.mock("@/features/notifications/NotificationAlerts", () => ({ NotificationAlerts: () => null }));
 vi.mock("@/features/notifications/NotificationBell", () => ({
-  NotificationBell: ({ unreadCount }: { unreadCount: number }) => (
-    <button type="button" aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"} />
+  NotificationBell: ({
+    unreadCount,
+    open,
+    onOpenChange,
+  }: {
+    unreadCount: number;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) => (
+    <>
+      <button type="button" aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"} onClick={() => onOpenChange(!open)} />
+      {open && <div role="region" aria-label="Recent notifications" />}
+    </>
   ),
 }));
 vi.mock("@/features/voice/VoiceActiveIndicator", () => ({ VoiceActiveIndicator: () => null }));
-vi.mock("@/features/announcements/AnnouncementBanner", () => ({ AnnouncementBanner: () => null }));
+vi.mock("@/features/announcements/AnnouncementBanner", () => ({
+  AnnouncementBanner: () => <div data-testid="global-announcement-banner" />,
+}));
 vi.mock("@/lib/supabase", () => ({ supabase: { auth: { signOut: mocks.signOut } } }));
 
 import { StudentLayout } from "./StudentLayout";
@@ -54,6 +67,7 @@ describe("StudentLayout navigation", () => {
   it("keeps the primary mobile navigation focused on the core destinations", () => {
     renderStudentLayout();
 
+    expect(screen.queryByTestId("global-announcement-banner")).not.toBeInTheDocument();
     const mobileNavigation = getMobileMainNavigation();
     const mobileLinks = within(mobileNavigation).getAllByRole("link");
 
@@ -104,6 +118,20 @@ describe("StudentLayout navigation", () => {
 
     expect(screen.getByText("Home content")).toBeInTheDocument();
     expect(screen.queryByText("Notification content")).not.toBeInTheDocument();
+  });
+
+  it("closes either header dropdown when the other is opened", () => {
+    renderStudentLayout();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
+    expect(screen.getByRole("navigation", { name: "Mobile menu" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Notifications, 7 unread" }));
+    expect(screen.queryByRole("navigation", { name: "Mobile menu" })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Recent notifications" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open navigation menu" }));
+    expect(screen.queryByRole("region", { name: "Recent notifications" })).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Mobile menu" })).toBeInTheDocument();
   });
 
   it("does not apply the transform entrance animation to an active conversation", () => {

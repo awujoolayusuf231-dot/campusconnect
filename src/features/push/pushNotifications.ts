@@ -177,6 +177,14 @@ export async function listenForForegroundPushNotifications(
         text: content.body,
         to: content.url,
       });
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        void navigator.serviceWorker.ready.then((registration) => registration.showNotification(content.title, {
+          body: content.body,
+          icon: "/icons/campusconnect-192.png",
+          ...(content.tag ? { tag: content.tag, renotify: true } : {}),
+          data: { url: content.url },
+        })).catch((error: unknown) => console.error("Could not display a foreground push notification.", error));
+      }
       return;
     }
     if (Notification.permission !== "granted") return;

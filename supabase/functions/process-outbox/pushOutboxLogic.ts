@@ -178,6 +178,15 @@ export function pushCopy(
         : "a Voice Space";
       return { title: "Voice Space invitation", body: `${name} invited you to join ${roomName}`, url, tag: "" };
     }
+    case "announcement": {
+      const title = typeof data?.title === "string" && data.title.trim()
+        ? data.title.trim().slice(0, 120)
+        : "CampusConnect update";
+      const body = typeof data?.body === "string" && data.body.trim()
+        ? data.body.trim().slice(0, 1000)
+        : "Open CampusConnect to read the latest announcement.";
+      return { title, body, url, tag: entityId ? `announcement:${entityId}` : "" };
+    }
     case "celebration_reminder":
       return { title: "CampusConnect", body: "You have a celebration reminder.", url, tag: "" };
     default:

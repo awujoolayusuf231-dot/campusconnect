@@ -64,6 +64,9 @@ export function notificationRoute({
     case "celebration_published":
       if (entityType === "celebration") route = `/app/celebrations/${encodedId}`;
       break;
+    case "announcement":
+      if (entityType === "announcement") route = `/app/notifications?announcement=${encodedId}`;
+      break;
   }
 
   return safeAppPath(route);

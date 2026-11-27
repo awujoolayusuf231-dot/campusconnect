@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { useUnreadCounts } from "@/features/notifications/useRealtimeCounts";
-import { AnnouncementBanner } from "@/features/announcements/AnnouncementBanner";
 import { Link } from "react-router-dom";
 import { isBrowserPushConfigured } from "@/features/push/pushConfig";
 import { VoiceCallDock, VoiceCallProvider } from "@/features/voice/VoiceCallProvider";
@@ -16,7 +15,8 @@ import { NotificationBell } from "@/features/notifications/NotificationBell";
 export function StudentLayout() {
   const { session, role } = useAuth();
   const { pathname } = useLocation();
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [openHeaderMenu, setOpenHeaderMenu] = useState<"navigation" | "notifications" | null>(null);
+  const moreOpen = openHeaderMenu === "navigation";
   const counts = useUnreadCounts();
   const me = useQuery({ queryKey: ["me-username", session?.user.id], enabled: !!session, queryFn: async () => {
     const { data } = await supabase.from("profiles").select("username").eq("id", session!.user.id).maybeSingle(); return (data as { username: string } | null)?.username ?? null; } });
@@ -43,7 +43,7 @@ export function StudentLayout() {
   const desktopLink = ({ isActive }: { isActive: boolean }) => `group flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${isActive ? "bg-primary-tint font-bold text-primary shadow-sm" : "text-muted hover:bg-white hover:text-fg"}`;
   const mobileLink = ({ isActive }: { isActive: boolean }) => `relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-0.5 py-2 text-[9px] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary sm:text-xs ${isActive ? "font-bold text-primary" : "text-muted hover:bg-bg"}`;
   const badge = (n: number) => n > 0 ? <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] leading-4 text-white" aria-label={`${n} unread`}>{n > 99 ? "99+" : n}</span> : null;
-  useEffect(() => setMoreOpen(false), [pathname]);
+  useEffect(() => setOpenHeaderMenu(null), [pathname]);
   useEffect(() => {
     if (!session?.user.id || !isBrowserPushConfigured()) return;
     let disposed = false;
@@ -87,10 +87,14 @@ export function StudentLayout() {
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden rounded-full bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary-deep sm:block">Your campus. Your community.</span>
-            <NotificationBell unreadCount={counts.notifications} />
+            <NotificationBell
+              unreadCount={counts.notifications}
+              open={openHeaderMenu === "notifications"}
+              onOpenChange={(open) => setOpenHeaderMenu(open ? "notifications" : null)}
+            />
             {!inChat && <>
               {role !== "student" && <NavLink to="/admin" className="hidden text-sm font-semibold text-muted hover:text-primary lg:block">Admin</NavLink>}
-              <button type="button" aria-label={moreOpen ? "Close navigation menu" : "Open navigation menu"} aria-controls="mobile-navigation-menu" aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-muted lg:hidden">
+              <button type="button" aria-label={moreOpen ? "Close navigation menu" : "Open navigation menu"} aria-controls="mobile-navigation-menu" aria-expanded={moreOpen} onClick={() => setOpenHeaderMenu((current) => current === "navigation" ? null : "navigation")} className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-muted lg:hidden">
                 {moreOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
               </button>
             </>}
@@ -99,14 +103,14 @@ export function StudentLayout() {
       </header>
       {moreOpen && (
         <>
-          <button type="button" aria-label="Dismiss navigation menu" onClick={() => setMoreOpen(false)} className="fixed inset-0 z-[19] cursor-default bg-transparent lg:hidden" />
+          <button type="button" aria-label="Dismiss navigation menu" onClick={() => setOpenHeaderMenu(null)} className="fixed inset-0 z-[19] cursor-default bg-transparent lg:hidden" />
           <nav id="mobile-navigation-menu" aria-label="Mobile menu" className="fixed right-3 top-20 z-30 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl border border-line bg-white p-2 shadow-[0_12px_36px_rgba(35,24,20,0.18)] lg:hidden">
             {menuItems.map((item) => (
-              <Link key={item.label} to={item.to} onClick={() => setMoreOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-fg hover:bg-primary-soft hover:text-primary">
+              <Link key={item.label} to={item.to} onClick={() => setOpenHeaderMenu(null)} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-fg hover:bg-primary-soft hover:text-primary">
                 <item.icon size={17} aria-hidden="true" />{item.label}
               </Link>
             ))}
-            <button type="button" onClick={() => void signOut()} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-danger hover:bg-danger-soft">
+            <button type="button" onClick={() => { setOpenHeaderMenu(null); void signOut(); }} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold text-danger hover:bg-danger-soft">
               <LogOut size={17} aria-hidden="true" />Log out
             </button>
           </nav>
@@ -137,7 +141,7 @@ export function StudentLayout() {
           </div>
         </aside>
         <main id="main" tabIndex={-1} className={`${inChat ? "w-full px-4 pb-24 pt-5 sm:px-6 lg:px-6 lg:pb-8" : "w-full px-3 pb-24 pt-4 sm:px-6 sm:pt-6 lg:ml-[250px] lg:px-8 lg:pb-8 xl:ml-[270px]"} min-w-0 outline-none`}>
-          <div className={`mx-auto w-full ${inChat ? "max-w-[1000px]" : "max-w-[1120px]"} space-y-4 sm:space-y-5${inChat ? "" : " motion-content"}`}><AnnouncementBanner /><Outlet /></div>
+          <div className={`mx-auto w-full ${inChat ? "max-w-[1000px]" : "max-w-[1120px]"} space-y-4 sm:space-y-5${inChat ? "" : " motion-content"}`}><Outlet /></div>
         </main>
       </div>
       {!inChat && (

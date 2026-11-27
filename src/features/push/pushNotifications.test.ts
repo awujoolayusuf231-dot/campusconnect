@@ -172,6 +172,10 @@ describe("push subscription registration", () => {
   });
 
   it("uses a toast for visible messages and suppresses duplicate FCM deliveries", async () => {
+    vi.stubGlobal("Notification", {
+      permission: "granted",
+      requestPermission: mocks.requestPermission,
+    });
     const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
     const showToast = vi.fn();
     let receiveMessage: ((payload: { data?: Record<string, string> }) => void) | undefined;
@@ -200,7 +204,14 @@ describe("push subscription registration", () => {
       text: "Amina sent you a message",
       to: "/app/messages/conversation-1",
     });
-    expect(mocks.showNotification).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(mocks.showNotification).toHaveBeenCalledWith(
+      "New message",
+      expect.objectContaining({
+        body: "Amina sent you a message",
+        tag: "message:conversation-1",
+        data: { url: "/app/messages/conversation-1" },
+      }),
+    ));
     visibility.mockRestore();
   });
 

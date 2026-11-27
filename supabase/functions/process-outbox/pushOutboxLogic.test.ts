@@ -58,6 +58,15 @@ describe("push outbox decisions", () => {
       url: "/app/voice-spaces/room-1",
       tag: "",
     });
+    expect(pushCopy("announcement", null, "announcement", "announcement-1", null, {
+      title: "Campus update",
+      body: "The library will open late tomorrow.",
+    })).toEqual({
+      title: "Campus update",
+      body: "The library will open late tomorrow.",
+      url: "/app/notifications?announcement=announcement-1",
+      tag: "announcement:announcement-1",
+    });
   });
 
   it("falls back to a safe generic copy and truncates actor names", () => {

@@ -57,9 +57,10 @@ export function NotificationsPage() {
     {!list.isLoading && items.length === 0 && <p className="card text-center text-muted">You are all caught up.</p>}
     <ul className="space-y-2">{items.map((item) => {
       const copy = describeNotification(item);
-      const body = <><span className={item.read_at ? "" : "font-semibold"}>{copy.text}</span><span className="ml-2 text-xs text-muted">{timeAgo(item.created_at)}</span></>;
+      const announcementBody = item.type === "announcement" && typeof item.data.body === "string" ? item.data.body : "";
+      const body = <><span className={item.read_at ? "" : "font-semibold"}>{copy.text}</span><span className="ml-2 text-xs text-muted">{timeAgo(item.created_at)}</span>{announcementBody && <span className="mt-2 block whitespace-pre-wrap break-words text-sm leading-6 text-muted">{announcementBody}</span>}</>;
       return <li key={item.id} className={`card flex items-center justify-between gap-2 ${item.read_at ? "" : "border-primary"}`}>
-        <Link to={copy.to} onClick={() => { if (!item.read_at) markOne.mutate(item.id); }} className="flex-1 hover:underline">{body}</Link>
+        <Link to={copy.to} onClick={() => { if (!item.read_at) markOne.mutate(item.id); }} className="min-w-0 flex-1 break-words hover:underline">{body}</Link>
         {!item.read_at && <button className="shrink-0 text-xs text-muted underline" onClick={() => markOne.mutate(item.id)}>Mark read</button>}
       </li>;
     })}</ul>

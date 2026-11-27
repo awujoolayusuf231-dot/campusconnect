@@ -1,4 +1,4 @@
-import { lazy, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { FEED_PAGE, fetchMediaPaths, fetchPostPublicMetrics, type FeedScope } from "./api";
@@ -18,8 +18,6 @@ const TABS: [FeedScope, string, string][] = [
   ["institution", "My institution", "Campus"],
 ];
 const TAB_ICONS = { for_you: Sparkles, all: Globe2, following: UsersRound, institution: GraduationCap };
-const CelebrationFeedCard = lazy(() => import("@/features/celebrations/CelebrationsPages").then((module) => ({ default: module.CelebrationFeedCard })));
-
 export function FeedPage() {
   const { session } = useAuth();
   const me = session?.user.id ?? "";
@@ -96,9 +94,7 @@ export function FeedPage() {
           </p>
           {scope === "for_you" && <Link to="/app/discover" className="mt-3 inline-flex min-h-9 items-center rounded-lg px-3 text-sm font-bold text-primary hover:bg-primary-soft">Explore students and topics</Link>}
         </div>)}
-      {items.map((item) => item.item_type === "post"
-        ? <PostCard key={`post-${item.item_id}`} post={item.item} images={media.data?.[item.item.id]} metrics={metrics.data?.[item.item.id]} me={me} trackImpression />
-        : <CelebrationFeedCard key={`celebration-${item.item_id}`} card={item.item} />)}
+      {posts.map((post) => <PostCard key={`post-${post.id}`} post={post} images={media.data?.[post.id]} metrics={metrics.data?.[post.id]} me={me} trackImpression />)}
       {feed.hasNextPage && <button className="btn group min-h-11 w-full gap-2 bg-white font-semibold text-muted hover:border-primary/25 hover:text-primary" disabled={feed.isFetchingNextPage} onClick={() => void feed.fetchNextPage()}>{feed.isFetchingNextPage ? <LoadingState label="Finding more posts" /> : <>Load more posts <ArrowDown size={16} aria-hidden="true" className="transition-transform group-hover:translate-y-0.5" /></>}</button>}
       </div>
     </div>

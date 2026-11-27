@@ -73,6 +73,8 @@ LiveKit credentials do not configure Firebase push. Migration `20261113000028_pu
 
 For the immediate-dispatch and richer-copy update, apply `20261117000041_push_outbox_immediate_dispatch.sql`, then deploy `process-outbox` with `supabase functions deploy process-outbox`, then deploy the frontend. Keep the existing every-minute cron job enabled as the retry/fallback path. Do not rerun the cron setup SQL if the job is already active.
 
+Broadcast notifications use the existing announcement audience, notification dedupe key, and push outbox. Apply [`20261127000053_broadcast_notifications_include_body.sql`](../supabase/migrations/20261127000053_broadcast_notifications_include_body.sql) to add the full message to existing and future notification payloads, then deploy `process-outbox` and the frontend. The migration changes no table structure or recipient rules.
+
 ## 2. Frontend build
 ```bash
 npm ci

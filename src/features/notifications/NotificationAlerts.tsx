@@ -122,8 +122,13 @@ export function NotificationAlerts({ userId }: { userId: string }) {
       if (!("serviceWorker" in navigator) || typeof Notification === "undefined"
         || Notification.permission !== "granted") return;
       const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification(copy.text, {
-        body: "Open CampusConnect to view this update.",
+      const announcement = row.type === "announcement";
+      const title = announcement && typeof row.data.title === "string" ? row.data.title : copy.text;
+      const body = announcement && typeof row.data.body === "string"
+        ? row.data.body
+        : "Open CampusConnect to view this update.";
+      await registration.showNotification(title, {
+        body,
         tag: `notification:${row.id}`,
         icon: "/icons/campusconnect-192.png",
         data: { url: safeAppPath(copy.to) },
@@ -149,7 +154,21 @@ export function NotificationAlerts({ userId }: { userId: string }) {
       const actors = await loadActors([row]);
       if (!active || !claimNotificationForDisplay(row.id)) return;
       const copy = describeNotification(enrich(row, actors));
-      if (visible) showToast({ id: String(row.id), text: copy.text, to: copy.to });
+      if (visible) {
+        showToast({
+          id: String(row.id),
+          ...(row.type === "announcement" && typeof row.data.title === "string" ? { title: row.data.title } : {}),
+          text: row.type === "announcement" && typeof row.data.body === "string" ? row.data.body : copy.text,
+          to: copy.to,
+        });
+        if (pushNotificationAllowedByPreferences(preferences)) {
+          try {
+            await showSystemNotification(row, copy);
+          } catch (error) {
+            console.error("Could not show a notification while CampusConnect was visible.", error);
+          }
+        }
+      }
       else {
         try {
           await showSystemNotification(row, copy);
@@ -196,7 +215,12 @@ export function NotificationAlerts({ userId }: { userId: string }) {
           const actors = await loadActors(rows);
           for (const row of rows) {
             const copy = describeNotification(enrich(row, actors));
-            showToast({ id: String(row.id), text: copy.text, to: copy.to });
+            showToast({
+              id: String(row.id),
+              ...(row.type === "announcement" && typeof row.data.title === "string" ? { title: row.data.title } : {}),
+              text: row.type === "announcement" && typeof row.data.body === "string" ? row.data.body : copy.text,
+              to: copy.to,
+            });
           }
         }
         void queryClient.invalidateQueries({ queryKey: ["unread", "notifications"] });

@@ -40,7 +40,7 @@ export function describeNotification(n: NotificationCopyInput): { text: string; 
     case "community_join": return { text: `${who} joined your community`, to };
     case "message": return { text: `${who} sent you a message`, to };
     case "project_application": return { text: `${who} applied to your project`, to };
-    case "announcement": return { text: `Announcement: ${String(n.data.title ?? "")}`, to };
+    case "announcement": return { text: `Announcement: ${String(n.data.title ?? "CampusConnect update")}`, to };
     case "moderation_warning": return { text: `A moderator sent you a warning: ${String(n.data.reason ?? "")}`, to };
     default: return { text: "New notification", to };
   }
