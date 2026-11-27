@@ -3,7 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
 vi.mock("@/lib/supabase", () => ({ supabase: { rpc: mocks.rpc } }));
 
-import { saveLearningQuiz, validateLearningQuiz, type SaveLearningQuizInput } from "./quizApi";
+import {
+  saveLearningQuiz,
+  listLearningQuizQuestions,
+  submitLearningQuiz,
+  validateLearningQuiz,
+  type SaveLearningQuizInput,
+} from "./quizApi";
 
 const validQuiz: SaveLearningQuizInput = {
   courseId: null,
@@ -57,5 +63,44 @@ describe("learning quiz API", () => {
         expect.objectContaining({ type: "short_answer", answer: "Cell", options: [] }),
       ],
     }));
+  });
+
+  it("submits only the quiz taker's selected answers to the grading RPC", async () => {
+    mocks.rpc.mockResolvedValue({ data: "attempt-1", error: null });
+
+    await expect(submitLearningQuiz({
+      quizId: "quiz-1",
+      answers: [
+        { questionId: "question-1", selectedOptionId: "option-2" },
+        { questionId: "question-2", answerText: "  Cell  " },
+      ],
+    })).resolves.toBe("attempt-1");
+
+    expect(mocks.rpc).toHaveBeenCalledWith("submit_learning_quiz", {
+      p_quiz_id: "quiz-1",
+      p_answers: [
+        { question_id: "question-1", selected_option_id: "option-2", answer_text: null },
+        { question_id: "question-2", selected_option_id: null, answer_text: "  Cell  " },
+      ],
+    });
+  });
+
+  it("uses the owner-only RPC to load private answer keys while editing", async () => {
+    const questions = [{
+      id: "question-1",
+      quiz_id: "quiz-1",
+      position: 1,
+      question_type: "multiple_choice",
+      prompt: "Which process makes glucose?",
+      explanation: "It uses light energy.",
+      options: [{ id: "option-1", question_id: "question-1", position: 1, option_text: "Photosynthesis" }],
+      answer_option_id: "option-1",
+      answer_text: null,
+    }];
+    mocks.rpc.mockResolvedValue({ data: questions, error: null });
+
+    await expect(listLearningQuizQuestions("quiz-1", true)).resolves.toEqual(questions);
+
+    expect(mocks.rpc).toHaveBeenCalledWith("get_learning_quiz_questions_for_owner", { p_quiz_id: "quiz-1" });
   });
 });

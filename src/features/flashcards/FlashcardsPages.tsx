@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, Navigate, NavLink, Outlet, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, ArrowRight, Award, BookOpen, Brain, Check, ChevronLeft, ChevronRight,
+  ArrowLeft, ArrowRight, Award, BookOpen, Brain, Check, CheckCircle2, ChevronLeft, ChevronRight,
   CircleHelp, Clock3, GraduationCap, Layers3, Lightbulb, ListChecks, LockKeyhole,
   Plus, RotateCcw, Sparkles, Target, Trash2, Trophy, Users,
   type LucideIcon,
@@ -22,11 +22,15 @@ import {
 } from "./api";
 import {
   getLearningQuiz,
+  getLearningQuizAttempt,
   listLearningQuizQuestions,
+  listLearningQuizAttempts,
   listLearningQuizzes,
   saveLearningQuiz,
+  submitLearningQuiz,
   validateLearningQuiz,
   type LearningQuiz,
+  type LearningQuizAttempt,
   type LearningQuizQuestionInput,
 } from "./quizApi";
 
@@ -39,6 +43,7 @@ const sections = [
   { to: "/app/flashcards/mine", label: "My flashcards" },
   { to: "/app/flashcards/quizzes", label: "Quiz library" },
   { to: "/app/flashcards/my-quizzes", label: "My quizzes" },
+  { to: "/app/flashcards/results", label: "Quiz results" },
   { to: "/app/flashcards/saved", label: "Saved questions" },
   { to: "/app/flashcards/performance", label: "Performance" },
   { to: "/app/flashcards/advanced", label: "Advanced learning" },
@@ -116,7 +121,7 @@ export function FlashcardsHomePage() {
   const library = useQuery({ queryKey: ["flashcards", "library", "recent"], queryFn: () => listFlashcardCollections() });
   return (
     <div className="space-y-5">
-      <BackendNotice>Flashcard collections and quiz drafts are live. Save quiz drafts privately or publish them to the quiz library. Quiz attempts, grading and performance tracking are not available yet.</BackendNotice>
+      <BackendNotice>Flashcard collections, quiz publishing, submissions and automatic grading are live. Review your scores and question feedback in Quiz results.</BackendNotice>
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <FeatureCard to="/app/flashcards/library" title="Flashcard library" description="Discover collections shared by CampusConnect students." icon={Layers3} />
         <FeatureCard to="/app/flashcards/mine" title="My flashcards" description={mine.isLoading ? "Loading your collections…" : `${mine.data?.length ?? 0} collection${mine.data?.length === 1 ? "" : "s"} you created.`} icon={BookOpen} />
@@ -141,7 +146,7 @@ export function FlashcardsHomePage() {
       </section>
       <section className="grid gap-3 sm:grid-cols-2">
         <FeatureCard to="/app/flashcards/create-quiz" title="Create a quiz" description="Compose questions, save a draft, or publish it to the quiz library." icon={ListChecks} />
-        <FeatureCard to="/app/flashcards/performance" title="Study performance" description="Real scores and learning progress will appear after backend support is added." icon={Target} />
+        <FeatureCard to="/app/flashcards/performance" title="Study performance" description="Quiz scores are available now; flashcard learning statistics are still in development." icon={Target} />
       </section>
       {mine.isError && <p role="alert" className="err">Could not load your flashcard collections: {(mine.error as Error).message}</p>}
       {library.data?.length ? <section className="space-y-3">
@@ -426,14 +431,6 @@ export function FlashcardCollectionPage() {
   </div>;
 }
 
-function EmptyQuizPage({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
-  return <div className="space-y-5">
-    <PageHeading eyebrow="Practice" title={title} description={description} action={action} />
-    <BackendNotice>Quiz drafts and publishing are supported. Quiz attempts, grading, saved questions and performance results are not available yet.</BackendNotice>
-    <EmptyLibrary title="No quiz data available" description="Create a quiz draft or publish a quiz to make it available in the library." />
-  </div>;
-}
-
 export function QuizLibraryPage() {
   const quizzes = useQuery({ queryKey: ["learning-quizzes", "published"], queryFn: () => listLearningQuizzes() });
   return <div className="space-y-5">
@@ -477,23 +474,105 @@ export function LearningQuizDetailsPage() {
     queryFn: () => listLearningQuizQuestions(quizId),
     enabled: !!quizId && quiz.data?.status === "published",
   });
+  const queryClient = useQueryClient();
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [submittedAttemptId, setSubmittedAttemptId] = useState("");
+  const attempt = useQuery({
+    queryKey: ["learning-quiz-attempt", submittedAttemptId],
+    queryFn: () => getLearningQuizAttempt(submittedAttemptId),
+    enabled: !!submittedAttemptId,
+  });
+  const submit = useMutation({
+    mutationFn: (answerPayload: { questionId: string; selectedOptionId?: string | null; answerText?: string | null }[]) =>
+      submitLearningQuiz({ quizId, answers: answerPayload }),
+    onSuccess: async (attemptId) => {
+      setSubmittedAttemptId(attemptId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["learning-quiz-attempts"] }),
+        queryClient.invalidateQueries({ queryKey: ["learning-quiz-attempt", attemptId] }),
+      ]);
+    },
+  });
   if (quiz.isLoading) return <LoadingState label="Loading published quiz" variant="panel" />;
   if (quiz.isError) return <p role="alert" className="err">Could not load this quiz: {(quiz.error as Error).message}</p>;
   if (!quiz.data || quiz.data.status !== "published") return <EmptyLibrary title="Quiz unavailable" description="This quiz does not exist or is not published." />;
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const answerPayload = (questions.data ?? []).map((question) => question.question_type === "short_answer"
+      ? { questionId: question.id, answerText: answers[question.id] ?? "" }
+      : { questionId: question.id, selectedOptionId: answers[question.id] ?? null });
+    submit.mutate(answerPayload);
+  }
+  function retakeQuiz() {
+    setAnswers({});
+    setSubmittedAttemptId("");
+    submit.reset();
+  }
   return <div className="space-y-5">
     <Link to="/app/flashcards/quizzes" className="inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-muted hover:text-primary"><ArrowLeft size={15} />Quiz library</Link>
     <PageHeading eyebrow="Published quiz" title={quiz.data.title} description={quiz.data.description || quiz.data.course?.title || "Published by a CampusConnect student."} />
     {quiz.data.course && <p className="text-sm font-bold text-primary">{quiz.data.course.code} · {quiz.data.course.title}</p>}
-    <BackendNotice>This published quiz is available for self-study. Answer submission and grading are not enabled yet.</BackendNotice>
+    <BackendNotice>Submit your answers to receive an immediate score and question-by-question feedback. Short answers are matched ignoring case and extra whitespace; you can retake this quiz.</BackendNotice>
     {questions.isLoading ? <LoadingState label="Loading quiz questions" variant="panel" />
       : questions.isError ? <p role="alert" className="err">Could not load quiz questions: {(questions.error as Error).message}</p>
-        : <ol className="space-y-3">{(questions.data ?? []).map((question) => <li key={question.id} className="rounded-2xl border border-line bg-white p-4 sm:p-5">
-          <p className="text-xs font-bold text-primary">Question {question.position} · {question.question_type.replaceAll("_", " ")}</p>
-          <p className="mt-2 whitespace-pre-wrap font-semibold leading-6 text-fg">{question.prompt}</p>
-          {question.options.length > 0 && <ul className="mt-3 space-y-2">{question.options.map((option) => <li key={option.id} className="rounded-xl border border-line px-3 py-2 text-sm text-fg">{option.option_text}</li>)}</ul>}
-          {question.explanation && <p className="mt-3 border-t border-line pt-3 text-sm leading-5 text-muted">{question.explanation}</p>}
-        </li>)}</ol>}
+        : !(questions.data ?? []).length ? <EmptyLibrary title="No questions available" description="This published quiz has no questions to answer." />
+          : submittedAttemptId ? <div className="space-y-4">
+            {attempt.isLoading ? <LoadingState label="Loading your graded result" variant="panel" />
+              : attempt.isError ? <p role="alert" className="err">Your submission was saved, but the result could not be loaded: {(attempt.error as Error).message}</p>
+                : attempt.data ? <QuizAttemptReview attempt={attempt.data} />
+                  : <p role="alert" className="err">Your submission was saved, but its result is unavailable. Open Quiz results to try again.</p>}
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn min-h-10 rounded-xl px-4 font-bold" disabled={attempt.isLoading} onClick={retakeQuiz}>Retake quiz</button>
+              <Link to="/app/flashcards/results" className="btn-primary inline-flex min-h-10 items-center rounded-xl px-4 font-bold">View all results</Link>
+            </div>
+          </div>
+            : <form className="space-y-3" onSubmit={handleSubmit}>
+              <ol className="space-y-3">{(questions.data ?? []).map((question) => <li key={question.id}>
+                <fieldset className="rounded-2xl border border-line bg-white p-4 sm:p-5">
+                  <legend className="sr-only">Question {question.position}</legend>
+                  <p className="text-xs font-bold capitalize text-primary">Question {question.position} · {question.question_type.replaceAll("_", " ")}</p>
+                  <p className="mt-2 whitespace-pre-wrap font-semibold leading-6 text-fg">{question.prompt}</p>
+                  {question.question_type === "short_answer"
+                    ? <label className="mt-3 block"><span className="label">Your answer</span><textarea className="input" rows={2} maxLength={300} value={answers[question.id] ?? ""} onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: event.target.value }))} disabled={submit.isPending} /></label>
+                    : <div className="mt-3 space-y-2">{question.options.map((option) => <label key={option.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-line px-3 text-sm text-fg hover:bg-primary-soft">
+                      <input type="radio" name={`quiz-question-${question.id}`} value={option.id} checked={answers[question.id] === option.id} onChange={() => setAnswers((current) => ({ ...current, [question.id]: option.id }))} disabled={submit.isPending} />
+                      {option.option_text}
+                    </label>)}</div>}
+                </fieldset>
+              </li>)}</ol>
+              <p className="text-xs text-muted">Unanswered questions are marked incorrect.</p>
+              {submit.isError && <p role="alert" className="err">Could not submit your quiz: {(submit.error as Error).message}</p>}
+              <button type="submit" className="btn-primary min-h-10 rounded-xl px-4 font-bold" disabled={submit.isPending || questions.isLoading}>
+                {submit.isPending ? "Submitting…" : "Submit quiz"}
+              </button>
+            </form>}
   </div>;
+}
+
+function QuizAttemptReview({ attempt }: { attempt: LearningQuizAttempt }) {
+  const score = `${attempt.score_percent.toFixed(2).replace(/\.?0+$/, "")}%`;
+  return <section aria-label="Graded quiz result" className="space-y-4 rounded-2xl border border-primary-border bg-primary-soft p-4 sm:p-6">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        {attempt.quiz?.title && <p className="text-xs font-bold text-primary">{attempt.quiz.title}</p>}
+        <h2 className="mt-1 text-xl font-black text-fg">Your score: {score}</h2>
+        <p className="mt-1 text-sm text-muted">{attempt.correct_count} of {attempt.total_questions} correct · {new Date(attempt.submitted_at).toLocaleString()}</p>
+      </div>
+      <CheckCircle2 size={24} className="text-primary" aria-hidden="true" />
+    </div>
+    <ol className="space-y-2">{attempt.answers.map((answer) => <li key={answer.position} className="rounded-xl border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <p className="font-semibold leading-6 text-fg">Question {answer.position}: {answer.prompt}</p>
+        <span className={`inline-flex items-center gap-1 text-xs font-extrabold ${answer.is_correct ? "text-success" : "text-danger"}`}>
+          {answer.is_correct ? <Check size={14} aria-hidden="true" /> : <CircleHelp size={14} aria-hidden="true" />}
+          {answer.is_correct ? "Correct" : "Incorrect"}
+        </span>
+      </div>
+      <p className="mt-2 text-sm text-muted">Your answer: <span className="font-semibold text-fg">{answer.submitted_answer ?? "No answer"}</span></p>
+      {!answer.is_correct && <p className="mt-1 text-sm text-muted">Correct answer: <span className="font-semibold text-fg">{answer.correct_answer}</span></p>}
+      {answer.explanation && <p className="mt-2 border-t border-line pt-2 text-sm leading-5 text-muted">{answer.explanation}</p>}
+    </li>)}</ol>
+  </section>;
 }
 
 function newQuizQuestion(id: number): QuizQuestionDraft {
@@ -590,7 +669,7 @@ export function CreateQuizPage() {
 
   return <div className="space-y-5">
     <PageHeading eyebrow={quizId ? "Edit your quiz" : "Quiz builder"} title={quizId ? "Edit quiz" : "Create a quiz"} description="Save a private draft and publish it when it is ready for the quiz library." />
-    <BackendNotice>Drafts are private to you. Publishing makes the questions and options visible to other students; answer keys stay private. Quiz submission and grading are not enabled yet.</BackendNotice>
+    <BackendNotice>Drafts are private to you. Publishing makes the questions and options available to other students. Answer keys stay private, and students only receive feedback for their own submitted attempts.</BackendNotice>
     <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="space-y-4">
         <article className="space-y-4 rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5">
@@ -619,25 +698,35 @@ export function CreateQuizPage() {
         {validation && <p className="text-xs leading-5 text-muted">{validation}</p>}
         {save.isError && <p role="alert" className="text-sm text-danger">{save.error.message}</p>}
         {savedNotice && <p role="status" className="text-sm font-semibold text-success">{savedNotice}</p>}
-        <p className="text-xs leading-5 text-muted">Publishing makes the quiz available in the library. Submissions and grading are not included yet.</p>
+        <p className="text-xs leading-5 text-muted">Students can submit published quizzes, receive automatic grades, and review their answers.</p>
       </aside>
     </section>
   </div>;
 }
 
 export function SavedQuestionsPage() {
-  return <EmptyQuizPage title="Saved questions" description="Saved-question bookmarks are not available yet." />;
+  return <div className="space-y-5">
+    <PageHeading eyebrow="Practice" title="Saved questions" description="Save questions from quizzes to return to them later." />
+    <EmptyLibrary title="Question bookmarks are coming soon" description="You can submit published quizzes and review their graded feedback now. Saving individual questions is not available yet." />
+  </div>;
 }
 
 export function QuizResultsPage() {
-  return <EmptyQuizPage title="Quiz results" description="Real attempts and question-by-question results will appear here after quiz submissions are supported." />;
+  const attempts = useQuery({ queryKey: ["learning-quiz-attempts"], queryFn: () => listLearningQuizAttempts() });
+  return <div className="space-y-5">
+    <PageHeading eyebrow="Your learning" title="Quiz results" description="Review your recent scores, submitted answers, correct answers, and explanations." />
+    {attempts.isLoading ? <LoadingState label="Loading your quiz results" variant="panel" />
+      : attempts.isError ? <p role="alert" className="err">Could not load your quiz results: {(attempts.error as Error).message}</p>
+        : attempts.data?.length ? <ul className="space-y-4">{attempts.data.map((attempt) => <li key={attempt.id}><QuizAttemptReview attempt={attempt} /></li>)}</ul>
+          : <EmptyLibrary title="No quiz attempts yet" description="Submit a published quiz to see your score and question-by-question feedback here." />}
+  </div>;
 }
 
 export function PerformancePage() {
   return <div className="space-y-5">
-    <PageHeading eyebrow="Your learning" title="Performance" description="Track real quiz outcomes and revision progress after learning records are available." />
-    <BackendNotice>No quiz attempts or flashcard study sessions are stored. Scores, averages, streaks and course progress are not shown because they are unsupported.</BackendNotice>
-    <EmptyLibrary title="No performance data" description="Once the backend supports attempts and study activity, this page can show real progress without inventing statistics." />
+    <PageHeading eyebrow="Your learning" title="Performance" description="Review quiz scores and continue strengthening your course knowledge." />
+    <BackendNotice>Quiz scores and graded answer history are available in Quiz results. Flashcard session statistics and course progress are not tracked yet.</BackendNotice>
+    <Link to="/app/flashcards/results" className="btn-primary inline-flex min-h-10 items-center rounded-xl px-4 font-bold">View quiz results</Link>
   </div>;
 }
 

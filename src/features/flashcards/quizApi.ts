@@ -40,15 +40,52 @@ export type SaveLearningQuizInput = {
   questions: LearningQuizQuestionInput[];
   publish: boolean;
 };
+export type LearningQuizAnswerInput = {
+  questionId: string;
+  selectedOptionId?: string | null;
+  answerText?: string | null;
+};
+export type LearningQuizAttemptAnswer = {
+  position: number;
+  question_type: LearningQuizQuestionType;
+  prompt: string;
+  submitted_answer: string | null;
+  correct_answer: string;
+  is_correct: boolean;
+  explanation: string;
+};
+export type LearningQuizAttempt = {
+  id: string;
+  quiz_id: string;
+  user_id: string;
+  submitted_at: string;
+  correct_count: number;
+  total_questions: number;
+  score_percent: number;
+  quiz: { title: string } | null;
+  answers: LearningQuizAttemptAnswer[];
+};
 
 type Relation<T> = T | T[] | null;
 type QuizRow = Omit<LearningQuiz, "course"> & { course: Relation<{ code: string; title: string }> };
-type QuizQuestionRow = Omit<LearningQuizQuestion, "options" | "answer_option_id" | "answer_text"> & {
+type QuizQuestionRow = Pick<LearningQuizQuestion, "id" | "quiz_id" | "position" | "question_type" | "prompt"> & {
   options: LearningQuizOption[] | null;
+};
+type QuizAttemptRow = Omit<LearningQuizAttempt, "quiz" | "answers" | "score_percent"> & {
+  score_percent: number | string;
+  quiz: Relation<{ title: string }>;
+  answers: LearningQuizAttemptAnswer[] | null;
 };
 const QUIZ_SELECT = `
   id,owner_id,course_id,title,description,status,published_at,created_at,updated_at,
   course:academic_courses!learning_quizzes_course_id_fkey(code,title)
+`;
+const QUIZ_ATTEMPT_SELECT = `
+  id,quiz_id,user_id,submitted_at,correct_count,total_questions,score_percent,
+  quiz:learning_quizzes!learning_quiz_attempts_quiz_id_fkey(title),
+  answers:learning_quiz_attempt_answers!learning_quiz_attempt_answers_attempt_id_fkey(
+    position,question_type,prompt,submitted_answer,correct_answer,is_correct,explanation
+  )
 `;
 
 function first<T>(value: Relation<T>): T | null {
@@ -57,6 +94,15 @@ function first<T>(value: Relation<T>): T | null {
 
 function normalizeQuiz(row: QuizRow): LearningQuiz {
   return { ...row, course: first(row.course) };
+}
+
+function normalizeAttempt(row: QuizAttemptRow): LearningQuizAttempt {
+  return {
+    ...row,
+    score_percent: Number(row.score_percent),
+    quiz: first(row.quiz),
+    answers: [...(row.answers ?? [])].sort((a, b) => a.position - b.position),
+  };
 }
 
 export function validateLearningQuiz(input: SaveLearningQuizInput): string | null {
@@ -106,29 +152,25 @@ export async function getLearningQuiz(id: string): Promise<LearningQuiz | null> 
 }
 
 export async function listLearningQuizQuestions(quizId: string, includeAnswers = false): Promise<LearningQuizQuestion[]> {
+  if (includeAnswers) {
+    const { data, error } = await supabase.rpc("get_learning_quiz_questions_for_owner", { p_quiz_id: quizId });
+    if (error) throw error;
+    if (!Array.isArray(data)) throw new Error("Quiz questions could not be loaded.");
+    return data as unknown as LearningQuizQuestion[];
+  }
+
   const { data, error } = await supabase
     .from("learning_quiz_questions")
-    .select("id,quiz_id,position,question_type,prompt,explanation,options:learning_quiz_options!learning_quiz_options_question_id_fkey(id,question_id,position,option_text)")
+    .select("id,quiz_id,position,question_type,prompt,options:learning_quiz_options!learning_quiz_options_question_id_fkey(id,question_id,position,option_text)")
     .eq("quiz_id", quizId)
     .order("position");
   if (error) throw error;
   const questions = ((data ?? []) as unknown as QuizQuestionRow[]).map((question) => ({
     ...question,
+    explanation: "",
     options: [...(question.options ?? [])].sort((a, b) => a.position - b.position),
   }));
-  if (!includeAnswers || !questions.length) return questions;
-
-  const { data: answerRows, error: answersError } = await supabase
-    .from("learning_quiz_answer_keys")
-    .select("question_id,answer_option_id,answer_text")
-    .in("question_id", questions.map((question) => question.id));
-  if (answersError) throw answersError;
-  const answers = new Map((answerRows ?? []).map((answer) => [answer.question_id, answer]));
-  return questions.map((question) => ({
-    ...question,
-    answer_option_id: answers.get(question.id)?.answer_option_id ?? null,
-    answer_text: answers.get(question.id)?.answer_text ?? null,
-  }));
+  return questions;
 }
 
 export async function saveLearningQuiz(input: SaveLearningQuizInput): Promise<string> {
@@ -164,4 +206,44 @@ export async function saveLearningQuiz(input: SaveLearningQuizInput): Promise<st
   if (error) throw error;
   if (typeof data !== "string") throw new Error("The quiz could not be saved.");
   return data;
+}
+
+export async function submitLearningQuiz(input: {
+  quizId: string;
+  answers: LearningQuizAnswerInput[];
+}): Promise<string> {
+  if (!input.quizId || !input.answers.length) throw new Error("A quiz and its answers are required.");
+  const { data, error } = await supabase.rpc("submit_learning_quiz", {
+    p_quiz_id: input.quizId,
+    p_answers: input.answers.map((answer) => ({
+      question_id: answer.questionId,
+      selected_option_id: answer.selectedOptionId ?? null,
+      answer_text: answer.answerText ?? null,
+    })),
+  });
+  if (error) throw error;
+  if (typeof data !== "string") throw new Error("Your quiz submission could not be saved.");
+  return data;
+}
+
+export async function getLearningQuizAttempt(attemptId: string): Promise<LearningQuizAttempt | null> {
+  const { data, error } = await supabase
+    .from("learning_quiz_attempts")
+    .select(QUIZ_ATTEMPT_SELECT)
+    .eq("id", attemptId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? normalizeAttempt(data as unknown as QuizAttemptRow) : null;
+}
+
+export async function listLearningQuizAttempts(quizId?: string): Promise<LearningQuizAttempt[]> {
+  let query = supabase
+    .from("learning_quiz_attempts")
+    .select(QUIZ_ATTEMPT_SELECT)
+    .order("submitted_at", { ascending: false })
+    .limit(100);
+  if (quizId) query = query.eq("quiz_id", quizId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return ((data ?? []) as unknown as QuizAttemptRow[]).map(normalizeAttempt);
 }

@@ -12,9 +12,12 @@ const mocks = vi.hoisted(() => ({
   recordFlashcardReview: vi.fn(),
   saveFlashcardCollection: vi.fn(),
   getLearningQuiz: vi.fn(),
+  getLearningQuizAttempt: vi.fn(),
   listLearningQuizQuestions: vi.fn(),
+  listLearningQuizAttempts: vi.fn(),
   listLearningQuizzes: vi.fn(),
   saveLearningQuiz: vi.fn(),
+  submitLearningQuiz: vi.fn(),
 }));
 vi.mock("@/features/past-questions/api", () => ({ listCourses: mocks.listCourses }));
 vi.mock("./api", () => ({
@@ -32,9 +35,12 @@ vi.mock("./api", () => ({
 }));
 vi.mock("./quizApi", () => ({
   getLearningQuiz: mocks.getLearningQuiz,
+  getLearningQuizAttempt: mocks.getLearningQuizAttempt,
   listLearningQuizQuestions: mocks.listLearningQuizQuestions,
+  listLearningQuizAttempts: mocks.listLearningQuizAttempts,
   listLearningQuizzes: mocks.listLearningQuizzes,
   saveLearningQuiz: mocks.saveLearningQuiz,
+  submitLearningQuiz: mocks.submitLearningQuiz,
   validateLearningQuiz: (input: { title: string; questions: { prompt: string; type: string; options: string[]; answer: string }[] }) => {
     if (input.title.trim().length < 3) return "Quiz title must be between 3 and 120 characters.";
     if (!input.questions.length || input.questions.some((question) => !question.prompt.trim() || !question.answer.trim())) return "Complete each question and its correct answer.";
@@ -52,6 +58,7 @@ import {
   FlashcardLibraryPage,
   FlashcardsHomePage,
   FlashcardsLayout,
+  LearningQuizDetailsPage,
   MyFlashcardsPage,
   MyQuizzesPage,
   PerformancePage,
@@ -73,6 +80,7 @@ function renderFeature(path = "/app/flashcards") {
             <Route path="create" element={<CreateFlashcardsPage />} />
             <Route path="collections/:collectionId" element={<FlashcardCollectionPage />} />
             <Route path="quizzes" element={<QuizLibraryPage />} />
+            <Route path="quizzes/:quizId" element={<LearningQuizDetailsPage />} />
             <Route path="my-quizzes" element={<MyQuizzesPage />} />
             <Route path="create-quiz" element={<CreateQuizPage />} />
             <Route path="edit-quiz/:quizId" element={<CreateQuizPage />} />
@@ -99,16 +107,19 @@ describe("Flashcards and quizzes pages", () => {
     mocks.deleteFlashcardCollection.mockResolvedValue(undefined);
     mocks.recordFlashcardReview.mockResolvedValue(undefined);
     mocks.getLearningQuiz.mockResolvedValue(null);
+    mocks.getLearningQuizAttempt.mockResolvedValue(null);
     mocks.listLearningQuizQuestions.mockResolvedValue([]);
+    mocks.listLearningQuizAttempts.mockResolvedValue([]);
     mocks.listLearningQuizzes.mockResolvedValue([]);
     mocks.saveLearningQuiz.mockResolvedValue("quiz-1");
+    mocks.submitLearningQuiz.mockResolvedValue("attempt-1");
   });
 
   it("explains that flashcard collections and quiz drafts are live", () => {
     renderFeature();
 
     expect(screen.getByRole("heading", { name: "Flashcards & Quizzes" })).toBeVisible();
-    expect(screen.getByText(/Flashcard collections and quiz drafts are live/i)).toBeVisible();
+    expect(screen.getByText(/quiz publishing, submissions and automatic grading are live/i)).toBeVisible();
     expect(screen.getByRole("link", { name: /Create flashcards/i })).toHaveAttribute("href", "/app/flashcards/create");
   });
 
@@ -177,11 +188,101 @@ describe("Flashcards and quizzes pages", () => {
     expect(screen.getByRole("button", { name: "Not available yet" })).toBeDisabled();
   });
 
-  it("provides honest empty states for unsupported libraries and results", () => {
+  it("shows a clear empty state before the first quiz attempt", async () => {
     renderFeature("/app/flashcards/results");
 
     expect(screen.getByRole("heading", { name: "Quiz results" })).toBeVisible();
-    expect(screen.getByText(/Quiz drafts and publishing are supported/i)).toBeVisible();
+    expect(await screen.findByText("No quiz attempts yet")).toBeVisible();
+  });
+
+  it("submits a published quiz and displays its automatically graded result", async () => {
+    const quiz = {
+      id: "quiz-1",
+      owner_id: "student-2",
+      course_id: null,
+      title: "Biology revision",
+      description: "",
+      status: "published",
+      published_at: "2026-11-27T00:00:00Z",
+      created_at: "2026-11-27T00:00:00Z",
+      updated_at: "2026-11-27T00:00:00Z",
+      course: null,
+    };
+    const question = {
+      id: "question-1",
+      quiz_id: quiz.id,
+      position: 1,
+      question_type: "multiple_choice",
+      prompt: "Which process makes glucose in plants?",
+      explanation: "Plants use light energy to make glucose.",
+      options: [
+        { id: "option-1", question_id: "question-1", position: 1, option_text: "Photosynthesis" },
+        { id: "option-2", question_id: "question-1", position: 2, option_text: "Respiration" },
+      ],
+    };
+    const attempt = {
+      id: "attempt-1",
+      quiz_id: quiz.id,
+      user_id: "student-1",
+      submitted_at: "2026-11-27T00:01:00Z",
+      correct_count: 1,
+      total_questions: 1,
+      score_percent: 100,
+      quiz: { title: quiz.title },
+      answers: [{
+        position: 1,
+        question_type: "multiple_choice",
+        prompt: question.prompt,
+        submitted_answer: "Photosynthesis",
+        correct_answer: "Photosynthesis",
+        is_correct: true,
+        explanation: question.explanation,
+      }],
+    };
+    mocks.getLearningQuiz.mockResolvedValue(quiz);
+    mocks.listLearningQuizQuestions.mockResolvedValue([question]);
+    mocks.getLearningQuizAttempt.mockResolvedValue(attempt);
+    renderFeature(`/app/flashcards/quizzes/${quiz.id}`);
+
+    expect(await screen.findByRole("heading", { name: quiz.title })).toBeVisible();
+    expect(screen.queryByText(question.explanation)).not.toBeInTheDocument();
+    expect(await screen.findByText(question.prompt)).toBeVisible();
+    fireEvent.click(screen.getByRole("radio", { name: "Photosynthesis" }));
+    fireEvent.click(screen.getByRole("button", { name: "Submit quiz" }));
+
+    expect(await screen.findByRole("region", { name: "Graded quiz result" })).toHaveTextContent("Your score: 100%");
+    expect(screen.getByText(question.explanation)).toBeVisible();
+    expect(mocks.submitLearningQuiz).toHaveBeenCalledWith({
+      quizId: quiz.id,
+      answers: [{ questionId: question.id, selectedOptionId: "option-1" }],
+    });
+  });
+
+  it("shows saved attempts and question feedback in quiz results", async () => {
+    mocks.listLearningQuizAttempts.mockResolvedValue([{
+      id: "attempt-1",
+      quiz_id: "quiz-1",
+      user_id: "student-1",
+      submitted_at: "2026-11-27T00:01:00Z",
+      correct_count: 0,
+      total_questions: 1,
+      score_percent: 0,
+      quiz: { title: "Biology revision" },
+      answers: [{
+        position: 1,
+        question_type: "short_answer",
+        prompt: "What is the basic unit of life?",
+        submitted_answer: "Atom",
+        correct_answer: "Cell",
+        is_correct: false,
+        explanation: "All living organisms are made of cells.",
+      }],
+    }]);
+    renderFeature("/app/flashcards/results");
+
+    expect(await screen.findByText("Biology revision")).toBeVisible();
+    expect(screen.getByText("Your score: 0%")).toBeVisible();
+    expect(screen.getByText("Cell")).toBeVisible();
   });
 
   it("loads real public collection cards in the library", async () => {
