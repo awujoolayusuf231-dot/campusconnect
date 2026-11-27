@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { listCourses, type Course, type Department, type Institution } from "@/features/past-questions/api";
+import { getAcademicFileDetails } from "@/lib/academicFiles";
 
 export const STUDY_NOTES_BUCKET = "study-notes";
 export const MAX_STUDY_NOTE_FILE_BYTES = 20 * 1024 * 1024;
@@ -54,11 +55,11 @@ export type UploadStudyNoteInput = {
 };
 
 export function validateStudyNoteFile(file: File): string | null {
-  if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
-    return "Choose a PDF document.";
+  if (!getAcademicFileDetails(file)) {
+    return "Choose a PDF, JPG, PNG, WebP, DOC, or DOCX file.";
   }
   if (file.size <= 0 || file.size > MAX_STUDY_NOTE_FILE_BYTES) {
-    return "The PDF must be smaller than 20 MB.";
+    return "The file must be smaller than 20 MB.";
   }
   return null;
 }
@@ -196,11 +197,13 @@ export async function setStudyNoteSaved(noteId: string, userId: string, saved: b
 export async function uploadStudyNote(input: UploadStudyNoteInput): Promise<void> {
   const validationError = validateStudyNoteFile(input.file);
   if (validationError) throw new Error(validationError);
+  const fileDetails = getAcademicFileDetails(input.file);
+  if (!fileDetails) throw new Error("Choose a supported academic file.");
 
-  const objectPath = `${input.userId}/${crypto.randomUUID()}.pdf`;
+  const objectPath = `${input.userId}/${crypto.randomUUID()}.${fileDetails.extension}`;
   const { error: uploadError } = await supabase.storage
     .from(STUDY_NOTES_BUCKET)
-    .upload(objectPath, input.file, { contentType: "application/pdf", upsert: false });
+    .upload(objectPath, input.file, { contentType: fileDetails.contentType, upsert: false });
   if (uploadError) throw uploadError;
 
   const { error: insertError } = await supabase.from("study_notes").insert({
@@ -221,10 +224,10 @@ export async function uploadStudyNote(input: UploadStudyNoteInput): Promise<void
   throw insertError;
 }
 
-export async function createStudyNoteDownloadUrl(objectPath: string): Promise<string> {
+export async function createStudyNoteDownloadUrl(objectPath: string, downloadName?: string): Promise<string> {
   const { data, error } = await supabase.storage
     .from(STUDY_NOTES_BUCKET)
-    .createSignedUrl(objectPath, 60);
+    .createSignedUrl(objectPath, 60, downloadName ? { download: downloadName } : undefined);
   if (error) throw error;
   return data.signedUrl;
 }

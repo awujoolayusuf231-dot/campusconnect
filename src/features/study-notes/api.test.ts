@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({ from: vi.fn() }));
 
 vi.mock("@/lib/supabase", () => ({ supabase: { from: mocks.from } }));
 
-import { listStudyNotes } from "./api";
+import { listStudyNotes, validateStudyNoteFile } from "./api";
 
 function queryResult(data: unknown) {
   const query = {
@@ -48,5 +48,11 @@ describe("study notes API", () => {
 
     expect(notes[0]?.course?.department?.name).toBe("Computer Science");
     expect(notes[0]?.course?.department?.institution?.name).toBe("Test University");
+  });
+
+  it("accepts supported photos and Word files while rejecting unsupported types", () => {
+    expect(validateStudyNoteFile(new File(["image"], "notes.webp", { type: "image/webp" }))).toBeNull();
+    expect(validateStudyNoteFile(new File(["document"], "notes.doc", { type: "application/msword" }))).toBeNull();
+    expect(validateStudyNoteFile(new File(["binary"], "notes.zip", { type: "application/zip" }))).toContain("Choose a PDF");
   });
 });

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { getAcademicFileDetails, type AcademicFileDetails } from "@/lib/academicFiles";
 
 export const ASSIGNMENT_DISCUSSIONS_BUCKET = "assignment-discussions";
 export const MAX_ASSIGNMENT_DISCUSSION_ATTACHMENT_BYTES = 10 * 1024 * 1024;
@@ -21,7 +22,7 @@ export type DiscussionAttachment = {
   object_path: string;
   file_name: string;
   file_size: number;
-  content_type: "application/pdf";
+  content_type: AcademicFileDetails["contentType"];
   created_at: string;
 };
 
@@ -71,11 +72,11 @@ const DISCUSSION_SELECT = `
 `;
 
 export function validateDiscussionAttachment(file: File): string | null {
-  if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
-    return "Choose a PDF attachment.";
+  if (!getAcademicFileDetails(file)) {
+    return "Choose a PDF, JPG, PNG, WebP, DOC, or DOCX attachment.";
   }
   if (file.size <= 0 || file.size > MAX_ASSIGNMENT_DISCUSSION_ATTACHMENT_BYTES) {
-    return "The PDF must be smaller than 10 MB.";
+    return "The attachment must be smaller than 10 MB.";
   }
   return null;
 }
@@ -241,10 +242,10 @@ export async function deleteAssignmentDiscussionAttachment(attachment: Discussio
   if (error) throw new Error(`The file was removed, but its record could not be updated: ${error.message}`);
 }
 
-export async function createDiscussionAttachmentUrl(objectPath: string): Promise<string> {
+export async function createDiscussionAttachmentUrl(objectPath: string, downloadName?: string): Promise<string> {
   const { data, error } = await supabase.storage
     .from(ASSIGNMENT_DISCUSSIONS_BUCKET)
-    .createSignedUrl(objectPath, 60);
+    .createSignedUrl(objectPath, 60, downloadName ? { download: downloadName } : undefined);
   if (error) throw error;
   return data.signedUrl;
 }
@@ -270,10 +271,12 @@ async function uploadDiscussionAttachment(
   file: File,
   userId: string,
 ): Promise<void> {
-  const objectPath = `${userId}/${discussionId}/${crypto.randomUUID()}.pdf`;
+  const fileDetails = getAcademicFileDetails(file);
+  if (!fileDetails) throw new Error("Choose a supported academic file.");
+  const objectPath = `${userId}/${discussionId}/${crypto.randomUUID()}.${fileDetails.extension}`;
   const { error: uploadError } = await supabase.storage
     .from(ASSIGNMENT_DISCUSSIONS_BUCKET)
-    .upload(objectPath, file, { contentType: "application/pdf", upsert: false });
+    .upload(objectPath, file, { contentType: fileDetails.contentType, upsert: false });
   if (uploadError) throw uploadError;
 
   const { error: insertError } = await supabase.from("assignment_discussion_attachments").insert({
@@ -283,7 +286,7 @@ async function uploadDiscussionAttachment(
     object_path: objectPath,
     file_name: file.name.slice(0, 160),
     file_size: file.size,
-    content_type: "application/pdf",
+    content_type: fileDetails.contentType,
   });
   if (!insertError) return;
 

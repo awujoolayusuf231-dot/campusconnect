@@ -141,6 +141,23 @@ describe("Assignment Discussion Rooms", () => {
     }));
   });
 
+  it("allows photos and documents to be attached to a discussion", async () => {
+    const photo = new File(["photo-bytes"], "assignment-photo.jpg", { type: "image/jpeg" });
+    renderDiscussions("/app/assignment-discussions/courses/course-1");
+
+    await screen.findByRole("heading", { name: "CSC 101 · Introduction to Computing" });
+    fireEvent.click(screen.getByRole("button", { name: /Start a discussion/ }));
+    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Review this assignment photo" } });
+    fireEvent.change(screen.getByLabelText("Details"), { target: { value: "Can someone explain the first question in this image?" } });
+    fireEvent.change(screen.getByLabelText(/Attach a file/), { target: { files: [photo] } });
+    fireEvent.click(screen.getByRole("button", { name: "Post discussion" }));
+
+    await waitFor(() => expect(mocks.createAssignmentDiscussion).toHaveBeenCalledWith(expect.objectContaining({
+      file: photo,
+      title: "Review this assignment photo",
+    })));
+  });
+
   it("creates a reply to a persisted discussion", async () => {
     mocks.listAssignmentDiscussions.mockResolvedValue([discussion]);
     renderDiscussions("/app/assignment-discussions/courses/course-1");

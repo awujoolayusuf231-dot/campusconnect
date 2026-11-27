@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, BookOpen, FileText, Flag, MessagesSquare, Paperclip, Pencil, Send, Trash2 } from "lucide-react";
+import { ArrowRight, BookOpen, FileText, Flag, Image, MessagesSquare, Paperclip, Pencil, Send, Trash2 } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { LoadingState } from "@/app/LoadingState";
+import { ACADEMIC_FILE_ACCEPT } from "@/lib/academicFiles";
 import { timeAgo } from "@/lib/time";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { getCourse, listCourses, listDepartments, listInstitutions, type Course } from "@/features/past-questions/api";
@@ -323,8 +324,8 @@ function DiscussionComposer({ courseId, discussionId, mode, onCancel, onSaved }:
         <textarea className="input min-h-28" required minLength={mode === "discussion" ? 10 : 1} maxLength={mode === "discussion" ? 5000 : 3000} value={body} onChange={(event) => setBody(event.target.value)} placeholder={mode === "discussion" ? "Share enough context for classmates to help." : "Share a helpful response."} />
       </label>
       <label className="block">
-        <span className="label">Attach a PDF (optional, up to {MAX_ASSIGNMENT_DISCUSSION_ATTACHMENT_BYTES / 1024 / 1024} MB)</span>
-        <input className="input" type="file" accept="application/pdf,.pdf" onChange={(event) => {
+        <span className="label">Attach a file (PDF, photo, DOC or DOCX; up to {MAX_ASSIGNMENT_DISCUSSION_ATTACHMENT_BYTES / 1024 / 1024} MB)</span>
+        <input className="input" type="file" accept={ACADEMIC_FILE_ACCEPT} onChange={(event) => {
           const nextFile = event.target.files?.[0] ?? null;
           setFile(nextFile);
           setFileError(nextFile ? validateDiscussionAttachment(nextFile) ?? "" : "");
@@ -551,16 +552,21 @@ function EditReplyForm({
 function DiscussionAttachmentItem({ attachment, onRemove }: { attachment: DiscussionAttachment; onRemove: () => void }) {
   const { session } = useAuth();
   const [url, setUrl] = useState("");
-  const preview = useMutation({ mutationFn: () => createDiscussionAttachmentUrl(attachment.object_path), onSuccess: setUrl });
+  const preview = useMutation({
+    mutationFn: () => attachment.content_type.startsWith("image/") || attachment.content_type === "application/pdf"
+      ? createDiscussionAttachmentUrl(attachment.object_path)
+      : createDiscussionAttachmentUrl(attachment.object_path, attachment.file_name),
+    onSuccess: setUrl,
+  });
   const remove = useMutation({ mutationFn: deleteAssignmentDiscussionAttachment, onSuccess: onRemove });
   const own = session?.user.id === attachment.uploaded_by;
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-white p-3">
-      <span className="flex min-w-0 items-center gap-2 text-sm"><FileText size={16} className="shrink-0 text-primary" aria-hidden="true" /><span className="truncate">{attachment.file_name}</span><span className="shrink-0 text-xs text-muted">{formatFileSize(attachment.file_size)}</span></span>
+      <span className="flex min-w-0 items-center gap-2 text-sm">{attachment.content_type.startsWith("image/") ? <Image size={16} className="shrink-0 text-primary" aria-hidden="true" /> : <FileText size={16} className="shrink-0 text-primary" aria-hidden="true" />}<span className="truncate">{attachment.file_name}</span><span className="shrink-0 text-xs text-muted">{formatFileSize(attachment.file_size)}</span></span>
       <span className="flex items-center gap-2">
-        {url ? <a className="text-xs font-bold text-primary underline" href={url} target="_blank" rel="noreferrer">Open PDF</a> : <button type="button" className="btn min-h-8 gap-1 px-2.5 text-xs" disabled={preview.isPending} onClick={() => preview.mutate()}><Paperclip size={12} aria-hidden="true" />{preview.isPending ? "Preparing…" : "View PDF"}</button>}
+        {url ? <a className="text-xs font-bold text-primary underline" href={url} target="_blank" rel="noreferrer">Open attachment</a> : <button type="button" className="btn min-h-8 gap-1 px-2.5 text-xs" disabled={preview.isPending} onClick={() => preview.mutate()}><Paperclip size={12} aria-hidden="true" />{preview.isPending ? "Preparing…" : "View attachment"}</button>}
         {own && <button type="button" className="btn min-h-8 px-2 text-xs text-danger" disabled={remove.isPending} onClick={() => {
-          if (window.confirm("Remove this PDF attachment?")) remove.mutate(attachment);
+          if (window.confirm("Remove this attachment?")) remove.mutate(attachment);
         }}>Remove</button>}
       </span>
       {(preview.isError || remove.isError) && <span role="alert" className="w-full text-xs text-danger">{preview.error?.message ?? remove.error?.message}</span>}

@@ -78,6 +78,7 @@ const CreateFlashcardsPage = lazy(() => import("@/features/flashcards/Flashcards
 const QuizLibraryPage = lazy(() => import("@/features/flashcards/FlashcardsPages").then((m) => ({ default: m.QuizLibraryPage })));
 const MyQuizzesPage = lazy(() => import("@/features/flashcards/FlashcardsPages").then((m) => ({ default: m.MyQuizzesPage })));
 const CreateQuizPage = lazy(() => import("@/features/flashcards/FlashcardsPages").then((m) => ({ default: m.CreateQuizPage })));
+const LearningQuizDetailsPage = lazy(() => import("@/features/flashcards/FlashcardsPages").then((m) => ({ default: m.LearningQuizDetailsPage })));
 const QuizResultsPage = lazy(() => import("@/features/flashcards/FlashcardsPages").then((m) => ({ default: m.QuizResultsPage })));
 const SavedQuestionsPage = lazy(() => import("@/features/flashcards/FlashcardsPages").then((m) => ({ default: m.SavedQuestionsPage })));
 const PerformancePage = lazy(() => import("@/features/flashcards/FlashcardsPages").then((m) => ({ default: m.PerformancePage })));
@@ -183,6 +184,8 @@ export function App() {
               <Route path="quizzes" element={<QuizLibraryPage />} />
               <Route path="my-quizzes" element={<MyQuizzesPage />} />
               <Route path="create-quiz" element={<CreateQuizPage />} />
+              <Route path="edit-quiz/:quizId" element={<CreateQuizPage />} />
+              <Route path="quizzes/:quizId" element={<LearningQuizDetailsPage />} />
               <Route path="results" element={<QuizResultsPage />} />
               <Route path="saved" element={<SavedQuestionsPage />} />
               <Route path="performance" element={<PerformancePage />} />

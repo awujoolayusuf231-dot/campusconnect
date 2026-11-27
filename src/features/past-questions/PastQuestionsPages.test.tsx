@@ -153,11 +153,11 @@ describe("Past Questions Supabase integration", () => {
     courseView.unmount();
     renderPastQuestions(`/app/past-questions/questions/${resource.id}`);
     expect(await screen.findByRole("heading", { name: resource.title })).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Get secure document link" }));
+    fireEvent.click(screen.getByRole("button", { name: "Get secure PDF link" }));
     expect(await screen.findByRole("link", { name: "Open PDF" })).toHaveAttribute("href", "https://example.test/signed.pdf");
   });
 
-  it("submits a selected PDF through the upload workflow", async () => {
+  it("submits a selected photo through the upload workflow", async () => {
     mocks.listDepartments.mockResolvedValue([department]);
     mocks.listCourses.mockResolvedValue([course]);
     renderPastQuestions("/app/past-questions/upload");
@@ -171,13 +171,13 @@ describe("Past Questions Supabase integration", () => {
     fireEvent.change(screen.getByLabelText("Document title"), { target: { value: "CSC 101 examination" } });
     fireEvent.change(screen.getByLabelText("Academic session"), { target: { value: "2024/2025" } });
     fireEvent.change(screen.getByLabelText("Exam year"), { target: { value: "2025" } });
-    fireEvent.change(screen.getByLabelText("Examination document (PDF)"), {
-      target: { files: [new File(["pdf content"], "exam.pdf", { type: "application/pdf" })] },
+    fireEvent.change(screen.getByLabelText("Examination file"), {
+      target: { files: [new File(["photo content"], "exam.png", { type: "image/png" })] },
     });
     expect((screen.getByLabelText("Institution") as HTMLSelectElement).value).toBe(institution.id);
     expect((screen.getByLabelText("Department") as HTMLSelectElement).value).toBe(department.id);
     expect((screen.getByLabelText("Course") as HTMLSelectElement).value).toBe(course.id);
-    expect((screen.getByLabelText("Examination document (PDF)") as HTMLInputElement).files).toHaveLength(1);
+    expect((screen.getByLabelText("Examination file") as HTMLInputElement).files).toHaveLength(1);
     fireEvent.submit(screen.getByRole("button", { name: "Submit for review" }).closest("form")!);
 
     await waitFor(() => expect(mocks.uploadResource).toHaveBeenCalledWith(expect.objectContaining({

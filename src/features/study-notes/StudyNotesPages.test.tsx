@@ -154,7 +154,7 @@ describe("Study Notes", () => {
     expect(await screen.findByTitle(`${note.title} PDF preview`)).toHaveAttribute("src", "https://example.test/secure.pdf");
   }, 15000);
 
-  it("submits a PDF for review using the selected academic catalog course", async () => {
+  it("submits a Word document for review using the selected academic catalog course", async () => {
     renderStudyNotes("/app/study-notes/upload");
     await screen.findByRole("heading", { name: "Upload study notes" });
     fireEvent.change(screen.getByLabelText("Institution"), { target: { value: institution.id } });
@@ -166,8 +166,8 @@ describe("Study Notes", () => {
     fireEvent.change(screen.getByLabelText("Level"), { target: { value: "100" } });
     fireEvent.change(screen.getByLabelText("Semester"), { target: { value: "first" } });
     fireEvent.change(screen.getByLabelText("Description"), { target: { value: "A clear introduction to computing concepts and revision topics." } });
-    const file = new File(["pdf-content"], "study-guide.pdf", { type: "application/pdf" });
-    fireEvent.change(screen.getByLabelText("Study notes PDF"), { target: { files: [file] } });
+    const file = new File(["word-content"], "study-guide.docx", { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+    fireEvent.change(screen.getByLabelText("Study notes file"), { target: { files: [file] } });
     await act(async () => {
       fireEvent.submit(screen.getByRole("button", { name: "Submit for review" }).closest("form")!);
     });

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { LoadingState } from "@/app/LoadingState";
+import { ACADEMIC_FILE_ACCEPT, getAcademicFileExtension, getAcademicFileKindFromPath } from "@/lib/academicFiles";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useMyPermissions } from "@/features/admin/useMyPermissions";
 import {
@@ -649,8 +650,12 @@ export function QuestionDetailsPage() {
   const query = useQuery({ queryKey: ["past-questions", "resource", questionId], queryFn: () => getResource(questionId), enabled: !!questionId });
   const [downloadError, setDownloadError] = useState("");
   const [downloadUrl, setDownloadUrl] = useState("");
+  const fileKind = query.data ? getAcademicFileKindFromPath(query.data.object_path) : null;
+  const fileExtension = query.data ? getAcademicFileExtension(query.data.object_path) : "file";
   const download = useMutation({
-    mutationFn: (path: string) => createResourceDownloadUrl(path),
+    mutationFn: ({ path, downloadName }: { path: string; downloadName?: string }) => downloadName
+      ? createResourceDownloadUrl(path, downloadName)
+      : createResourceDownloadUrl(path),
     onSuccess: (url) => { setDownloadUrl(url); setDownloadError(""); },
     onError: (error) => { setDownloadError(error instanceof Error ? error.message : "The document is unavailable."); },
   });
@@ -676,16 +681,16 @@ export function QuestionDetailsPage() {
             {resource.status === "rejected" && resource.rejection_reason && <InfoRow label="Review note" value={resource.rejection_reason} />}
           </dl>
           <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-4">
-            <button type="button" className="btn-primary min-h-10 gap-2" disabled={download.isPending} onClick={() => download.mutate(resource.object_path)}><ArrowDownToLine size={15} aria-hidden="true" />{download.isPending ? "Preparing secure link…" : "Get secure document link"}</button>
-            <span className="inline-flex items-center gap-1.5 text-xs text-muted"><LockKeyhole size={14} aria-hidden="true" />Private PDF · link expires after 60 seconds</span>
+            <button type="button" className="btn-primary min-h-10 gap-2" disabled={download.isPending} onClick={() => download.mutate({ path: resource.object_path, downloadName: fileKind === "document" ? `${resource.title}.${fileExtension}` : undefined })}><ArrowDownToLine size={15} aria-hidden="true" />{download.isPending ? "Preparing secure link…" : fileKind === "pdf" ? "Get secure PDF link" : fileKind === "image" ? "View photo" : "Download document"}</button>
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted"><LockKeyhole size={14} aria-hidden="true" />Private file · link expires after 60 seconds</span>
             {downloadError && <p role="alert" className="w-full text-sm text-danger">{downloadError}</p>}
-            {downloadUrl && <a className="w-full text-sm font-bold text-primary underline" href={downloadUrl} target="_blank" rel="noreferrer">Open PDF</a>}
+            {downloadUrl && fileKind !== "image" && <a className="w-full text-sm font-bold text-primary underline" href={downloadUrl} target="_blank" rel="noreferrer">{fileKind === "pdf" ? "Open PDF" : "Open document"}</a>}
           </div>
         </div>
         <section aria-label="Secure document access" className="flex min-h-[18rem] flex-col items-center justify-center rounded-2xl border border-dashed border-primary-border bg-white p-6 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary"><FileText size={26} aria-hidden="true" /></span>
-          <h3 className="mt-4 font-extrabold text-fg">Private document</h3>
-          <p className="mt-2 max-w-sm text-sm leading-6 text-muted">The PDF is served from a private bucket. Access is checked by Supabase Storage policies before a short-lived link is created.</p>
+          {downloadUrl && fileKind === "image" ? <img src={downloadUrl} alt={resource.title} className="max-h-[28rem] w-full rounded-xl object-contain" /> : <><span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary"><FileText size={26} aria-hidden="true" /></span>
+            <h3 className="mt-4 font-extrabold text-fg">{fileKind === "pdf" ? "Private PDF" : fileKind === "image" ? "Private photo" : "Private document"}</h3>
+            <p className="mt-2 max-w-sm text-sm leading-6 text-muted">This file is served from a private bucket. Access is checked by Supabase Storage policies before a short-lived link is created.</p></>}
         </section>
       </section>
     </div>
@@ -758,7 +763,7 @@ export function UploadPage() {
     const examYear = Number(data.get("examYear"));
     const semester = String(data.get("semester") ?? "");
     if (!session?.user.id) return setFormError("Your session has expired. Sign in again to submit a resource.");
-    if (!file) return setFormError("Choose a PDF document to upload.");
+    if (!file) return setFormError("Choose a PDF, photo, DOC, or DOCX file to upload.");
     const fileError = validatePastQuestionFile(file);
     if (fileError) return setFormError(fileError);
     if (title.length < 5 || title.length > 200) return setFormError("The title must be between 5 and 200 characters.");
@@ -773,14 +778,14 @@ export function UploadPage() {
   const formQueryError = institutions.error ?? departments.error ?? courses.error;
   return (
     <div className="space-y-5">
-      <PageTitle eyebrow="Contribute to the library" title="Upload past questions" description="Submit a PDF examination resource for review. It will become visible in the library only after approval." />
+      <PageTitle eyebrow="Contribute to the library" title="Upload past questions" description="Submit an examination resource for review. It will become visible in the library only after approval." />
       <div role="note" className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
         <Info size={18} className="mt-0.5 shrink-0" aria-hidden="true" />
-        <p><strong>Review required.</strong> Submissions are private while pending. Upload a PDF up to {MAX_PAST_QUESTION_FILE_BYTES / 1024 / 1024} MB.</p>
+        <p><strong>Review required.</strong> Submissions are private while pending. Upload a PDF, photo, DOC, or DOCX file up to {MAX_PAST_QUESTION_FILE_BYTES / 1024 / 1024} MB.</p>
       </div>
       {formQueryError && <ErrorState error={formQueryError} retry={() => { void institutions.refetch(); void departments.refetch(); void courses.refetch(); }} />}
       <form className="rounded-2xl border border-line bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-7" onSubmit={handleSubmit}>
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-2"><h3 className="font-extrabold text-fg">Resource information</h3><span className="text-xs text-muted">PDF only · maximum 20 MB</span></div>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-2"><h3 className="font-extrabold text-fg">Resource information</h3><span className="text-xs text-muted">PDF, photo, DOC or DOCX · maximum 20 MB</span></div>
         <fieldset disabled={upload.isPending || addDepartment.isPending || addCourse.isPending} className="grid gap-4 sm:grid-cols-2">
           <label className="sm:col-span-2"><span className="label">Document title</span><input name="title" className="input" required minLength={5} maxLength={200} placeholder="e.g. Introduction to Biology examination" /></label>
           <label><span className="label">Institution</span><select className="input" required disabled={institutions.isLoading || upload.isPending} value={institutionId} onChange={(event) => { setInstitutionId(event.target.value); setDepartmentId(""); setCourseId(""); setShowNewDepartment(false); setShowNewCourse(false); setCatalogNotice(""); }}><option value="">Select an institution</option>{(institutions.data ?? []).map((institution) => <option key={institution.id} value={institution.id}>{institution.name}</option>)}</select></label>
@@ -812,7 +817,7 @@ export function UploadPage() {
           <label><span className="label">Academic session</span><input name="academicSession" className="input" required minLength={4} maxLength={20} placeholder="e.g. 2024/2025" /></label>
           <label><span className="label">Exam year</span><input name="examYear" className="input" type="number" required min={1950} max={2100} step={1} placeholder="2025" /></label>
           <label><span className="label">Semester</span><select name="semester" className="input" defaultValue=""><option value="">Not specified</option><option value="first">First semester</option><option value="second">Second semester</option><option value="other">Other</option></select></label>
-          <label className="sm:col-span-2"><span className="label">Examination document (PDF)</span><input key={fileInputKey} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-primary-soft file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" type="file" accept="application/pdf,.pdf" required onChange={(event) => { setFile(event.target.files?.[0] ?? null); setSubmitted(false); }} /></label>
+          <label className="sm:col-span-2"><span className="label">Examination file</span><input aria-label="Examination file" key={fileInputKey} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-primary-soft file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" type="file" accept={ACADEMIC_FILE_ACCEPT} required onChange={(event) => { setFile(event.target.files?.[0] ?? null); setSubmitted(false); }} /></label>
         </fieldset>
         {catalogNotice && <p role="status" className="mt-4 text-sm font-semibold text-success">{catalogNotice}</p>}
         <p className="mt-4 text-xs leading-5 text-muted">Departments and courses you add become shared catalog entries. Add only accurate, official information; other students can use these entries too.</p>

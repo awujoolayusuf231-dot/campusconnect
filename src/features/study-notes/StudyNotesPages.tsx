@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDownToLine, ArrowRight, BookOpen, Bookmark, Building2, ChevronRight, CircleAlert, FileText, LockKeyhole, Search, Upload } from "lucide-react";
 import { Link, NavLink, Outlet, useParams } from "react-router-dom";
 import { LoadingState } from "@/app/LoadingState";
+import { ACADEMIC_FILE_ACCEPT, getAcademicFileExtension, getAcademicFileKindFromPath } from "@/lib/academicFiles";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { createCourse, createDepartment, getCourse, getInstitution, listCourses, listDepartments, listInstitutionPage, listInstitutions, type Course, type Institution } from "@/features/past-questions/api";
 import {
@@ -326,7 +327,14 @@ export function StudyNoteDetails() {
   const { noteId = "" } = useParams();
   const query = useQuery({ queryKey: ["study-notes", "note", noteId], queryFn: () => getStudyNote(noteId), enabled: !!noteId });
   const [documentUrl, setDocumentUrl] = useState("");
-  const preview = useMutation({ mutationFn: (path: string) => createStudyNoteDownloadUrl(path), onSuccess: setDocumentUrl });
+  const fileKind = query.data ? getAcademicFileKindFromPath(query.data.object_path) : null;
+  const fileExtension = query.data ? getAcademicFileExtension(query.data.object_path) : "file";
+  const preview = useMutation({
+    mutationFn: ({ path, downloadName }: { path: string; downloadName?: string }) => downloadName
+      ? createStudyNoteDownloadUrl(path, downloadName)
+      : createStudyNoteDownloadUrl(path),
+    onSuccess: setDocumentUrl,
+  });
   if (query.isLoading) return <LoadingState label="Loading study-note details" variant="panel" />;
   if (query.isError) return <ErrorState error={query.error} retry={() => void query.refetch()} />;
   const note = query.data;
@@ -345,14 +353,16 @@ export function StudyNoteDetails() {
           </dl>
           <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-line pt-4">
             {note.status === "approved" && <SaveNoteButton note={note} />}
-            {note.status !== "rejected" && <button type="button" className="btn-primary min-h-10 gap-2" disabled={preview.isPending} onClick={() => preview.mutate(note.object_path)}><ArrowDownToLine size={15} aria-hidden="true" />{preview.isPending ? "Preparing secure preview…" : "Preview PDF"}</button>}
-            <span className="inline-flex items-center gap-1.5 text-xs text-muted"><LockKeyhole size={14} aria-hidden="true" />Private PDF · secure link expires after 60 seconds</span>
+            {note.status !== "rejected" && fileKind && <button type="button" className="btn-primary min-h-10 gap-2" disabled={preview.isPending} onClick={() => preview.mutate({ path: note.object_path, downloadName: fileKind === "document" ? `${note.title}.${fileExtension}` : undefined })}><ArrowDownToLine size={15} aria-hidden="true" />{preview.isPending ? "Preparing secure file…" : fileKind === "pdf" ? "Preview PDF" : fileKind === "image" ? "View photo" : "Download document"}</button>}
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted"><LockKeyhole size={14} aria-hidden="true" />Private file · secure link expires after 60 seconds</span>
             {preview.isError && <p role="alert" className="w-full text-sm text-danger">{preview.error.message}</p>}
-            {documentUrl && <a className="text-sm font-bold text-primary underline" href={documentUrl} target="_blank" rel="noreferrer">Open PDF in a new tab</a>}
+            {documentUrl && fileKind !== "image" && <a className="text-sm font-bold text-primary underline" href={documentUrl} target="_blank" rel="noreferrer">{fileKind === "pdf" ? "Open PDF in a new tab" : "Open document in a new tab"}</a>}
           </div>
         </div>
         <section aria-label="Study-note document preview" className="min-h-[18rem] overflow-hidden rounded-2xl border border-line bg-white">
-          {documentUrl ? <iframe title={`${note.title} PDF preview`} src={documentUrl} className="h-[32rem] w-full" /> : <div className="flex min-h-[18rem] flex-col items-center justify-center p-6 text-center"><span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary"><FileText size={26} aria-hidden="true" /></span><h3 className="mt-4 font-extrabold text-fg">{note.status === "approved" ? "Document preview" : "Pending review"}</h3><p className="mt-2 max-w-sm text-sm leading-6 text-muted">{note.status === "approved" ? "Generate a short-lived secure link to preview this PDF." : "Only you and authorized reviewers can access this submission until it is approved."}</p></div>}
+          {documentUrl && fileKind === "pdf" ? <iframe title={`${note.title} PDF preview`} src={documentUrl} className="h-[32rem] w-full" />
+            : documentUrl && fileKind === "image" ? <img src={documentUrl} alt={note.title} className="mx-auto max-h-[32rem] w-full object-contain" />
+              : <div className="flex min-h-[18rem] flex-col items-center justify-center p-6 text-center"><span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary"><FileText size={26} aria-hidden="true" /></span><h3 className="mt-4 font-extrabold text-fg">{note.status === "approved" ? fileKind === "document" ? "Word document" : "Document preview" : "Pending review"}</h3><p className="mt-2 max-w-sm text-sm leading-6 text-muted">{note.status === "approved" ? fileKind === "document" ? "Download the secure Word document using the button above." : "Generate a short-lived secure file link to preview this resource." : "Only you and authorized reviewers can access this submission until it is approved."}</p></div>}
         </section>
       </section>
     </div>
@@ -430,7 +440,7 @@ export function StudyNotesUpload() {
     if (description.trim().length < 10 || description.trim().length > 2000) return setFormError("The description must be between 10 and 2,000 characters.");
     if (!courseId) return setFormError("Select a course.");
     if (!level || !semester) return setFormError("Select a level and semester.");
-    if (!file) return setFormError("Choose a PDF document to upload.");
+    if (!file) return setFormError("Choose a PDF, photo, DOC, or DOCX file to upload.");
     const fileError = validateStudyNoteFile(file);
     if (fileError) return setFormError(fileError);
     upload.mutate({ courseId, title, description, level, semester, file, userId: session.user.id });
@@ -440,9 +450,9 @@ export function StudyNotesUpload() {
   return (
     <div className="space-y-5">
       <PageTitle eyebrow="Contribute to the repository" title="Upload study notes" description="Share your course notes. An administrator reviews each submission before it appears in the library." />
-      <div role="note" className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950"><LockKeyhole size={18} className="mt-0.5 shrink-0" aria-hidden="true" /><p><strong>Review required.</strong> Your submission stays private while pending. Upload one PDF up to {MAX_STUDY_NOTE_FILE_BYTES / 1024 / 1024} MB.</p></div>
+      <div role="note" className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950"><LockKeyhole size={18} className="mt-0.5 shrink-0" aria-hidden="true" /><p><strong>Review required.</strong> Your submission stays private while pending. Upload one PDF, photo, DOC, or DOCX file up to {MAX_STUDY_NOTE_FILE_BYTES / 1024 / 1024} MB.</p></div>
       <form className="rounded-2xl border border-line bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-7" onSubmit={submit}>
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-2"><h3 className="font-extrabold text-fg">Note information</h3><span className="text-xs text-muted">PDF only · maximum 20 MB</span></div>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-2"><h3 className="font-extrabold text-fg">Note information</h3><span className="text-xs text-muted">PDF, photo, DOC or DOCX · maximum 20 MB</span></div>
         <fieldset disabled={upload.isPending || addDepartment.isPending || addCourse.isPending} className="grid gap-4 sm:grid-cols-2">
           <label className="sm:col-span-2"><span className="label">Note title</span><input className="input" required minLength={5} maxLength={200} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Enter a clear title" /></label>
           <label><span className="label">Institution</span><select className="input" required value={institutionId} onChange={(event) => { setInstitutionId(event.target.value); setDepartmentId(""); setCourseId(""); setShowNewDepartment(false); setShowNewCourse(false); setCatalogNotice(""); }}><option value="">Select an institution</option>{(institutions.data ?? []).map((institution: Institution) => <option key={institution.id} value={institution.id}>{institution.name}</option>)}</select></label>
@@ -474,7 +484,7 @@ export function StudyNotesUpload() {
           <label><span className="label">Level</span><select className="input" required value={level} onChange={(event) => setLevel(event.target.value as StudyNoteLevel | "")}><option value="">Select a level</option>{LEVELS.map((value) => <option key={value} value={value}>{value} level</option>)}</select></label>
           <label><span className="label">Semester</span><select className="input" required value={semester} onChange={(event) => setSemester(event.target.value as StudyNoteSemester | "")}><option value="">Select a semester</option>{SEMESTERS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
           <label className="sm:col-span-2"><span className="label">Description</span><textarea className="input min-h-24" required minLength={10} maxLength={2000} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe what students will learn from these notes" /></label>
-          <label className="sm:col-span-2"><span className="label">Study notes PDF</span><input aria-label="Study notes PDF" key={fileInputKey} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-primary-soft file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" type="file" accept="application/pdf,.pdf" required onChange={(event) => setFile(event.currentTarget.files?.[0] ?? null)} /><span className="mt-1 block text-xs text-muted">{file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : "PDF documents only, maximum 20 MB."}</span></label>
+          <label className="sm:col-span-2"><span className="label">Study notes file</span><input aria-label="Study notes file" key={fileInputKey} className="input file:mr-3 file:rounded-lg file:border-0 file:bg-primary-soft file:px-3 file:py-2 file:text-xs file:font-bold file:text-primary" type="file" accept={ACADEMIC_FILE_ACCEPT} required onChange={(event) => setFile(event.currentTarget.files?.[0] ?? null)} /><span className="mt-1 block text-xs text-muted">{file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : "PDF, JPG, PNG, WebP, DOC or DOCX · maximum 20 MB."}</span></label>
         </fieldset>
         {catalogNotice && <p role="status" className="mt-4 text-sm font-semibold text-success">{catalogNotice}</p>}
         <p className="mt-3 text-xs leading-5 text-muted">New departments and courses are added to the shared academic catalog. Add only accurate, official information.</p>

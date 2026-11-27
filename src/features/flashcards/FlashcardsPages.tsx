@@ -20,16 +20,18 @@ import {
   type FlashcardCollection,
   type FlashcardStatus,
 } from "./api";
+import {
+  getLearningQuiz,
+  listLearningQuizQuestions,
+  listLearningQuizzes,
+  saveLearningQuiz,
+  validateLearningQuiz,
+  type LearningQuiz,
+  type LearningQuizQuestionInput,
+} from "./quizApi";
 
 type FlashcardDraft = { id: number; savedId?: string; prompt: string; answer: string };
-type QuizQuestionDraft = {
-  id: number;
-  type: "multiple_choice" | "true_false" | "short_answer";
-  prompt: string;
-  options: string[];
-  answer: string;
-  explanation: string;
-};
+type QuizQuestionDraft = LearningQuizQuestionInput & { id: number };
 
 const sections = [
   { to: "/app/flashcards", label: "Overview", end: true },
@@ -114,12 +116,12 @@ export function FlashcardsHomePage() {
   const library = useQuery({ queryKey: ["flashcards", "library", "recent"], queryFn: () => listFlashcardCollections() });
   return (
     <div className="space-y-5">
-      <BackendNotice>Flashcard collections are live. You can create private decks or publish them to the student library. Quizzes, saved quiz questions and quiz performance still need their own backend and remain previews.</BackendNotice>
+      <BackendNotice>Flashcard collections and quiz drafts are live. Save quiz drafts privately or publish them to the quiz library. Quiz attempts, grading and performance tracking are not available yet.</BackendNotice>
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <FeatureCard to="/app/flashcards/library" title="Flashcard library" description="Discover collections shared by CampusConnect students." icon={Layers3} />
         <FeatureCard to="/app/flashcards/mine" title="My flashcards" description={mine.isLoading ? "Loading your collections…" : `${mine.data?.length ?? 0} collection${mine.data?.length === 1 ? "" : "s"} you created.`} icon={BookOpen} />
         <FeatureCard to="/app/flashcards/create" title="Create flashcards" description="Save a private deck or share it with other students." icon={Plus} />
-        <FeatureCard to="/app/flashcards/quizzes" title="Quiz library" description="Find real course quizzes after quiz data is available." icon={CircleHelp} />
+        <FeatureCard to="/app/flashcards/quizzes" title="Quiz library" description="Browse quizzes published by students." icon={CircleHelp} />
       </section>
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.7fr)]">
         <div className="rounded-2xl border border-line bg-white p-5 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-6">
@@ -138,7 +140,7 @@ export function FlashcardsHomePage() {
         </div>
       </section>
       <section className="grid gap-3 sm:grid-cols-2">
-        <FeatureCard to="/app/flashcards/create-quiz" title="Create a quiz draft" description="Compose questions and preview the quiz without saving or submitting it." icon={ListChecks} />
+        <FeatureCard to="/app/flashcards/create-quiz" title="Create a quiz" description="Compose questions, save a draft, or publish it to the quiz library." icon={ListChecks} />
         <FeatureCard to="/app/flashcards/performance" title="Study performance" description="Real scores and learning progress will appear after backend support is added." icon={Target} />
       </section>
       {mine.isError && <p role="alert" className="err">Could not load your flashcard collections: {(mine.error as Error).message}</p>}
@@ -427,25 +429,71 @@ export function FlashcardCollectionPage() {
 function EmptyQuizPage({ title, description, action }: { title: string; description: string; action?: ReactNode }) {
   return <div className="space-y-5">
     <PageHeading eyebrow="Practice" title={title} description={description} action={action} />
-    <BackendNotice>There are no quiz, attempt, answer-key, or saved-question APIs in the current project. No sample quiz records or results are displayed.</BackendNotice>
-    <EmptyLibrary title="No quiz data available" description="This area will show real quiz information after its backend is implemented." />
+    <BackendNotice>Quiz drafts and publishing are supported. Quiz attempts, grading, saved questions and performance results are not available yet.</BackendNotice>
+    <EmptyLibrary title="No quiz data available" description="Create a quiz draft or publish a quiz to make it available in the library." />
   </div>;
 }
 
 export function QuizLibraryPage() {
+  const quizzes = useQuery({ queryKey: ["learning-quizzes", "published"], queryFn: () => listLearningQuizzes() });
   return <div className="space-y-5">
-    <PageHeading eyebrow="Discover" title="Quiz library" description="Search course quizzes and practice material once real quiz records are available." action={<Link to="/app/flashcards/create-quiz" className="btn inline-flex min-h-10 items-center gap-2 rounded-xl px-4 font-bold"><Plus size={15} />Create draft</Link>} />
-    <div className="grid gap-3 rounded-2xl border border-line bg-white p-4 sm:grid-cols-3">
-      <label><span className="label">Search quizzes</span><input className="input" disabled placeholder="Quiz title or course" /></label>
-      <label><span className="label">Institution</span><select className="input" disabled><option>All institutions</option></select></label>
-      <label><span className="label">Department</span><select className="input" disabled><option>All departments</option></select></label>
-    </div>
-    <EmptyLibrary title="No quizzes available" description="Quiz discovery and starting a real quiz are unavailable until quiz data and submission support exist." />
+    <PageHeading eyebrow="Discover" title="Quiz library" description="Browse quizzes published by students for course revision." action={<Link to="/app/flashcards/create-quiz" className="btn inline-flex min-h-10 items-center gap-2 rounded-xl px-4 font-bold"><Plus size={15} />Create quiz</Link>} />
+    {quizzes.isLoading ? <LoadingState label="Loading published quizzes" variant="panel" />
+      : quizzes.isError ? <p role="alert" className="err">Could not load the quiz library: {(quizzes.error as Error).message}</p>
+        : quizzes.data?.length ? <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{quizzes.data.map((quiz) => <li key={quiz.id}><LearningQuizCard quiz={quiz} /></li>)}</ul>
+          : <EmptyLibrary title="No published quizzes yet" description="Published course quizzes will appear here. You can create one and publish it from the quiz builder." />}
   </div>;
 }
 
 export function MyQuizzesPage() {
-  return <EmptyQuizPage title="My quizzes" description="Manage your quiz drafts and published quizzes when the quiz backend supports them." action={<Link to="/app/flashcards/create-quiz" className="btn-primary inline-flex min-h-10 items-center gap-2 rounded-xl px-4 font-bold"><Plus size={15} />Create quiz draft</Link>} />;
+  const quizzes = useQuery({ queryKey: ["learning-quizzes", "mine"], queryFn: () => listLearningQuizzes({ mine: true }) });
+  return <div className="space-y-5">
+    <PageHeading eyebrow="Your quizzes" title="My quizzes" description="Continue editing drafts or manage quizzes you have published." action={<Link to="/app/flashcards/create-quiz" className="btn-primary inline-flex min-h-10 items-center gap-2 rounded-xl px-4 font-bold"><Plus size={15} />Create quiz</Link>} />
+    {quizzes.isLoading ? <LoadingState label="Loading your quizzes" variant="panel" />
+      : quizzes.isError ? <p role="alert" className="err">Could not load your quizzes: {(quizzes.error as Error).message}</p>
+        : quizzes.data?.length ? <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{quizzes.data.map((quiz) => <li key={quiz.id}><LearningQuizCard quiz={quiz} mine /></li>)}</ul>
+          : <EmptyLibrary title="No quizzes created yet" description="Save a quiz as a draft or publish it to the quiz library." />}
+  </div>;
+}
+
+function LearningQuizCard({ quiz, mine = false }: { quiz: LearningQuiz; mine?: boolean }) {
+  return <article className="flex h-full flex-col rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5">
+    <div className="flex items-start justify-between gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary"><CircleHelp size={19} aria-hidden="true" /></span><span className={`rounded-full px-2.5 py-1 text-[10px] font-bold capitalize ${quiz.status === "published" ? "bg-[#eef8f0] text-success" : "bg-warning-soft text-warning"}`}>{quiz.status}</span></div>
+    <h2 className="mt-4 font-extrabold leading-6 text-fg">{quiz.title}</h2>
+    {quiz.course && <p className="mt-1 text-xs font-semibold text-muted">{quiz.course.code} · {quiz.course.title}</p>}
+    {quiz.description && <p className="mt-2 line-clamp-3 text-sm leading-5 text-muted">{quiz.description}</p>}
+    <div className="mt-auto flex flex-wrap gap-2 pt-4">
+      {mine && <Link to={`/app/flashcards/edit-quiz/${quiz.id}`} className="btn min-h-9 gap-1.5 px-3 text-xs font-bold">{quiz.status === "published" ? "Edit / unpublish" : "Continue draft"}</Link>}
+      {quiz.status === "published" && <Link to={`/app/flashcards/quizzes/${quiz.id}`} className="btn-primary inline-flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-bold">View quiz <ArrowRight size={13} /></Link>}
+    </div>
+  </article>;
+}
+
+export function LearningQuizDetailsPage() {
+  const { quizId = "" } = useParams();
+  const quiz = useQuery({ queryKey: ["learning-quizzes", "quiz", quizId], queryFn: () => getLearningQuiz(quizId), enabled: !!quizId });
+  const questions = useQuery({
+    queryKey: ["learning-quizzes", "questions", quizId],
+    queryFn: () => listLearningQuizQuestions(quizId),
+    enabled: !!quizId && quiz.data?.status === "published",
+  });
+  if (quiz.isLoading) return <LoadingState label="Loading published quiz" variant="panel" />;
+  if (quiz.isError) return <p role="alert" className="err">Could not load this quiz: {(quiz.error as Error).message}</p>;
+  if (!quiz.data || quiz.data.status !== "published") return <EmptyLibrary title="Quiz unavailable" description="This quiz does not exist or is not published." />;
+  return <div className="space-y-5">
+    <Link to="/app/flashcards/quizzes" className="inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-muted hover:text-primary"><ArrowLeft size={15} />Quiz library</Link>
+    <PageHeading eyebrow="Published quiz" title={quiz.data.title} description={quiz.data.description || quiz.data.course?.title || "Published by a CampusConnect student."} />
+    {quiz.data.course && <p className="text-sm font-bold text-primary">{quiz.data.course.code} · {quiz.data.course.title}</p>}
+    <BackendNotice>This published quiz is available for self-study. Answer submission and grading are not enabled yet.</BackendNotice>
+    {questions.isLoading ? <LoadingState label="Loading quiz questions" variant="panel" />
+      : questions.isError ? <p role="alert" className="err">Could not load quiz questions: {(questions.error as Error).message}</p>
+        : <ol className="space-y-3">{(questions.data ?? []).map((question) => <li key={question.id} className="rounded-2xl border border-line bg-white p-4 sm:p-5">
+          <p className="text-xs font-bold text-primary">Question {question.position} · {question.question_type.replaceAll("_", " ")}</p>
+          <p className="mt-2 whitespace-pre-wrap font-semibold leading-6 text-fg">{question.prompt}</p>
+          {question.options.length > 0 && <ul className="mt-3 space-y-2">{question.options.map((option) => <li key={option.id} className="rounded-xl border border-line px-3 py-2 text-sm text-fg">{option.option_text}</li>)}</ul>}
+          {question.explanation && <p className="mt-3 border-t border-line pt-3 text-sm leading-5 text-muted">{question.explanation}</p>}
+        </li>)}</ol>}
+  </div>;
 }
 
 function newQuizQuestion(id: number): QuizQuestionDraft {
@@ -478,22 +526,71 @@ function QuizDraftPreview({ questions, title, onClose }: { questions: QuizQuesti
 }
 
 export function CreateQuizPage() {
+  const { quizId } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [courseId, setCourseId] = useState("");
   const [questions, setQuestions] = useState<QuizQuestionDraft[]>([newQuizQuestion(1)]);
   const [nextId, setNextId] = useState(2);
   const [preview, setPreview] = useState(false);
+  const [hydratedQuizId, setHydratedQuizId] = useState("");
+  const [savedNotice, setSavedNotice] = useState("");
   const courses = useQuery({ queryKey: ["flashcards", "academic-courses"], queryFn: () => listCourses() });
+  const savedQuiz = useQuery({ queryKey: ["learning-quizzes", "quiz", quizId], queryFn: () => getLearningQuiz(quizId!), enabled: !!quizId });
+  const savedQuestions = useQuery({
+    queryKey: ["learning-quizzes", "questions", quizId, "edit"],
+    queryFn: () => listLearningQuizQuestions(quizId!, true),
+    enabled: !!quizId && !!savedQuiz.data,
+  });
+  const save = useMutation({
+    mutationFn: (publish: boolean) => saveLearningQuiz({ quizId, courseId: courseId || null, title, description, questions, publish }),
+    onSuccess: async (id, publish) => {
+      setSavedNotice(publish ? "Quiz published to the library." : "Quiz draft saved.");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["learning-quizzes", "mine"] }),
+        queryClient.invalidateQueries({ queryKey: ["learning-quizzes", "published"] }),
+        queryClient.invalidateQueries({ queryKey: ["learning-quizzes", "quiz", id] }),
+      ]);
+      if (publish) navigate("/app/flashcards/my-quizzes");
+      else if (!quizId) navigate(`/app/flashcards/edit-quiz/${id}`, { replace: true });
+    },
+  });
+  useEffect(() => {
+    if (!quizId || !savedQuiz.data || !savedQuestions.data || hydratedQuizId === quizId) return;
+    setTitle(savedQuiz.data.title);
+    setDescription(savedQuiz.data.description);
+    setCourseId(savedQuiz.data.course_id ?? "");
+    setQuestions(savedQuestions.data.map((question, index) => ({
+      id: index + 1,
+      type: question.question_type,
+      prompt: question.prompt,
+      options: question.options.map((option) => option.option_text),
+      answer: question.question_type === "short_answer"
+        ? question.answer_text ?? ""
+        : question.options.find((option) => option.id === question.answer_option_id)?.option_text ?? "",
+      explanation: question.explanation,
+    })));
+    setNextId(savedQuestions.data.length + 1);
+    setHydratedQuizId(quizId);
+  }, [hydratedQuizId, savedQuestions.data, savedQuiz.data, quizId]);
   const selectedCourse = courses.data?.find((course) => course.id === courseId);
   const updateQuestion = (id: number, patch: Partial<QuizQuestionDraft>) => setQuestions((current) => current.map((question) => question.id === id ? { ...question, ...patch } : question));
-  const valid = title.trim().length >= 3 && questions.every((question) => question.prompt.trim().length > 0 && (question.type !== "multiple_choice" || question.options.filter((option) => option.trim()).length >= 2));
+  const validation = validateLearningQuiz({ quizId, courseId: courseId || null, title, description, questions, publish: false });
+  const valid = !validation;
   const addQuestion = () => { setQuestions((current) => [...current, newQuizQuestion(nextId)]); setNextId((id) => id + 1); };
   const updateOption = (question: QuizQuestionDraft, optionIndex: number, value: string) => updateQuestion(question.id, { options: question.options.map((option, index) => index === optionIndex ? value : option) });
 
+  if (quizId && savedQuiz.isLoading) return <LoadingState label="Loading quiz draft" variant="panel" />;
+  if (quizId && savedQuiz.isError) return <p role="alert" className="err">Could not load this quiz: {(savedQuiz.error as Error).message}</p>;
+  if (quizId && savedQuiz.data && savedQuestions.isError) return <p role="alert" className="err">Could not load quiz questions: {(savedQuestions.error as Error).message}</p>;
+  if (quizId && savedQuiz.data && savedQuestions.isLoading) return <LoadingState label="Loading quiz questions" variant="panel" />;
+  if (quizId && !savedQuiz.isLoading && !savedQuiz.data) return <EmptyLibrary title="Quiz unavailable" description="This quiz does not exist or you do not have permission to edit it." />;
+
   return <div className="space-y-5">
-    <PageHeading eyebrow="Draft builder" title="Create a quiz" description="Prepare questions and walk through a local preview. The quiz cannot be saved, published or submitted." />
-    <BackendNotice>This flashcard quiz builder is a local draft only; it cannot save or publish quizzes. To publish a live quiz for a group, use <Link className="font-bold text-primary underline" to="/app/group-quiz">Group Quiz</Link>. Correct answers and explanations on this page remain temporary.</BackendNotice>
+    <PageHeading eyebrow={quizId ? "Edit your quiz" : "Quiz builder"} title={quizId ? "Edit quiz" : "Create a quiz"} description="Save a private draft and publish it when it is ready for the quiz library." />
+    <BackendNotice>Drafts are private to you. Publishing makes the questions and options visible to other students; answer keys stay private. Quiz submission and grading are not enabled yet.</BackendNotice>
     <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="space-y-4">
         <article className="space-y-4 rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5">
@@ -502,13 +599,13 @@ export function CreateQuizPage() {
           <CoursePicker value={courseId} onChange={setCourseId} />
           <label className="block"><span className="label">Instructions or description</span><textarea className="input" rows={3} maxLength={1000} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Explain what students should know" /></label>
         </article>
-        <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-extrabold text-fg">Questions <span className="text-muted">({questions.length})</span></h2><button type="button" className="btn inline-flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-bold" onClick={addQuestion}><Plus size={14} />Add question</button></div>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-extrabold text-fg">Questions <span className="text-muted">({questions.length})</span></h2><button type="button" className="btn inline-flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-bold" disabled={questions.length >= 100} onClick={addQuestion}><Plus size={14} />Add question</button></div>
         {questions.map((question, index) => <article key={question.id} className="space-y-3 rounded-2xl border border-line bg-white p-4 shadow-[0_8px_24px_rgba(35,24,20,0.035)] sm:p-5">
           <div className="flex items-center justify-between gap-2"><h3 className="font-extrabold text-fg">Question {index + 1}</h3><button type="button" aria-label={`Remove question ${index + 1}`} className="rounded-lg p-2 text-muted hover:bg-danger-soft hover:text-danger disabled:opacity-40" disabled={questions.length === 1} onClick={() => setQuestions((current) => current.filter((item) => item.id !== question.id))}><Trash2 size={15} /></button></div>
-          <label className="block"><span className="label">Question type</span><select className="input" value={question.type} onChange={(event) => updateQuestion(question.id, { type: event.target.value as QuizQuestionDraft["type"], options: event.target.value === "true_false" ? ["True", "False"] : question.options })}><option value="multiple_choice">Multiple choice</option><option value="true_false">True or false</option><option value="short_answer">Short answer</option></select></label>
+          <label className="block"><span className="label">Question type</span><select className="input" value={question.type} onChange={(event) => { const type = event.target.value as QuizQuestionDraft["type"]; updateQuestion(question.id, { type, options: type === "true_false" ? ["True", "False"] : type === "short_answer" ? [] : ["", "", "", ""], answer: "" }); }}><option value="multiple_choice">Multiple choice</option><option value="true_false">True or false</option><option value="short_answer">Short answer</option></select></label>
           <label className="block"><span className="label">Question text</span><textarea className="input" rows={2} maxLength={1500} value={question.prompt} onChange={(event) => updateQuestion(question.id, { prompt: event.target.value })} placeholder="Write the question" /></label>
           {question.type === "multiple_choice" && <div className="grid gap-2 sm:grid-cols-2">{question.options.map((option, optionIndex) => <label key={optionIndex} className="block"><span className="label">Option {String.fromCharCode(65 + optionIndex)}</span><input className="input" maxLength={300} value={option} onChange={(event) => updateOption(question, optionIndex, event.target.value)} placeholder={`Answer option ${optionIndex + 1}`} /></label>)}</div>}
-          <label className="block"><span className="label">Correct answer <span className="font-normal text-muted">(draft only)</span></span>{question.type === "multiple_choice" ? <select className="input" value={question.answer} onChange={(event) => updateQuestion(question.id, { answer: event.target.value })}><option value="">Choose the correct option</option>{question.options.filter(Boolean).map((option, optionIndex) => <option key={optionIndex} value={option}>{option}</option>)}</select> : <input className="input" maxLength={300} value={question.answer} onChange={(event) => updateQuestion(question.id, { answer: event.target.value })} placeholder={question.type === "true_false" ? "True or False" : "Expected answer"} />}</label>
+          <label className="block"><span className="label">Correct answer <span className="font-normal text-muted">(private)</span></span>{question.type !== "short_answer" ? <select className="input" value={question.answer} onChange={(event) => updateQuestion(question.id, { answer: event.target.value })}><option value="">Choose the correct option</option>{question.options.filter(Boolean).map((option, optionIndex) => <option key={optionIndex} value={option}>{option}</option>)}</select> : <input className="input" maxLength={300} value={question.answer} onChange={(event) => updateQuestion(question.id, { answer: event.target.value })} placeholder="Expected answer" />}</label>
           <label className="block"><span className="label">Explanation <span className="font-normal text-muted">(optional)</span></span><textarea className="input" rows={2} maxLength={1000} value={question.explanation} onChange={(event) => updateQuestion(question.id, { explanation: event.target.value })} placeholder="Explain the answer" /></label>
         </article>)}
         {preview && <QuizDraftPreview questions={questions} title={title} onClose={() => setPreview(false)} />}
@@ -517,16 +614,19 @@ export function CreateQuizPage() {
         <h2 className="font-extrabold text-fg">Draft actions</h2>
         <p className="text-sm leading-5 text-muted">{questions.length} question{questions.length === 1 ? "" : "s"} · {selectedCourse ? `${selectedCourse.code} — ${selectedCourse.title}` : "No course selected"}</p>
         <button type="button" className="btn-primary min-h-10 w-full rounded-xl px-4 font-bold" disabled={!valid} onClick={() => setPreview(true)}>Preview quiz</button>
-        <button type="button" className="btn min-h-10 w-full cursor-not-allowed rounded-xl px-4 font-bold opacity-50" disabled>Save quiz</button>
-        <button type="button" className="btn min-h-10 w-full cursor-not-allowed rounded-xl px-4 font-bold opacity-50" disabled>Publish quiz</button>
-        <p className="text-xs leading-5 text-muted">Saving, publishing, attempt records and grading need backend support.</p>
+        <button type="button" className="btn min-h-10 w-full rounded-xl px-4 font-bold" disabled={!valid || save.isPending} onClick={() => { setSavedNotice(""); save.mutate(false); }}>{save.isPending && !save.variables ? "Saving…" : "Save draft"}</button>
+        <button type="button" className="btn-primary min-h-10 w-full rounded-xl px-4 font-bold" disabled={!valid || save.isPending} onClick={() => { setSavedNotice(""); save.mutate(true); }}>{save.isPending && save.variables ? "Publishing…" : "Publish quiz"}</button>
+        {validation && <p className="text-xs leading-5 text-muted">{validation}</p>}
+        {save.isError && <p role="alert" className="text-sm text-danger">{save.error.message}</p>}
+        {savedNotice && <p role="status" className="text-sm font-semibold text-success">{savedNotice}</p>}
+        <p className="text-xs leading-5 text-muted">Publishing makes the quiz available in the library. Submissions and grading are not included yet.</p>
       </aside>
     </section>
   </div>;
 }
 
 export function SavedQuestionsPage() {
-  return <EmptyQuizPage title="Saved questions" description="Review questions you saved for later revision when a compatible saved-question backend exists." />;
+  return <EmptyQuizPage title="Saved questions" description="Saved-question bookmarks are not available yet." />;
 }
 
 export function QuizResultsPage() {

@@ -11,6 +11,10 @@ const mocks = vi.hoisted(() => ({
   listFlashcardProgress: vi.fn(),
   recordFlashcardReview: vi.fn(),
   saveFlashcardCollection: vi.fn(),
+  getLearningQuiz: vi.fn(),
+  listLearningQuizQuestions: vi.fn(),
+  listLearningQuizzes: vi.fn(),
+  saveLearningQuiz: vi.fn(),
 }));
 vi.mock("@/features/past-questions/api", () => ({ listCourses: mocks.listCourses }));
 vi.mock("./api", () => ({
@@ -23,6 +27,18 @@ vi.mock("./api", () => ({
   validateFlashcardCollection: (input: { title: string; description: string; cards: { prompt: string; answer: string }[] }) => {
     if (input.title.trim().length < 3) return "Collection title must be between 3 and 120 characters.";
     if (!input.cards.length || input.cards.some((card) => !card.prompt.trim() || !card.answer.trim())) return "Complete each card before saving.";
+    return null;
+  },
+}));
+vi.mock("./quizApi", () => ({
+  getLearningQuiz: mocks.getLearningQuiz,
+  listLearningQuizQuestions: mocks.listLearningQuizQuestions,
+  listLearningQuizzes: mocks.listLearningQuizzes,
+  saveLearningQuiz: mocks.saveLearningQuiz,
+  validateLearningQuiz: (input: { title: string; questions: { prompt: string; type: string; options: string[]; answer: string }[] }) => {
+    if (input.title.trim().length < 3) return "Quiz title must be between 3 and 120 characters.";
+    if (!input.questions.length || input.questions.some((question) => !question.prompt.trim() || !question.answer.trim())) return "Complete each question and its correct answer.";
+    if (input.questions.some((question) => question.type === "multiple_choice" && question.options.filter((option) => option.trim()).length < 2)) return "Add at least two options.";
     return null;
   },
 }));
@@ -59,6 +75,7 @@ function renderFeature(path = "/app/flashcards") {
             <Route path="quizzes" element={<QuizLibraryPage />} />
             <Route path="my-quizzes" element={<MyQuizzesPage />} />
             <Route path="create-quiz" element={<CreateQuizPage />} />
+            <Route path="edit-quiz/:quizId" element={<CreateQuizPage />} />
             <Route path="results" element={<QuizResultsPage />} />
             <Route path="saved" element={<SavedQuestionsPage />} />
             <Route path="performance" element={<PerformancePage />} />
@@ -81,13 +98,17 @@ describe("Flashcards and quizzes pages", () => {
     mocks.saveFlashcardCollection.mockResolvedValue("collection-1");
     mocks.deleteFlashcardCollection.mockResolvedValue(undefined);
     mocks.recordFlashcardReview.mockResolvedValue(undefined);
+    mocks.getLearningQuiz.mockResolvedValue(null);
+    mocks.listLearningQuizQuestions.mockResolvedValue([]);
+    mocks.listLearningQuizzes.mockResolvedValue([]);
+    mocks.saveLearningQuiz.mockResolvedValue("quiz-1");
   });
 
-  it("explains that flashcards are live while quizzes remain previews", () => {
+  it("explains that flashcard collections and quiz drafts are live", () => {
     renderFeature();
 
     expect(screen.getByRole("heading", { name: "Flashcards & Quizzes" })).toBeVisible();
-    expect(screen.getByText(/Flashcard collections are live/i)).toBeVisible();
+    expect(screen.getByText(/Flashcard collections and quiz drafts are live/i)).toBeVisible();
     expect(screen.getByRole("link", { name: /Create flashcards/i })).toHaveAttribute("href", "/app/flashcards/create");
   });
 
@@ -117,20 +138,27 @@ describe("Flashcards and quizzes pages", () => {
     }));
   });
 
-  it("previews quiz drafts without submitting or grading answers", async () => {
+  it("previews quiz drafts and saves them without submitting or grading answers", async () => {
     renderFeature("/app/flashcards/create-quiz");
 
     fireEvent.change(screen.getByLabelText("Quiz title"), { target: { value: "Biology revision" } });
     fireEvent.change(screen.getByLabelText("Question text"), { target: { value: "Which process makes glucose in plants?" } });
     fireEvent.change(screen.getByLabelText("Option A"), { target: { value: "Photosynthesis" } });
     fireEvent.change(screen.getByLabelText("Option B"), { target: { value: "Respiration" } });
+    fireEvent.change(screen.getByLabelText(/Correct answer/), { target: { value: "Photosynthesis" } });
     fireEvent.click(await screen.findByRole("button", { name: "Preview quiz" }));
 
     expect(screen.getByRole("region", { name: "Quiz preview" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Finish preview" }));
     expect(screen.getByRole("status")).toHaveTextContent("Answers were not submitted, graded or saved.");
-    expect(screen.getByRole("button", { name: "Save quiz" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Publish quiz" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Publish quiz" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await waitFor(() => expect(mocks.saveLearningQuiz).toHaveBeenCalledWith(expect.objectContaining({
+      title: "Biology revision",
+      publish: false,
+      questions: [expect.objectContaining({ type: "multiple_choice", answer: "Photosynthesis" })],
+    })));
     expect(screen.getAllByRole("link", { name: "Group Quiz" }).some((link) => link.getAttribute("href") === "/app/group-quiz")).toBe(true);
   });
 
@@ -153,7 +181,7 @@ describe("Flashcards and quizzes pages", () => {
     renderFeature("/app/flashcards/results");
 
     expect(screen.getByRole("heading", { name: "Quiz results" })).toBeVisible();
-    expect(screen.getByText(/There are no quiz, attempt, answer-key, or saved-question APIs/i)).toBeVisible();
+    expect(screen.getByText(/Quiz drafts and publishing are supported/i)).toBeVisible();
   });
 
   it("loads real public collection cards in the library", async () => {

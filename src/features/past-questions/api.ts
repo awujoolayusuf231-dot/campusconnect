@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { getAcademicFileDetails } from "@/lib/academicFiles";
 
 export const PAST_QUESTIONS_BUCKET = "past-questions";
 export const MAX_PAST_QUESTION_FILE_BYTES = 20 * 1024 * 1024;
@@ -64,11 +65,11 @@ export type UploadResourceInput = {
 };
 
 export function validatePastQuestionFile(file: File): string | null {
-  if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
-    return "Choose a PDF document.";
+  if (!getAcademicFileDetails(file)) {
+    return "Choose a PDF, JPG, PNG, WebP, DOC, or DOCX file.";
   }
   if (file.size <= 0 || file.size > MAX_PAST_QUESTION_FILE_BYTES) {
-    return "The PDF must be smaller than 20 MB.";
+    return "The file must be smaller than 20 MB.";
   }
   return null;
 }
@@ -453,11 +454,13 @@ function mergeResources(...groups: PastQuestionResource[][]): PastQuestionResour
 export async function uploadResource(input: UploadResourceInput): Promise<void> {
   const validationError = validatePastQuestionFile(input.file);
   if (validationError) throw new Error(validationError);
+  const fileDetails = getAcademicFileDetails(input.file);
+  if (!fileDetails) throw new Error("Choose a supported academic file.");
 
-  const objectPath = `${input.userId}/${crypto.randomUUID()}.pdf`;
+  const objectPath = `${input.userId}/${crypto.randomUUID()}.${fileDetails.extension}`;
   const { error: uploadError } = await supabase.storage
     .from(PAST_QUESTIONS_BUCKET)
-    .upload(objectPath, input.file, { contentType: "application/pdf", upsert: false });
+    .upload(objectPath, input.file, { contentType: fileDetails.contentType, upsert: false });
   if (uploadError) throw uploadError;
 
   const { error: insertError } = await supabase.from("past_question_resources").insert({
@@ -478,10 +481,10 @@ export async function uploadResource(input: UploadResourceInput): Promise<void> 
   throw insertError;
 }
 
-export async function createResourceDownloadUrl(objectPath: string): Promise<string> {
+export async function createResourceDownloadUrl(objectPath: string, downloadName?: string): Promise<string> {
   const { data, error } = await supabase.storage
     .from(PAST_QUESTIONS_BUCKET)
-    .createSignedUrl(objectPath, 60);
+    .createSignedUrl(objectPath, 60, downloadName ? { download: downloadName } : undefined);
   if (error) throw error;
   return data.signedUrl;
 }
