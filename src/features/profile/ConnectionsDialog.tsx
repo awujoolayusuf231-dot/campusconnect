@@ -7,6 +7,7 @@ import { followUser, listConnections, unfollowUser, type Connection } from "@/fe
 import { Avatar } from "@/features/social/components/Avatar";
 import { socialErrorMessage } from "@/lib/errors";
 import { LoadingState } from "@/app/LoadingState";
+import { VerifiedBadge } from "./VerifiedBadge";
 
 const PAGE = 30;
 
@@ -45,7 +46,13 @@ export function ConnectionsDialog({ userId, initial, me, onClose }: { userId: st
             <li key={c.user_id} className="flex items-center gap-3 rounded-2xl border border-line bg-white p-3 shadow-[0_3px_12px_rgba(35,24,20,0.025)]">
               <button className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => { onClose(); nav(`/app/u/${c.username}`); }}>
                 <Avatar name={c.display_name} path={c.avatar_path} size={44} />
-                <span className="min-w-0"><span className="block truncate text-sm font-extrabold text-fg">{c.display_name}</span><span className="mt-0.5 block truncate text-xs text-muted">@{c.username}</span></span></button>
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1">
+                    <span className="block truncate text-sm font-extrabold text-fg">{c.display_name}</span>
+                    <VerifiedBadge username={c.username} />
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-muted">@{c.username}</span>
+                </span></button>
               {c.user_id !== me && <button className={`${c.is_following ? "btn border-[#e5d7d4] bg-white" : "btn-primary"} min-h-9 rounded-xl px-3 text-xs font-bold`} disabled={toggle.isPending} onClick={() => toggle.mutate(c)}>{c.is_following ? "Following" : "Follow"}</button>}
             </li>))}</ul>
           {toggle.isError && <p role="alert" className="err mt-2">{socialErrorMessage((toggle.error as Error).message)}</p>}

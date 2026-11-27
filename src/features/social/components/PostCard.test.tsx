@@ -65,6 +65,11 @@ function renderCard(overrides: Partial<typeof post> = {}, options: { fullPost?: 
 }
 
 describe("PostCard content preview", () => {
+  it("shows a verification badge only for the designated account", () => {
+    renderCard({ username: "dewalexict" });
+    expect(screen.getByRole("img", { name: "CampusConnect verified account" })).toBeVisible();
+  });
+
   it("shows short post text and preserves its line breaks without a details link", () => {
     renderCard();
 

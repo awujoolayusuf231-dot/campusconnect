@@ -10,6 +10,7 @@ import { Avatar } from "./components/Avatar";
 import { socialErrorMessage } from "@/lib/errors";
 import { LoadingState } from "@/app/LoadingState";
 import { HashtagDiscovery } from "./HashtagDiscovery";
+import { VerifiedBadge } from "@/features/profile/VerifiedBadge";
 
 interface Student {
   id: string;
@@ -45,7 +46,10 @@ function StudentCard({
       <div className="flex min-w-0 items-start gap-3">
         <Avatar name={student.display_name} path={student.avatar_path} size={52} />
         <div className="min-w-0 flex-1">
-          <Link to={`/app/u/${student.username}`} className="break-words font-bold text-fg hover:text-primary hover:underline">{student.display_name}</Link>
+          <div className="flex flex-wrap items-center gap-1">
+            <Link to={`/app/u/${student.username}`} className="break-words font-bold text-fg hover:text-primary hover:underline">{student.display_name}</Link>
+            <VerifiedBadge username={student.username} />
+          </div>
           <p className="mt-0.5 truncate text-xs text-muted">@{student.username}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {institution && <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-semibold text-primary-deep"><Building2 size={12} aria-hidden="true" /><span className="truncate">{institution}</span></span>}

@@ -11,6 +11,7 @@ import { Avatar } from "./Avatar";
 import { formatCount } from "@/lib/format";
 import { MentionTextarea } from "./MentionTextarea";
 import { PostBody } from "./PostBody";
+import { VerifiedBadge } from "@/features/profile/VerifiedBadge";
 
 type CommentMutation = {
   id: string;
@@ -200,6 +201,7 @@ export function CommentSection({ postId, postAuthorId = "", me, canReshare = tru
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <Link className="max-w-full break-words text-sm font-bold text-fg hover:text-primary hover:underline" to={`/app/u/${comment.author.username}`}>{comment.author.display_name}</Link>
+            <VerifiedBadge username={comment.author.username} />
             <span className="break-all text-xs text-muted">@{comment.author.username}</span>
             <span aria-hidden="true" className="text-xs text-muted">·</span>
             <time dateTime={comment.created_at} title={new Date(comment.created_at).toLocaleString()} className="text-xs text-muted">{timeAgo(comment.created_at)}{comment.edited_at ? " · edited" : ""}</time>

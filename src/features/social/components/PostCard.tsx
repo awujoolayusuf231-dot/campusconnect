@@ -7,6 +7,7 @@ import { socialErrorMessage } from "@/lib/errors";
 import { formatCount } from "@/lib/format";
 import { timeAgo } from "@/lib/time";
 import { Avatar } from "./Avatar";
+import { VerifiedBadge } from "@/features/profile/VerifiedBadge";
 import { CommentSection } from "./CommentSection";
 import { ProtectedPostImage } from "./ProtectedPostImage";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -131,7 +132,10 @@ export function PostCard({ post, images, me, metrics, defaultOpenComments = fals
       <header className="flex items-start gap-3">
         <Avatar name={post.display_name} path={post.avatar_path} />
         <div className="min-w-0 flex-1">
-          <Link to={`/app/u/${post.username}`} className="text-sm font-extrabold tracking-tight text-fg hover:text-primary hover:underline">{post.display_name}</Link>
+          <div className="flex min-w-0 flex-wrap items-center gap-1">
+            <Link to={`/app/u/${post.username}`} className="text-sm font-extrabold tracking-tight text-fg hover:text-primary hover:underline">{post.display_name}</Link>
+            <VerifiedBadge username={post.username} />
+          </div>
           <p className="mt-0.5 min-w-0 break-words text-xs text-muted">@{post.username} <span aria-hidden="true">·</span> <Link to={`/app/p/${post.id}`} className="hover:text-primary hover:underline" title={new Date(post.created_at).toLocaleString()}>
             {fullPost ? <time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString()}</time> : timeAgo(post.created_at)}
           </Link>{post.edited_at ? " · edited" : ""}</p>

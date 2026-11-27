@@ -15,6 +15,7 @@ import { formatCount } from "@/lib/format";
 import { socialErrorMessage } from "@/lib/errors";
 import { LoadingState } from "@/app/LoadingState";
 import { resolveProfileCoverUrl } from "./profileCover";
+import { VerifiedBadge } from "./VerifiedBadge";
 
 interface Profile { id: string; username: string; display_name: string; bio: string | null; avatar_path: string | null; cover_path: string | null; institution_id: string | null; faculty: string | null; department: string | null; academic_level: string | null; graduation_year: number | null; interests: string[]; location: string | null; website_url: string | null; celebration_url: string | null; show_celebration: boolean; created_at: string }
 type Tab = "posts" | "reposts";
@@ -128,7 +129,7 @@ export function ProfilePage() {
             </div>
           </div>
           <div className="mt-4">
-            <h1 className="break-words text-2xl font-black leading-tight tracking-[-0.035em] text-fg sm:text-3xl">{p.display_name}</h1>
+            <h1 className="break-words text-2xl font-black leading-tight tracking-[-0.035em] text-fg sm:text-3xl">{p.display_name} <VerifiedBadge username={p.username} /></h1>
             <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">@{p.username}{!mine && stats.data?.follows_me && <span className="rounded-full bg-primary-tint px-2.5 py-1 text-[11px] font-bold text-primary">Follows you</span>}</p>
           </div>
           {p.bio && <p className="mt-4 max-w-2xl whitespace-pre-wrap break-words text-sm leading-7 text-[#514a48] sm:text-base">{p.bio}</p>}

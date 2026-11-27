@@ -11,6 +11,18 @@ import { NotificationBell } from "./NotificationBell";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubGlobal("IntersectionObserver", class {
+    constructor(private callback: IntersectionObserverCallback) {}
+    observe(target: Element) {
+      this.callback([{ target, isIntersecting: true, intersectionRatio: 1 } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+    }
+    disconnect() {}
+    unobserve() {}
+    takeRecords() { return []; }
+    root = null;
+    rootMargin = "0px";
+    thresholds = [0.6];
+  });
   mocks.rpc.mockImplementation((name: string) => {
     if (name === "notifications_list") return Promise.resolve({
       data: [{
@@ -32,7 +44,7 @@ beforeEach(() => {
 });
 
 describe("NotificationBell", () => {
-  it("opens a preview without marking notifications read, then marks the selected invitation", async () => {
+  it("automatically marks a visible notification read and still opens its destination", async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(createElement(MemoryRouter, null,
       createElement(QueryClientProvider, { client },
@@ -43,10 +55,10 @@ describe("NotificationBell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Notifications, 1 unread" }));
     const invitation = await screen.findByRole("link", { name: /Amina Bello invited you to join Study session/ });
     expect(invitation).toHaveAttribute("href", "/app/voice-spaces/room-1");
-    expect(mocks.rpc).not.toHaveBeenCalledWith("mark_notifications_read", expect.anything());
+    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith("mark_notifications_read", { p_ids: [8] }));
 
     fireEvent.click(invitation);
-    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith("mark_notifications_read", { p_ids: [8] }));
+    expect(mocks.rpc.mock.calls.filter(([name]) => name === "mark_notifications_read")).toHaveLength(1);
   });
 
   it("closes the preview on an outside pointer action", async () => {

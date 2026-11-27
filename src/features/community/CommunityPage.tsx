@@ -18,6 +18,7 @@ import { ConfirmDialog } from "@/features/social/components/ConfirmDialog";
 import { socialErrorMessage } from "@/lib/errors";
 import { timeAgo } from "@/lib/time";
 import { LoadingState } from "@/app/LoadingState";
+import { VerifiedBadge } from "@/features/profile/VerifiedBadge";
 
 type Tab = "posts" | "about" | "members" | "moderation";
 
@@ -407,7 +408,13 @@ function Members({ id, me, role, canView }: { id: string; me: string; role: stri
       <ul className="grid gap-2 sm:grid-cols-2">{(canView ? members.data : undefined)?.map((m) => (
         <li key={m.user_id} className="flex min-w-0 items-center gap-3 rounded-2xl border border-line bg-white p-3 shadow-[0_6px_18px_rgba(35,24,20,0.025)] sm:p-4">
           <Avatar name={m.profile?.display_name ?? "?"} path={m.profile?.avatar_path ?? null} />
-          <div className="min-w-0 flex-1"><Link to={`/app/u/${m.profile?.username ?? ""}`} className="break-words text-sm font-bold text-fg hover:text-primary hover:underline">{m.profile?.display_name ?? "Student"}</Link><p className="mt-1 text-xs text-muted">@{m.profile?.username ?? "student"} · joined {timeAgo(m.joined_at)}</p></div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1">
+              <Link to={`/app/u/${m.profile?.username ?? ""}`} className="break-words text-sm font-bold text-fg hover:text-primary hover:underline">{m.profile?.display_name ?? "Student"}</Link>
+              <VerifiedBadge username={m.profile?.username} />
+            </div>
+            <p className="mt-1 text-xs text-muted">@{m.profile?.username ?? "student"} · joined {timeAgo(m.joined_at)}</p>
+          </div>
           <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold capitalize ${m.role === "owner" ? "bg-primary-soft text-primary" : m.role === "moderator" ? "bg-[#f7f1ee] text-[#72514c]" : "bg-bg text-muted"}`}>{m.role}</span>
           {isMod && m.user_id !== me && m.role !== "owner" && (
             <div className="flex flex-wrap justify-end gap-1 text-xs sm:col-span-2">

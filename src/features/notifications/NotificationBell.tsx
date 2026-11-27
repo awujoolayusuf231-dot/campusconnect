@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Bell, Heart, MessageCircle, Radio, UserRound } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -23,6 +23,8 @@ function iconFor(type: string) {
 export function NotificationBell({ unreadCount }: { unreadCount: number }) {
   const queryClient = useQueryClient();
   const panel = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+  const markingRead = useRef(new Set<number>());
   const [open, setOpen] = useState(false);
   const [readError, setReadError] = useState("");
   const preview = useQuery({
@@ -51,18 +53,41 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
     };
   }, [open]);
 
-  async function markRead(id: number) {
+  const markRead = useCallback(async (ids: number[]) => {
+    const pendingIds = [...new Set(ids)].filter((id) => !markingRead.current.has(id));
+    if (pendingIds.length === 0) return;
+    pendingIds.forEach((id) => markingRead.current.add(id));
     setReadError("");
-    const { error } = await supabase.rpc("mark_notifications_read", { p_ids: [id] });
+    const { error } = await supabase.rpc("mark_notifications_read", { p_ids: pendingIds });
     if (error) {
+      pendingIds.forEach((id) => markingRead.current.delete(id));
       setReadError("Could not update this notification's read status.");
       console.error("Could not mark a notification as read.", error);
+      return;
     }
+    queryClient.setQueryData<PreviewNotification[]>(["notifications", "preview"], (current) =>
+      current?.map((item) => pendingIds.includes(item.id) && !item.read_at
+        ? { ...item, read_at: new Date().toISOString() }
+        : item));
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["notifications"] }),
       queryClient.invalidateQueries({ queryKey: ["unread"] }),
     ]);
-  }
+  }, [queryClient]);
+
+  useEffect(() => {
+    const root = list.current;
+    if (!open || !root || !preview.data?.length) return;
+    const observer = new IntersectionObserver((entries) => {
+      const visibleUnreadIds = entries
+        .filter((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.6)
+        .map((entry) => Number((entry.target as HTMLLIElement).dataset.notificationId))
+        .filter((id) => preview.data?.some((item) => item.id === id && !item.read_at));
+      if (visibleUnreadIds.length > 0) void markRead(visibleUnreadIds);
+    }, { root, threshold: 0.6 });
+    root.querySelectorAll<HTMLLIElement>("[data-notification-id]").forEach((item) => observer.observe(item));
+    return () => observer.disconnect();
+  }, [markRead, open, preview.data]);
 
   return <div ref={panel} className="relative">
     <button
@@ -77,7 +102,7 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
       <Bell size={18} aria-hidden="true" />
       {unreadCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-primary px-1 text-center text-[9px] font-bold leading-4 text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}
     </button>
-    {open && <section id="notification-preview" aria-label="Recent notifications" className="absolute right-0 top-full z-50 mt-2 w-[min(24rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-line bg-white shadow-2xl">
+    {open && <section id="notification-preview" aria-label="Recent notifications" className="fixed left-1/2 top-[4.5rem] z-50 flex max-h-[calc(100dvh-6rem)] w-[calc(100vw-1.5rem)] max-w-96 -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-2xl md:absolute md:left-auto md:top-full md:mt-2 md:max-h-[min(65vh,32rem)] md:w-[min(24rem,calc(100vw-1.5rem))] md:max-w-none md:translate-x-0">
       <header className="flex items-center justify-between border-b border-line px-4 py-3">
         <h2 className="font-bold">Notifications</h2>
         {unreadCount > 0 && <span className="text-xs font-semibold text-primary">{unreadCount > 99 ? "99+" : unreadCount} unread</span>}
@@ -85,12 +110,12 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
       {preview.isLoading && <p className="px-4 py-6 text-center text-sm text-muted">Loading notifications…</p>}
       {preview.isError && <p role="alert" className="px-4 py-6 text-center text-sm text-danger">Could not load notifications.</p>}
       {!preview.isLoading && !preview.isError && !preview.data?.length && <p className="px-4 py-8 text-center text-sm text-muted">You have no notifications yet.</p>}
-      {!!preview.data?.length && <ul className="max-h-[min(65vh,28rem)] overflow-y-auto">
+      {!!preview.data?.length && <ul ref={list} className="min-h-0 flex-1 overflow-y-auto">
         {preview.data.map((item) => {
           const copy = describeNotification(item);
           const Icon = iconFor(item.type);
-          return <li key={item.id} className={`border-b border-line/70 last:border-0 ${item.read_at ? "bg-white" : "bg-primary-soft/40"}`}>
-            <Link to={copy.to} onClick={() => { setOpen(false); if (!item.read_at) void markRead(item.id); }} className="flex min-h-[4.5rem] items-start gap-3 px-4 py-3 hover:bg-primary-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-primary">
+          return <li key={item.id} data-notification-id={item.id} className={`border-b border-line/70 last:border-0 ${item.read_at ? "bg-white" : "bg-primary-soft/40"}`}>
+            <Link to={copy.to} onClick={() => { setOpen(false); if (!item.read_at) void markRead([item.id]); }} className="flex min-h-[4.5rem] items-start gap-3 px-4 py-3 hover:bg-primary-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-primary">
               <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${item.read_at ? "bg-bg text-muted" : "bg-primary-soft text-primary"}`}><Icon size={17} aria-hidden="true" /></span>
               <span className="min-w-0 flex-1">
                 <span className={`block text-sm leading-5 ${item.read_at ? "text-fg" : "font-bold text-fg"}`}>{copy.text}</span>
