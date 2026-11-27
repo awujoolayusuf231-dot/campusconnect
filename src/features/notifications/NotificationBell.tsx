@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Bell, Heart, MessageCircle, Radio, UserRound } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,6 +12,7 @@ type PreviewNotification = NotificationCopyInput & {
   created_at: string;
   read_at: string | null;
 };
+type DropdownPosition = { top: number; left: number; width: number; maxHeight: number };
 
 function iconFor(type: string) {
   if (type === "voice_invitation") return Radio;
@@ -23,10 +25,13 @@ function iconFor(type: string) {
 export function NotificationBell({ unreadCount }: { unreadCount: number }) {
   const queryClient = useQueryClient();
   const panel = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const dropdown = useRef<HTMLElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const markingRead = useRef(new Set<number>());
   const [open, setOpen] = useState(false);
   const [readError, setReadError] = useState("");
+  const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
   const preview = useQuery({
     queryKey: ["notifications", "preview"],
     enabled: open,
@@ -40,7 +45,9 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
   useEffect(() => {
     if (!open) return;
     const handlePointerDown = (event: PointerEvent) => {
-      if (event.target instanceof Node && !panel.current?.contains(event.target)) setOpen(false);
+      if (event.target instanceof Node
+        && !panel.current?.contains(event.target)
+        && !dropdown.current?.contains(event.target)) setOpen(false);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
@@ -50,6 +57,34 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const updatePosition = () => {
+      const bounds = trigger.current?.getBoundingClientRect();
+      if (!bounds) return;
+      const margin = 12;
+      const width = Math.min(384, window.innerWidth - margin * 2);
+      const mobile = window.innerWidth < 768;
+      const top = mobile ? Math.max(margin, Math.min(72, window.innerHeight - 180)) : bounds.bottom + 8;
+      const left = mobile
+        ? (window.innerWidth - width) / 2
+        : Math.min(Math.max(margin, bounds.right - width), window.innerWidth - width - margin);
+      setDropdownPosition({
+        top,
+        left,
+        width,
+        maxHeight: Math.max(160, window.innerHeight - top - margin * 2),
+      });
+    };
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
     };
   }, [open]);
 
@@ -91,6 +126,7 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
 
   return <div ref={panel} className="relative">
     <button
+      ref={trigger}
       type="button"
       aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
       aria-expanded={open}
@@ -102,7 +138,19 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
       <Bell size={18} aria-hidden="true" />
       {unreadCount > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-primary px-1 text-center text-[9px] font-bold leading-4 text-white">{unreadCount > 99 ? "99+" : unreadCount}</span>}
     </button>
-    {open && <section id="notification-preview" aria-label="Recent notifications" className="fixed left-1/2 top-[4.5rem] z-50 flex max-h-[calc(100dvh-6rem)] w-[calc(100vw-1.5rem)] max-w-96 -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-2xl md:absolute md:left-auto md:top-full md:mt-2 md:max-h-[min(65vh,32rem)] md:w-[min(24rem,calc(100vw-1.5rem))] md:max-w-none md:translate-x-0">
+    {open && dropdownPosition && createPortal(<section
+      ref={dropdown}
+      id="notification-preview"
+      aria-label="Recent notifications"
+      style={{
+        position: "fixed",
+        top: dropdownPosition.top,
+        left: dropdownPosition.left,
+        width: dropdownPosition.width,
+        maxHeight: dropdownPosition.maxHeight,
+      }}
+      className="z-50 flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-2xl"
+    >
       <header className="flex items-center justify-between border-b border-line px-4 py-3">
         <h2 className="font-bold">Notifications</h2>
         {unreadCount > 0 && <span className="text-xs font-semibold text-primary">{unreadCount > 99 ? "99+" : unreadCount} unread</span>}
@@ -130,6 +178,6 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
       <footer className="border-t border-line p-2">
         <Link to="/app/notifications" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-center text-sm font-bold text-primary hover:bg-primary-soft">View all notifications</Link>
       </footer>
-    </section>}
+    </section>, document.body)}
   </div>;
 }
