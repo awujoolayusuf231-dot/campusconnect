@@ -33,6 +33,10 @@ export function describeNotification(n: NotificationCopyInput): { text: string; 
       text: `${who} shared a celebration: ${String(n.data.title ?? "new celebration")}`,
       to,
     };
+    case "voice_invitation": return {
+      text: `${who} invited you to join ${String(n.data.title ?? "a Voice Space")}`,
+      to,
+    };
     case "community_join": return { text: `${who} joined your community`, to };
     case "message": return { text: `${who} sent you a message`, to };
     case "project_application": return { text: `${who} applied to your project`, to };

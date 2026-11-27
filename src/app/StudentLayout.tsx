@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Bell, BookOpen, GraduationCap, Home, MessageCircle, Settings, Sparkles, UserRound, Users, Menu, LogOut, Info, LifeBuoy, Compass, X } from "lucide-react";
+import { BookOpen, GraduationCap, Home, MessageCircle, Settings, Sparkles, UserRound, Users, Menu, LogOut, Info, LifeBuoy, Compass, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
@@ -9,7 +9,9 @@ import { AnnouncementBanner } from "@/features/announcements/AnnouncementBanner"
 import { Link } from "react-router-dom";
 import { isBrowserPushConfigured } from "@/features/push/pushConfig";
 import { VoiceCallDock, VoiceCallProvider } from "@/features/voice/VoiceCallProvider";
+import { VoiceActiveIndicator } from "@/features/voice/VoiceActiveIndicator";
 import { NotificationAlerts } from "@/features/notifications/NotificationAlerts";
+import { NotificationBell } from "@/features/notifications/NotificationBell";
 
 export function StudentLayout() {
   const { session, role } = useAuth();
@@ -85,15 +87,7 @@ export function StudentLayout() {
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden rounded-full bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary-deep sm:block">Your campus. Your community.</span>
-            <NavLink
-              to="/app/notifications"
-              aria-label={counts.notifications > 0 ? `Notifications, ${counts.notifications} unread` : "Notifications"}
-              title="Notifications"
-              className={({ isActive }) => `relative flex h-10 w-10 items-center justify-center rounded-xl border bg-white transition hover:border-primary/30 hover:bg-primary-soft hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${isActive ? "border-primary/30 bg-primary-soft text-primary" : "border-line text-muted"}`}
-            >
-              <Bell size={18} aria-hidden="true" />
-              {counts.notifications > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-primary px-1 text-center text-[9px] font-bold leading-4 text-white">{counts.notifications > 99 ? "99+" : counts.notifications}</span>}
-            </NavLink>
+            <NotificationBell unreadCount={counts.notifications} />
             {!inChat && <>
               {role !== "student" && <NavLink to="/admin" className="hidden text-sm font-semibold text-muted hover:text-primary lg:block">Admin</NavLink>}
               <button type="button" aria-label={moreOpen ? "Close navigation menu" : "Open navigation menu"} aria-controls="mobile-navigation-menu" aria-expanded={moreOpen} onClick={() => setMoreOpen((open) => !open)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-muted lg:hidden">
@@ -152,6 +146,7 @@ export function StudentLayout() {
         </nav>)}
     </div>
     <VoiceCallDock />
+    <VoiceActiveIndicator />
     </VoiceCallProvider>
   );
 }

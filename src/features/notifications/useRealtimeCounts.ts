@@ -16,7 +16,7 @@ export function useUnreadCounts() {
   useEffect(() => {
     if (!uid) return;
     const channel = supabase.channel(`counts-${uid}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${uid}` }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${uid}` }, () => {
         void qc.invalidateQueries({ queryKey: ["unread", "notifications"] }); void qc.invalidateQueries({ queryKey: ["notifications"] }); })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => {
         void qc.invalidateQueries({ queryKey: ["unread", "messages"] }); void qc.invalidateQueries({ queryKey: ["conversations"] }); })

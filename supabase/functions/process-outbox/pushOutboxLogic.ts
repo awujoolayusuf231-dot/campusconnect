@@ -1,6 +1,10 @@
 import { notificationRoute } from "../_shared/notificationRoute.ts";
 
 export type NotificationPreference =
+  | "notify_followed_posts"
+  | "notify_celebrations"
+  | "notify_voice"
+  | "notify_collaboration"
   | "notify_follows"
   | "notify_likes"
   | "notify_comments"
@@ -59,6 +63,17 @@ export function preferenceForNotification(type: string): NotificationPreference 
       return "notify_messages";
     case "discussion_reply":
       return "notify_discussions";
+    case "followed_post":
+      return "notify_followed_posts";
+    case "celebration_reminder":
+    case "celebration_published":
+      return "notify_celebrations";
+    case "voice_invitation":
+      return "notify_voice";
+    case "project_invitation":
+    case "project_application":
+    case "competition_update":
+      return "notify_collaboration";
     default:
       return null;
   }
@@ -157,6 +172,12 @@ export function pushCopy(
       return { title: "New project application", body: `${name} applied to your project`, url, tag: "" };
     case "discussion_reply":
       return { title: "Discussion reply", body: `${name} replied to your discussion`, url, tag: "" };
+    case "voice_invitation": {
+      const roomName = typeof data?.title === "string" && data.title.trim()
+        ? data.title.trim().slice(0, 100)
+        : "a Voice Space";
+      return { title: "Voice Space invitation", body: `${name} invited you to join ${roomName}`, url, tag: "" };
+    }
     case "celebration_reminder":
       return { title: "CampusConnect", body: "You have a celebration reminder.", url, tag: "" };
     default:

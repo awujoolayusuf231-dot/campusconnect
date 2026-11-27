@@ -10,7 +10,23 @@ vi.mock("@/features/community/api", () => ({
   listMyCommunities: vi.fn(),
 }));
 
-import { getVoiceToken, syncVoiceRoomPermissions } from "./api";
+import { formatVoiceDuration, getVoiceToken, syncVoiceRoomPermissions } from "./api";
+
+describe("formatVoiceDuration", () => {
+  it("uses the persisted start and end timestamps rather than a local join counter", () => {
+    expect(formatVoiceDuration("2026-11-27T09:00:00.000Z", null, Date.parse("2026-11-27T10:24:36.000Z")))
+      .toBe("01:24:36");
+    expect(formatVoiceDuration("2026-11-27T09:00:00.000Z", "2026-11-27T09:04:05.000Z", Date.now()))
+      .toBe("00:04:05");
+  });
+
+  it("clamps malformed or pre-start durations to a safe zero value", () => {
+    expect(formatVoiceDuration(null, null)).toBe("00:00:00");
+    expect(formatVoiceDuration("invalid", null)).toBe("00:00:00");
+    expect(formatVoiceDuration("2026-11-27T10:00:00.000Z", null, Date.parse("2026-11-27T09:59:59.000Z")))
+      .toBe("00:00:00");
+  });
+});
 
 describe("syncVoiceRoomPermissions", () => {
   beforeEach(() => {

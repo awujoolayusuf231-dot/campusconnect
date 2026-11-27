@@ -1,4 +1,5 @@
 type NotificationPreference =
+  | "notify_enabled"
   | "notify_follows"
   | "notify_likes"
   | "notify_comments"
@@ -9,7 +10,7 @@ type NotificationPreference =
 const shownNotificationKeys = new Set<string>();
 const MAX_SHOWN_NOTIFICATION_KEYS = 200;
 
-const preferenceByType: Record<string, NotificationPreference | "notify_followed_posts" | "notify_celebrations"> = {
+const preferenceByType: Record<string, NotificationPreference | "notify_followed_posts" | "notify_celebrations" | "notify_voice" | "notify_collaboration"> = {
   follow: "notify_follows",
   like: "notify_likes",
   repost: "notify_likes",
@@ -20,10 +21,14 @@ const preferenceByType: Record<string, NotificationPreference | "notify_followed
   followed_post: "notify_followed_posts",
   celebration_reminder: "notify_celebrations",
   celebration_published: "notify_celebrations",
+  voice_invitation: "notify_voice",
+  project_invitation: "notify_collaboration",
+  project_application: "notify_collaboration",
+  competition_update: "notify_collaboration",
 };
 
 export type NotificationPreferences = Partial<Record<
-  NotificationPreference | "notify_push" | "notify_followed_posts" | "notify_celebrations",
+  NotificationPreference | "notify_push" | "notify_followed_posts" | "notify_celebrations" | "notify_voice" | "notify_collaboration",
   boolean
 >>;
 
@@ -31,9 +36,13 @@ export function notificationAllowedByPreferences(
   type: string,
   preferences: NotificationPreferences,
 ): boolean {
-  if (preferences.notify_push === false) return false;
+  if (preferences.notify_enabled === false) return false;
   const category = preferenceByType[type];
   return !category || preferences[category] !== false;
+}
+
+export function pushNotificationAllowedByPreferences(preferences: NotificationPreferences): boolean {
+  return preferences.notify_enabled !== false && preferences.notify_push !== false;
 }
 
 export function claimNotificationForDisplay(id?: string | number | null, fallbackTag?: string): boolean {

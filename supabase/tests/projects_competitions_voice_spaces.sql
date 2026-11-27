@@ -1,4 +1,4 @@
--- Run after 20261115000033_projects_competitions_voice_spaces.sql on a local/test database.
+-- Run after 20261126000052_voice_presence_notification_preferences.sql on a local/test database.
 -- The intentional final exception rolls back every fixture and feature-flag change.
 begin;
 
@@ -79,6 +79,8 @@ begin
       jsonb_build_object('username', 'project_member_' || v_suffix, 'display_name', 'Project Member')),
     (v_outsider, 'project-outsider-' || v_suffix || '@test.invalid',
       jsonb_build_object('username', 'project_outside_' || v_suffix, 'display_name', 'Project Outsider'));
+  insert into public.user_preferences(user_id, notify_voice)
+  values(v_outsider, false);
 
   select pg_temp.scalar(v_owner, 'authenticated',
     $query$select public.create_project(
@@ -93,11 +95,39 @@ begin
   returning id into v_room;
   insert into public.voice_room_invitations(room_id,inviter_id,invitee_id,requested_role,status)
   values(v_room,v_owner,v_outsider,'speaker','pending');
+  v_result := v_result || pg_temp.ex('voice invitation category preference suppresses the invitation notification',
+    (select count(*)::text from public.notifications where user_id=v_outsider and type='voice_invitation'),
+    '0');
+  update public.user_preferences set notify_voice=true where user_id=v_outsider;
+  update public.voice_room_invitations set status='accepted' where room_id=v_room and invitee_id=v_outsider;
+  update public.voice_room_invitations set status='pending' where room_id=v_room and invitee_id=v_outsider;
+  v_result := v_result || pg_temp.ex('an enabled Voice Space invitation creates one actionable notification with the room title',
+    (select count(*)::text || ':' || min(data->>'title')
+      from public.notifications where user_id=v_outsider and type='voice_invitation'),
+    '1:Project discussion');
+  update public.user_preferences set notify_enabled=false where user_id=v_outsider;
+  perform public.internal_notify(v_outsider,'voice_invitation',v_owner,'voice_room',v_room,'voice-master-off-test','{}'::jsonb);
+  v_result := v_result || pg_temp.ex('master notification preference suppresses notification generation',
+    (select count(*)::text from public.notifications where user_id=v_outsider and dedupe_key='voice-master-off-test'),
+    '0');
+
+  update public.voice_rooms set status='live' where id=v_room;
+  v_result := v_result || pg_temp.ex('live transition stamps a persistent start timestamp',
+    pg_temp.scalar(v_member,'authenticated',format(
+      'select (live_started_at is not null)::text from public.voice_rooms where id=%L',v_room
+    )), 'true');
+  v_result := v_result || pg_temp.ex('active presence reveals room details only to eligible members',
+    pg_temp.scalar(v_outsider,'authenticated',format(
+      'select can_join::text || '':'' || title from public.voice_active_presence() where room_id=%L',v_room
+    )), 'false:A restricted Voice Space is live');
 
   v_result := v_result || pg_temp.ex('project member can join a group Voice Space',
     pg_temp.scalar(v_member,'authenticated',format('select public.voice_can_join(%L)',v_room)), 'true');
   v_result := v_result || pg_temp.ex('non-member invitation cannot bypass group membership',
     pg_temp.scalar(v_outsider,'authenticated',format('select public.voice_can_join(%L)',v_room)), 'false');
+  update public.voice_rooms set status='ended',ended_at=now() where id=v_room;
+  v_result := v_result || pg_temp.ex('invited users can see ended state without gaining join access',
+    pg_temp.scalar(v_outsider,'authenticated',format('select status from public.voice_rooms where id=%L',v_room)), 'ended');
   v_result := v_result || pg_temp.ex('public project is discoverable while enabled',
     pg_temp.scalar(v_outsider,'authenticated',format('select count(*) from public.projects where id=%L',v_project)), '1');
   v_result := v_result || pg_temp.ex('public member count is accurate without exposing membership rows',

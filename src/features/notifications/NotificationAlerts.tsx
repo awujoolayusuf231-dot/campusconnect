@@ -6,6 +6,7 @@ import {
   catchUpPresentation,
   claimNotificationForDisplay,
   notificationAllowedByPreferences,
+  pushNotificationAllowedByPreferences,
   type NotificationPreferences,
 } from "./realtimeNotificationLogic";
 import { describeNotification, type NotificationCopyInput } from "./notificationCopy";
@@ -23,7 +24,7 @@ type NotificationRow = NotificationCopyInput & {
 type ActorProfile = { id: string; display_name: string | null; username: string | null };
 type Toast = { id: string; title?: string; text: string; to: string };
 
-const preferenceFields = "notify_push,notify_follows,notify_likes,notify_comments,notify_community,notify_messages,notify_discussions,notify_followed_posts,notify_celebrations";
+const preferenceFields = "notify_enabled,notify_push,notify_follows,notify_likes,notify_comments,notify_community,notify_messages,notify_discussions,notify_followed_posts,notify_celebrations,notify_voice,notify_collaboration";
 const defaultPreferences: NotificationPreferences = {};
 const LAST_SEEN_KEY_PREFIX = "campusconnect-notifications-last-seen:";
 
@@ -140,7 +141,8 @@ export function NotificationAlerts({ userId }: { userId: string }) {
       }
 
       const visible = document.visibilityState === "visible";
-      if (!visible && (typeof Notification === "undefined" || Notification.permission !== "granted")) {
+      if (!visible && (!pushNotificationAllowedByPreferences(preferences)
+        || typeof Notification === "undefined" || Notification.permission !== "granted")) {
         setLastSeenAt(userId);
         return;
       }

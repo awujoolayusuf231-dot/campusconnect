@@ -4,6 +4,7 @@ import {
   claimNotificationForDisplay,
   clearShownNotificationsForTests,
   notificationAllowedByPreferences,
+  pushNotificationAllowedByPreferences,
 } from "./realtimeNotificationLogic";
 
 beforeEach(() => {
@@ -39,9 +40,22 @@ describe("notification catch-up", () => {
 
 describe("notification preferences", () => {
   it("honors the global push setting and notification category settings", () => {
-    expect(notificationAllowedByPreferences("message", { notify_push: false })).toBe(false);
+    expect(notificationAllowedByPreferences("message", { notify_push: false })).toBe(true);
     expect(notificationAllowedByPreferences("message", { notify_messages: false })).toBe(false);
     expect(notificationAllowedByPreferences("follow", { notify_follows: false })).toBe(false);
     expect(notificationAllowedByPreferences("message", { notify_push: true, notify_messages: true })).toBe(true);
+  });
+
+  it("honors the master switch and voice/collaboration notification categories", () => {
+    expect(notificationAllowedByPreferences("voice_invitation", { notify_enabled: false })).toBe(false);
+    expect(notificationAllowedByPreferences("voice_invitation", { notify_voice: false })).toBe(false);
+    expect(notificationAllowedByPreferences("project_application", { notify_collaboration: false })).toBe(false);
+    expect(notificationAllowedByPreferences("voice_invitation", { notify_enabled: true, notify_voice: true })).toBe(true);
+  });
+
+  it("uses the push preference only for background push delivery", () => {
+    expect(pushNotificationAllowedByPreferences({ notify_push: false })).toBe(false);
+    expect(pushNotificationAllowedByPreferences({ notify_enabled: false, notify_push: true })).toBe(false);
+    expect(pushNotificationAllowedByPreferences({ notify_enabled: true, notify_push: true })).toBe(true);
   });
 });

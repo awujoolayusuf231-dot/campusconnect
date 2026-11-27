@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { listMutedUsers, unmuteUser } from "@/features/social/api";
+import { NotificationSettings } from "./NotificationSettings";
 
 export function SettingsPage() {
   const queryClient = useQueryClient();
@@ -38,6 +39,7 @@ export function SettingsPage() {
         <input id="pw" type="password" autoComplete="new-password" className="input" value={pw} onChange={(e) => setPw(e.target.value)} />
         <button className="btn-primary">Update password</button>
       </form>
+      <NotificationSettings />
       <section className="card space-y-3">
         <h2 className="font-medium">Muted accounts</h2>
         {mutedUsers.isLoading && <p className="text-sm text-muted">Loading muted accounts…</p>}

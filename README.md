@@ -105,7 +105,7 @@ select cron.schedule(
 );
 ```
 
-After redeploying the frontend over HTTPS (localhost is also supported for development), sign in and use Notifications → This device → Enable on this device. Allow browser notifications. To verify delivery, create a notification-producing action and check that `public.push_outbox` changes from `pending` to `delivered`. The app can store tokens and enqueue notifications without the worker schedule, but pushes will not be sent until the Edge Function and cron job are configured.
+After redeploying the frontend over HTTPS (localhost is also supported for development), sign in and use Account Settings → Notification settings → Enable on this device. Allow browser notifications. To verify delivery, create a notification-producing action and check that `public.push_outbox` changes from `pending` to `delivered`. The app can store tokens and enqueue notifications without the worker schedule, but pushes will not be sent until the Edge Function and cron job are configured.
 
 The worker rechecks push/category preferences, account standing, and actor/recipient blocks immediately before sending. The outbox has one status per notification rather than per device: any successful device marks that notification delivered; retries occur when no device succeeds. Invalid FCM registrations are removed. Tests exercise decision logic only and do not call Firebase or send notifications.
 

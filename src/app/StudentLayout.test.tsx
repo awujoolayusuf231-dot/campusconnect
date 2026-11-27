@@ -12,6 +12,12 @@ vi.mock("@/features/auth/AuthProvider", () => ({ useAuth: () => mocks.auth }));
 vi.mock("@tanstack/react-query", () => ({ useQuery: () => ({ data: "student" }) }));
 vi.mock("@/features/notifications/useRealtimeCounts", () => ({ useUnreadCounts: () => mocks.counts }));
 vi.mock("@/features/notifications/NotificationAlerts", () => ({ NotificationAlerts: () => null }));
+vi.mock("@/features/notifications/NotificationBell", () => ({
+  NotificationBell: ({ unreadCount }: { unreadCount: number }) => (
+    <button type="button" aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"} />
+  ),
+}));
+vi.mock("@/features/voice/VoiceActiveIndicator", () => ({ VoiceActiveIndicator: () => null }));
 vi.mock("@/features/announcements/AnnouncementBanner", () => ({ AnnouncementBanner: () => null }));
 vi.mock("@/lib/supabase", () => ({ supabase: { auth: { signOut: mocks.signOut } } }));
 
@@ -84,21 +90,20 @@ describe("StudentLayout navigation", () => {
     expect(screen.queryByRole("navigation", { name: "Mobile menu" })).not.toBeInTheDocument();
   });
 
-  it("puts the notification link and unread count in the header", () => {
+  it("puts a notification preview button and unread count in the header", () => {
     renderStudentLayout();
 
-    const notificationLink = screen.getByRole("link", { name: "Notifications, 7 unread" });
-    expect(notificationLink).toHaveAttribute("href", "/app/notifications");
-    expect(within(notificationLink).getByText("7")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Notifications, 7 unread" })).toBeInTheDocument();
     expect(within(getMobileMainNavigation()).queryByRole("link", { name: /Notifications/ })).not.toBeInTheDocument();
   });
 
-  it("opens the notifications page from the header link", () => {
+  it("does not navigate to the notifications page just by opening the header preview", () => {
     renderStudentLayout();
 
-    fireEvent.click(screen.getByRole("link", { name: "Notifications, 7 unread" }));
+    fireEvent.click(screen.getByRole("button", { name: "Notifications, 7 unread" }));
 
-    expect(screen.getByText("Notification content")).toBeInTheDocument();
+    expect(screen.getByText("Home content")).toBeInTheDocument();
+    expect(screen.queryByText("Notification content")).not.toBeInTheDocument();
   });
 
   it("does not apply the transform entrance animation to an active conversation", () => {

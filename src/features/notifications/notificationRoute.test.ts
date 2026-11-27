@@ -8,12 +8,13 @@ describe("notificationRoute", () => {
     ["repost", "post", "/app/p/post%2F1"],
     ["comment", "post", "/app/p/post%2F1"],
     ["project_application", "project", "/app/projects/project%2F1"],
+    ["voice_invitation", "voice_room", "/app/voice-spaces/room%2F1"],
     ["celebration_reminder", "celebration", "/app/celebrations/card%2F1"],
   ])("maps %s/%s to its app route", (type, entityType, route) => {
     expect(notificationRoute({
       type,
       entityType,
-      entityId: type === "message" ? "conversation/1" : type === "like" || type === "repost" || type === "comment" ? "post/1" : type === "project_application" ? "project/1" : "card/1",
+      entityId: type === "message" ? "conversation/1" : type === "like" || type === "repost" || type === "comment" ? "post/1" : type === "project_application" ? "project/1" : type === "voice_invitation" ? "room/1" : "card/1",
     })).toBe(route);
   });
 

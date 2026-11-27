@@ -52,6 +52,12 @@ describe("push outbox decisions", () => {
       url: "/app/celebrations/card-1",
       tag: "",
     });
+    expect(pushCopy("voice_invitation", "Amina", "voice_room", "room-1", null, { title: "Study session" })).toEqual({
+      title: "Voice Space invitation",
+      body: "Amina invited you to join Study session",
+      url: "/app/voice-spaces/room-1",
+      tag: "",
+    });
   });
 
   it("falls back to a safe generic copy and truncates actor names", () => {
@@ -76,7 +82,9 @@ describe("push outbox decisions", () => {
     expect(preferenceForNotification("follow")).toBe("notify_follows");
     expect(preferenceForNotification("repost")).toBe("notify_likes");
     expect(preferenceForNotification("discussion_reply")).toBe("notify_discussions");
-    expect(preferenceForNotification("celebration_reminder")).toBeNull();
+    expect(preferenceForNotification("celebration_reminder")).toBe("notify_celebrations");
+    expect(preferenceForNotification("voice_invitation")).toBe("notify_voice");
+    expect(preferenceForNotification("project_application")).toBe("notify_collaboration");
   });
 
   it("allows only eligible accounts with push enabled and no block", () => {

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { RequireAuth, RequireStaff } from "@/features/auth/guards";
 import { LoadingState } from "@/app/LoadingState";
 
@@ -117,11 +117,9 @@ const CollaborateHub = lazy(() => import("@/features/academic/AcademicResourcesH
 const DiscoverHub = lazy(() => import("@/features/academic/AcademicResourcesHub").then((m) => ({ default: m.DiscoverHub })));
 
 export function App() {
-  const location = useLocation();
-
   return (
     <Suspense fallback={<LoadingState label="Preparing your campus space" variant="page" />}>
-      <div key={location.pathname} className="route-transition">
+      <div className="route-transition">
        <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/features" element={<FeaturesPage />} />

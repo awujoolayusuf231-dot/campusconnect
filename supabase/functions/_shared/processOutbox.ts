@@ -52,6 +52,7 @@ type ActorProfile = {
 };
 type FirebaseAccount = { client_email: string; private_key: string; project_id: string };
 type PushPreferences = {
+  notify_enabled: boolean;
   notify_push: boolean;
   notify_follows: boolean;
   notify_likes: boolean;
@@ -59,6 +60,10 @@ type PushPreferences = {
   notify_community: boolean;
   notify_messages: boolean;
   notify_discussions: boolean;
+  notify_followed_posts: boolean;
+  notify_celebrations: boolean;
+  notify_voice: boolean;
+  notify_collaboration: boolean;
 };
 
 function base64Url(value: Uint8Array | string): string {
@@ -259,7 +264,7 @@ async function recheckEligibility(
   const [preferencesResult, standingResult] = await Promise.all([
     client
       .from("user_preferences")
-      .select("notify_push,notify_follows,notify_likes,notify_comments,notify_community,notify_messages,notify_discussions")
+      .select("notify_enabled,notify_push,notify_follows,notify_likes,notify_comments,notify_community,notify_messages,notify_discussions,notify_followed_posts,notify_celebrations,notify_voice,notify_collaboration")
       .eq("user_id", job.user_id)
       .maybeSingle(),
     client
@@ -302,7 +307,7 @@ async function recheckEligibility(
   }
 
   if (!shouldSendPush({
-    pushEnabled: preference?.notify_push !== false,
+    pushEnabled: preference?.notify_enabled !== false && preference?.notify_push !== false,
     categoryEnabled,
     accountStatus,
     blocked,

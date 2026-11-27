@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import type { Room } from "livekit-client";
-import { Mic, MicOff, PhoneOff } from "lucide-react";
+import { Mic, MicOff, PhoneOff, Radio } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 import { getVoiceToken, joinVoiceRoom, leaveVoiceRoom } from "./api";
 
 interface VoiceCallContextValue {
@@ -12,7 +13,10 @@ interface VoiceCallContextValue {
   canPublish: boolean;
   isMuted: boolean;
   error: string;
+  endedRoomId: string | null;
+  endedNotice: string;
   setError: (message: string) => void;
+  dismissEndedNotice: () => void;
   connect: (roomId: string, title: string, micMode: string, role: string) => Promise<void>;
   leave: () => Promise<void>;
   setMicrophoneEnabled: (enabled: boolean) => Promise<void>;
@@ -33,6 +37,8 @@ export function VoiceCallProvider({ children }: { children: ReactNode }) {
   const [canPublish, setCanPublish] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [error, setError] = useState("");
+  const [endedRoomId, setEndedRoomId] = useState<string | null>(null);
+  const [endedNotice, setEndedNotice] = useState("");
 
   const clearRemoteAudio = useCallback(() => {
     for (const element of remoteAudioRef.current) element.remove();
@@ -66,7 +72,14 @@ export function VoiceCallProvider({ children }: { children: ReactNode }) {
     playbackPausedRef.current = false;
     clearRemoteAudio();
     if (activeRoom) await activeRoom.disconnect();
-    if (activeId) await leaveVoiceRoom(activeId);
+    if (activeId) {
+      try {
+        await leaveVoiceRoom(activeId);
+      } catch (caught) {
+        console.error("Voice audio disconnected, but participant state could not be updated.", caught);
+        setError("Audio disconnected, but your Voice Space membership could not be updated. Refresh and try again.");
+      }
+    }
   }, [clearRemoteAudio]);
 
   const setMicrophoneEnabled = useCallback(async (enabled: boolean) => {
@@ -92,11 +105,17 @@ export function VoiceCallProvider({ children }: { children: ReactNode }) {
   const toggleMicrophone = useCallback(async () => {
     await setMicrophoneEnabled(isMuted);
   }, [isMuted, setMicrophoneEnabled]);
+  const dismissEndedNotice = useCallback(() => {
+    setEndedNotice("");
+    setEndedRoomId(null);
+  }, []);
 
   const connect = useCallback(async (nextRoomId: string, title: string, micMode: string, currentRole: string) => {
     if (roomRef.current && activeRoomIdRef.current === nextRoomId && connected) return;
     setConnecting(true);
     setError("");
+    setEndedNotice("");
+    setEndedRoomId(null);
     playbackPausedRef.current = false;
     try {
       if (roomRef.current || activeRoomIdRef.current) await leave();
@@ -116,8 +135,12 @@ export function VoiceCallProvider({ children }: { children: ReactNode }) {
           setRoomTitle("");
           setCanPublish(false);
           setIsMuted(true);
+          setError("The connection to this Voice Space was lost. Rejoin to reconnect.");
           clearRemoteAudio();
-          void leaveVoiceRoom(nextRoomId);
+          void leaveVoiceRoom(nextRoomId).catch((caught: unknown) => {
+            console.error("Could not update Voice Space membership after the audio connection closed.", caught);
+            setError("Audio disconnected, but your Voice Space membership could not be updated.");
+          });
         }
       });
       liveRoom.on(RoomEvent.ParticipantPermissionsChanged, () => {
@@ -187,6 +210,25 @@ export function VoiceCallProvider({ children }: { children: ReactNode }) {
     }
   }, [clearRemoteAudio, connected, leave]);
 
+  useEffect(() => {
+    if (!roomId) return;
+    const channel = supabase.channel(`voice-active-call-${roomId}`)
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "voice_rooms",
+        filter: `id=eq.${roomId}`,
+      }, (payload) => {
+        if ((payload.new as { status?: string }).status === "ended") {
+          setEndedRoomId(roomId);
+          setEndedNotice("This Voice Space has ended.");
+          void leave();
+        }
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [roomId, roomTitle, leave]);
+
   useEffect(() => () => {
     const activeId = activeRoomIdRef.current;
     const activeRoom = roomRef.current;
@@ -194,7 +236,9 @@ export function VoiceCallProvider({ children }: { children: ReactNode }) {
     activeRoomIdRef.current = null;
     if (activeRoom) void activeRoom.disconnect();
     clearRemoteAudio();
-    if (activeId) void leaveVoiceRoom(activeId);
+    if (activeId) void leaveVoiceRoom(activeId).catch((caught: unknown) => {
+      console.error("Could not clear Voice Space membership during cleanup.", caught);
+    });
   }, [clearRemoteAudio]);
 
   useEffect(() => {
@@ -226,9 +270,11 @@ export function VoiceCallProvider({ children }: { children: ReactNode }) {
   }, [connected, roomId, roomTitle, setRemotePlaybackPaused]);
 
   const value = useMemo(() => ({
-    roomId, roomTitle, connected, connecting, canPublish, isMuted, error, setError,
+    roomId, roomTitle, connected, connecting, canPublish, isMuted, error,
+    endedRoomId, endedNotice, setError, dismissEndedNotice,
     connect, leave, setMicrophoneEnabled, toggleMicrophone,
-  }), [roomId, roomTitle, connected, connecting, canPublish, isMuted, error, connect, leave, setMicrophoneEnabled, toggleMicrophone]);
+  }), [roomId, roomTitle, connected, connecting, canPublish, isMuted, error, endedRoomId, endedNotice,
+    dismissEndedNotice, connect, leave, setMicrophoneEnabled, toggleMicrophone]);
 
   return <VoiceCallContext.Provider value={value}>{children}</VoiceCallContext.Provider>;
 }
@@ -242,10 +288,17 @@ export function useVoiceCall() {
 export function VoiceCallDock() {
   const call = useVoiceCall();
   const { pathname } = useLocation();
-  if (!call.roomId || pathname === `/app/voice-spaces/${call.roomId}`) return null;
+  const showEndedNotice = !!call.endedNotice && pathname !== `/app/voice-spaces/${call.endedRoomId}`;
+  if ((!call.roomId || pathname === `/app/voice-spaces/${call.roomId}`) && !showEndedNotice) return null;
 
   return (
     <aside className="fixed inset-x-2 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-xl items-center gap-2 rounded-2xl border border-primary-border bg-white p-3 text-fg shadow-xl lg:inset-x-auto lg:bottom-4 lg:right-4">
+      {showEndedNotice && <div role="status" className="flex min-w-0 flex-1 items-center gap-2 text-sm font-semibold">
+        <Radio size={17} className="shrink-0 text-danger" aria-hidden="true" />
+        <span className="min-w-0 flex-1">{call.endedNotice}</span>
+        <button type="button" className="text-xs font-bold text-muted underline" onClick={call.dismissEndedNotice}>Dismiss</button>
+      </div>}
+      {call.roomId && <>
       <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${call.connected ? "bg-green-400" : "animate-pulse bg-amber-300"}`} aria-hidden="true" />
       <Link to={`/app/voice-spaces/${call.roomId}`} className="min-w-0 flex-1">
         <span className="block truncate text-xs font-bold">{call.roomTitle || "Voice Space"}</span>
@@ -255,6 +308,7 @@ export function VoiceCallDock() {
         {call.isMuted ? <MicOff size={16} /> : <Mic size={16} />}
       </button>}
       <button type="button" className="rounded-lg border border-line p-2 text-fg hover:bg-primary-soft" aria-label="Leave Voice Space" onClick={() => void call.leave()}><PhoneOff size={16} /></button>
+      </>}
     </aside>
   );
 }

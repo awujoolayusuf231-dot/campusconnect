@@ -14,7 +14,30 @@ export interface VoiceRoom {
   status: "scheduled" | "live" | "ended" | "cancelled";
   mic_mode: "open" | "host_controlled";
   scheduled_at: string;
+  live_started_at: string | null;
+  ended_at?: string | null;
   created_at: string;
+}
+
+export interface VoicePresence {
+  room_id: string;
+  title: string;
+  host_display_name: string | null;
+  host_avatar_path: string | null;
+  participant_count: number | null;
+  can_join: boolean;
+}
+
+export function formatVoiceDuration(startedAt: string | null, endedAt: string | null, now = Date.now()): string {
+  if (!startedAt) return "00:00:00";
+  const start = Date.parse(startedAt);
+  const end = endedAt ? Date.parse(endedAt) : now;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return "00:00:00";
+  const seconds = Math.max(0, Math.floor((end - start) / 1000));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainder = seconds % 60;
+  return [hours, minutes, remainder].map((part) => String(part).padStart(2, "0")).join(":");
 }
 
 async function rpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
@@ -29,6 +52,12 @@ export async function listVoiceRooms(page = 0): Promise<VoiceRoom[]> {
     .range(page * 20, page * 20 + 19);
   if (error) throw error;
   return (data ?? []) as VoiceRoom[];
+}
+
+export async function listActiveVoicePresence(): Promise<VoicePresence[]> {
+  const { data, error } = await supabase.rpc("voice_active_presence");
+  if (error) throw error;
+  return (data ?? []) as VoicePresence[];
 }
 
 export const createVoiceRoom = (input: {

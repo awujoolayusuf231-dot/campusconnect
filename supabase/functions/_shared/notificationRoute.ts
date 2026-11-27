@@ -50,6 +50,9 @@ export function notificationRoute({
     case "project_application":
       if (entityType === "project") route = `/app/projects/${encodedId}`;
       break;
+    case "voice_invitation":
+      if (entityType === "voice_room") route = `/app/voice-spaces/${encodedId}`;
+      break;
     case "discussion_reply": {
       const courseId = data?.course_id;
       if (entityType === "assignment_discussion" && typeof courseId === "string" && courseId) {

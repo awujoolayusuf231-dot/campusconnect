@@ -12,7 +12,7 @@ import { supabase } from "@/lib/supabase";
 import {
   createVoiceRoom, endVoiceRoom, listVoiceRooms, requestToSpeak,
   listMyVoiceCommunities, listMyVoiceProjects, respondToVoiceInvitation, resolveRaisedHand,
-  sendVoiceMessage, setVoiceMicMode, syncVoiceRoomPermissions, type VoiceRoom,
+  sendVoiceMessage, setVoiceMicMode, syncVoiceRoomPermissions, formatVoiceDuration, type VoiceRoom,
 } from "./api";
 import { useVoiceCall } from "./VoiceCallProvider";
 
@@ -113,10 +113,21 @@ export function VoiceRoomPage() {
   const [reportReason, setReportReason] = useState("");
   const [reportMessage, setReportMessage] = useState("");
   const [permissionSyncFailed, setPermissionSyncFailed] = useState(false);
+  const [clockNow, setClockNow] = useState(Date.now());
   const room = useQuery({ queryKey: ["voice-room", id], enabled: !!id, refetchInterval: 10000, queryFn: async () => {
     const { data, error } = await supabase.from("voice_rooms").select("*").eq("id", id).maybeSingle();
     if (error) throw error; return data as VoiceRoom | null;
   } });
+  useEffect(() => {
+    if (room.data?.status !== "live") return;
+    const timer = window.setInterval(() => setClockNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [room.data?.status]);
+  const duration = formatVoiceDuration(
+    room.data?.live_started_at ?? null,
+    room.data?.ended_at ?? null,
+    clockNow,
+  );
   const myMember = useQuery({ queryKey: ["voice-member", id, session?.user.id], enabled: !!id && !!session, queryFn: async () => {
     const { data, error } = await supabase.from("voice_room_members").select("role,left_at").eq("room_id", id).eq("user_id", session!.user.id).maybeSingle();
     if (error) throw error; return data;
@@ -172,7 +183,7 @@ export function VoiceRoomPage() {
   }
 
   useEffect(() => {
-    if (!connectedToThisRoom) return;
+    if (!id || !session) return;
     const channel = supabase.channel(`voice-room-live-${id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "voice_rooms", filter: `id=eq.${id}` }, () => {
         void qc.invalidateQueries({ queryKey: ["voice-room", id] });
@@ -192,7 +203,7 @@ export function VoiceRoomPage() {
       })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [connectedToThisRoom, id, qc, session?.user.id]);
+  }, [id, qc, session]);
 
   const request = useMutation({ mutationFn: () => requestToSpeak(id), onSuccess: () => setAudioError("Hand raised. The host can approve your speaker request.") });
   const respondInvite = useMutation({ mutationFn: ({ invitationId, accept }: { invitationId: string; accept: boolean }) => respondToVoiceInvitation(invitationId, accept), onSuccess: async () => {
@@ -279,6 +290,13 @@ export function VoiceRoomPage() {
   if (room.isLoading) return <LoadingState label="Loading Voice Space" variant="panel" />;
   if (room.isError || !room.data) return <p role="alert" className="err">This Voice Space is unavailable or you do not have permission to join.</p>;
   const value = room.data;
+  if (value.status === "ended") return <section className="mx-auto max-w-2xl rounded-3xl border border-primary-border bg-white p-6 text-center shadow-sm sm:p-10">
+    <Radio className="mx-auto text-primary" size={32} />
+    <h1 className="mt-4 text-2xl font-black">This Voice Space has ended.</h1>
+    <p className="mt-2 text-sm text-muted">The host ended the conversation. You are no longer connected to its audio.</p>
+    <p className="mt-4 text-sm font-semibold">Final duration <span className="ml-1 font-mono">{duration}</span></p>
+    <Link to="/app/voice-spaces" className="btn-primary mt-6 inline-flex min-h-11 items-center px-4">Browse Voice Spaces</Link>
+  </section>;
   const memberById = new Map((members.data ?? []).map((member) => [member.user_id, member]));
   const displayName = (userId: string) => memberById.get(userId)?.profile?.display_name ?? `Student ${userId.slice(0, 6)}`;
   const canSpeak = (member: VoiceMember) => member.role === "host"
@@ -289,13 +307,14 @@ export function VoiceRoomPage() {
     <Link to="/app/voice-spaces" className="text-sm font-semibold text-muted hover:text-primary">← All Voice Spaces</Link>
     <section className="overflow-hidden rounded-3xl border border-primary-border bg-white text-fg shadow-sm">
       <div className="flex items-center justify-between gap-3 border-b border-line bg-gradient-to-r from-primary-soft to-white p-4 sm:p-6">
-        <div><p className="text-xs font-bold uppercase tracking-[.18em] text-primary">{human(value.category)} · {human(value.room_type)}</p><h1 className="mt-1 text-2xl font-black">{value.title}</h1></div>
+        <div><p className="text-xs font-bold uppercase tracking-[.18em] text-primary">{human(value.category)} · {human(value.room_type)}</p><h1 className="mt-1 text-2xl font-black">{value.title}</h1>
+          {value.status === "live" && <p className="mt-1 text-xs text-muted">Running for <span className="font-mono font-bold text-fg" aria-label={`Voice Space duration ${duration}`}>{duration}</span></p>}</div>
         <span className={`rounded-full px-3 py-1 text-xs font-black ${value.status === "live" ? "bg-primary-soft text-primary" : "bg-bg text-muted"}`}>{value.status === "live" ? "LIVE" : new Date(value.scheduled_at).toLocaleString()}</span>
       </div>
       <div className="p-4 sm:p-6">
         <p className="text-sm leading-6 text-muted">{value.description || "Welcome to the conversation. Please be respectful and follow the host's directions."}</p>
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          {!connectedToThisRoom && <button className="btn-primary min-h-11 px-4" disabled={connecting || value.status === "ended" || value.status === "cancelled" || (value.status === "scheduled" && !host)} onClick={() => void connectToRoom()}>{connecting ? "Connecting…" : activeCallRoomId ? "Switch to this room" : value.status === "live" ? "Join room" : host ? "Start room" : "Join room"}</button>}
+          {!connectedToThisRoom && <button className="btn-primary min-h-11 px-4" disabled={connecting || value.status === "cancelled" || (value.status === "scheduled" && !host)} onClick={() => void connectToRoom()}>{connecting ? "Connecting…" : activeCallRoomId ? "Switch to this room" : value.status === "live" ? "Join room" : host ? "Start room" : "Join room"}</button>}
           {connectedToThisRoom && canPublish && <button className="btn inline-flex min-h-11 items-center gap-2 px-4" onClick={() => void voiceCall.toggleMicrophone()}>{isMuted ? <MicOff size={16} /> : <Mic size={16} />}{isMuted ? "Unmute" : "Mute"}</button>}
           {connectedToThisRoom && currentRole === "listener" && value.mic_mode === "host_controlled" && <button className="btn inline-flex min-h-11 items-center gap-2 px-4" disabled={request.isPending} onClick={() => request.mutate()}><Hand size={16} /> Raise hand</button>}
           {connectedToThisRoom && <button className="btn inline-flex min-h-11 items-center gap-2 px-4" onClick={() => void leave()}><PhoneOff size={16} /> Leave</button>}
