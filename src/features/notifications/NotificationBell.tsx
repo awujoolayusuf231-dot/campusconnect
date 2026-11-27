@@ -22,15 +22,23 @@ function iconFor(type: string) {
   return Bell;
 }
 
-export function NotificationBell({ unreadCount }: { unreadCount: number }) {
+export function NotificationBell({
+  unreadCount,
+  open,
+  onOpenChange,
+}: {
+  unreadCount: number;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const queryClient = useQueryClient();
   const panel = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const dropdown = useRef<HTMLElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const markingRead = useRef(new Set<number>());
-  const [open, setOpen] = useState(false);
   const [readError, setReadError] = useState("");
+  const [actionPending, setActionPending] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
   const preview = useQuery({
     queryKey: ["notifications", "preview"],
@@ -38,7 +46,7 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("notifications_list", { p_before: null, p_limit: 5 });
       if (error) throw error;
-      return (data ?? []) as PreviewNotification[];
+      return ((data ?? []) as PreviewNotification[]).filter((item) => !item.read_at);
     },
   });
 
@@ -47,10 +55,10 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
     const handlePointerDown = (event: PointerEvent) => {
       if (event.target instanceof Node
         && !panel.current?.contains(event.target)
-        && !dropdown.current?.contains(event.target)) setOpen(false);
+        && !dropdown.current?.contains(event.target)) onOpenChange(false);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") onOpenChange(false);
     };
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
@@ -58,7 +66,7 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open]);
+  }, [onOpenChange, open]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -101,14 +109,46 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
       return;
     }
     queryClient.setQueryData<PreviewNotification[]>(["notifications", "preview"], (current) =>
-      current?.map((item) => pendingIds.includes(item.id) && !item.read_at
-        ? { ...item, read_at: new Date().toISOString() }
-        : item));
+      current?.filter((item) => !pendingIds.includes(item.id)));
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["notifications"] }),
       queryClient.invalidateQueries({ queryKey: ["unread"] }),
     ]);
   }, [queryClient]);
+
+  const markAllRead = async () => {
+    setActionPending(true);
+    setReadError("");
+    const { error } = await supabase.rpc("mark_notifications_read");
+    if (error) {
+      setReadError("Could not mark notifications as read.");
+      console.error("Could not mark all notifications as read.", error);
+    } else {
+      queryClient.setQueryData<PreviewNotification[]>(["notifications", "preview"], []);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+        queryClient.invalidateQueries({ queryKey: ["unread"] }),
+      ]);
+    }
+    setActionPending(false);
+  };
+
+  const clearAll = async () => {
+    setActionPending(true);
+    setReadError("");
+    const { error } = await supabase.from("notifications").delete().not("id", "is", null);
+    if (error) {
+      setReadError("Could not clear notifications.");
+      console.error("Could not clear notifications.", error);
+    } else {
+      queryClient.setQueryData<PreviewNotification[]>(["notifications", "preview"], []);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+        queryClient.invalidateQueries({ queryKey: ["unread"] }),
+      ]);
+    }
+    setActionPending(false);
+  };
 
   useEffect(() => {
     const root = list.current;
@@ -117,7 +157,7 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
       const visibleUnreadIds = entries
         .filter((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.6)
         .map((entry) => Number((entry.target as HTMLLIElement).dataset.notificationId))
-        .filter((id) => preview.data?.some((item) => item.id === id && !item.read_at));
+        .filter((id) => preview.data?.some((item) => item.id === id && !item.read_at && item.type !== "announcement"));
       if (visibleUnreadIds.length > 0) void markRead(visibleUnreadIds);
     }, { root, threshold: 0.6 });
     root.querySelectorAll<HTMLLIElement>("[data-notification-id]").forEach((item) => observer.observe(item));
@@ -132,7 +172,7 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
       aria-expanded={open}
       aria-controls="notification-preview"
       title="Notifications"
-      onClick={() => setOpen((current) => !current)}
+      onClick={() => onOpenChange(!open)}
       className={`relative flex h-10 w-10 items-center justify-center rounded-xl border bg-white transition hover:border-primary/30 hover:bg-primary-soft hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${open ? "border-primary/30 bg-primary-soft text-primary" : "border-line text-muted"}`}
     >
       <Bell size={18} aria-hidden="true" />
@@ -155,6 +195,10 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
         <h2 className="font-bold">Notifications</h2>
         {unreadCount > 0 && <span className="text-xs font-semibold text-primary">{unreadCount > 99 ? "99+" : unreadCount} unread</span>}
       </header>
+      {!!preview.data?.length && <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2">
+        <button type="button" disabled={actionPending} onClick={() => void markAllRead()} className="rounded-lg px-2 py-1 text-xs font-semibold text-primary hover:bg-primary-soft disabled:opacity-50">Mark all as read</button>
+        <button type="button" disabled={actionPending} onClick={() => void clearAll()} className="rounded-lg px-2 py-1 text-xs font-semibold text-danger hover:bg-danger-soft disabled:opacity-50">Clear all</button>
+      </div>}
       {preview.isLoading && <p className="px-4 py-6 text-center text-sm text-muted">Loading notifications…</p>}
       {preview.isError && <p role="alert" className="px-4 py-6 text-center text-sm text-danger">Could not load notifications.</p>}
       {!preview.isLoading && !preview.isError && !preview.data?.length && <p className="px-4 py-8 text-center text-sm text-muted">You have no notifications yet.</p>}
@@ -163,10 +207,11 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
           const copy = describeNotification(item);
           const Icon = iconFor(item.type);
           return <li key={item.id} data-notification-id={item.id} className={`border-b border-line/70 last:border-0 ${item.read_at ? "bg-white" : "bg-primary-soft/40"}`}>
-            <Link to={copy.to} onClick={() => { setOpen(false); if (!item.read_at) void markRead([item.id]); }} className="flex min-h-[4.5rem] items-start gap-3 px-4 py-3 hover:bg-primary-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-primary">
+            <Link to={copy.to} onClick={() => { onOpenChange(false); if (!item.read_at) void markRead([item.id]); }} className="flex min-h-[4.5rem] items-start gap-3 px-4 py-3 hover:bg-primary-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-primary">
               <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${item.read_at ? "bg-bg text-muted" : "bg-primary-soft text-primary"}`}><Icon size={17} aria-hidden="true" /></span>
               <span className="min-w-0 flex-1">
                 <span className={`block text-sm leading-5 ${item.read_at ? "text-fg" : "font-bold text-fg"}`}>{copy.text}</span>
+                {item.type === "announcement" && typeof item.data.body === "string" && <span className="mt-1 line-clamp-2 block whitespace-pre-wrap break-words text-xs leading-5 text-muted">{item.data.body}</span>}
                 <span className="mt-1 block text-xs text-muted">{timeAgo(item.created_at)}</span>
               </span>
               {!item.read_at && <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" aria-label="Unread" />}
@@ -176,7 +221,7 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
       </ul>}
       {readError && <p role="alert" className="px-4 py-2 text-xs text-danger">{readError}</p>}
       <footer className="border-t border-line p-2">
-        <Link to="/app/notifications" onClick={() => setOpen(false)} className="block rounded-xl px-3 py-2 text-center text-sm font-bold text-primary hover:bg-primary-soft">View all notifications</Link>
+        <Link to="/app/notifications" onClick={() => onOpenChange(false)} className="block rounded-xl px-3 py-2 text-center text-sm font-bold text-primary hover:bg-primary-soft">View all notifications</Link>
       </footer>
     </section>, document.body)}
   </div>;
